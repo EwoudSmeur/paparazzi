@@ -710,7 +710,7 @@
                    &guidance_h_command_body.psi);	\
   }
 
-#define PERIODIC_SEND_GUIDANCE_H_REF(_trans, _dev) { \
+#define PERIODIC_SEND_GUIDANCE_H_REF_INT(_trans, _dev) { \
   DOWNLINK_SEND_GUIDANCE_H_REF_INT(_trans, _dev, \
       &guidance_h_pos_sp.x, \
       &guidance_h_pos_ref.x, \

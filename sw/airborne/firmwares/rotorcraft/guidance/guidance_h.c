@@ -219,8 +219,10 @@ void guidance_h_run(bool_t  in_flight) {
     case GUIDANCE_H_MODE_HOVER:
       guidance_h_update_reference();
 
+#ifndef ALIGN_WITH_WIND
       /* set psi command */
       guidance_h_command_body.psi = guidance_h_rc_sp.psi;
+#endif
       /* compute roll and pitch commands and set final attitude setpoint */
       guidance_h_traj_run(in_flight);
 
@@ -245,8 +247,10 @@ void guidance_h_run(bool_t  in_flight) {
 
         guidance_h_update_reference();
 
+#ifndef ALIGN_WITH_WIND
         /* set psi command */
         guidance_h_command_body.psi = nav_heading;
+#endif
         /* compute roll and pitch commands and set final attitude setpoint */
         guidance_h_traj_run(in_flight);
       }
@@ -310,6 +314,28 @@ static void guidance_h_traj_run(bool_t in_flight) {
   } else {
     INT_VECT2_ZERO(guidance_h_pos_err_sum);
   }
+
+#ifdef ALIGN_WITH_WIND
+  //Align the vehicle with the wind (forward or backward)
+  int32_t norm_distance_error;
+  INT32_VECT2_NORM(norm_distance_error, guidance_h_pos_err);
+  if( norm_distance_error > 8) {
+    float guidance_h_pos_err_angle_f = atan2f( (float) POS_FLOAT_OF_BFP(guidance_h_pos_err.y), (float) POS_FLOAT_OF_BFP(guidance_h_pos_err.x));
+
+    float guidance_heading_diff = guidance_h_pos_err_angle_f - stateGetNedToBodyEulers_f()->psi;
+
+    FLOAT_ANGLE_NORMALIZE(guidance_heading_diff);
+    
+    if(guidance_heading_diff > RadOfDeg(-90.0) && guidance_heading_diff < RadOfDeg(90.0)) {
+      guidance_h_command_body.psi = ANGLE_BFP_OF_REAL(guidance_h_pos_err_angle_f);
+    }
+    else {
+      float backward_angle = guidance_h_pos_err_angle_f + RadOfDeg(180.0);
+      FLOAT_ANGLE_NORMALIZE(backward_angle);
+      guidance_h_command_body.psi = ANGLE_BFP_OF_REAL(backward_angle);
+    }
+  }
+#endif
 
   /* run PID */
   guidance_h_command_earth.x =

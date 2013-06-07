@@ -1225,9 +1225,9 @@
     <field name="err_nav_y" type="int32"/>
     <field name="cmd_x"     type="int32"/>
     <field name="cmd_y"     type="int32"/>
-    <field name="cmd_phi"   type="int32"/>
-    <field name="cmd_theta" type="int32"/>
-    <field name="cmd_psi"   type="int32"/>
+    <field name="cmd_phi"   type="int32" alt_unit="deg" alt_unit_coef="0.0139882"/>
+    <field name="cmd_theta" type="int32" alt_unit="deg" alt_unit_coef="0.0139882"/>
+    <field name="cmd_psi"   type="int32" alt_unit="deg" alt_unit_coef="0.0139882"/>
   </message>
 
 

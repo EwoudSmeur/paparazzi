@@ -95,7 +95,7 @@
     <mode name="h_loop" key_press="h">
       <message name="ALIVE"                 period="0.9"/>
       <message name="HOVER_LOOP"            period="0.062"/>
-      <message name="GUIDANCE_H_REF"        period="0.062"/>
+      <message name="GUIDANCE_H_REF_INT"    period="0.062"/>
       <message name="STAB_ATTITUDE"         period="0.4"/>
       <!--<message name="STAB_ATTITUDE_REF" period="0.4"/>-->
       <message name="ROTORCRAFT_FP"         period="0.8"/>

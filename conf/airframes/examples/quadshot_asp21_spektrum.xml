@@ -90,8 +90,8 @@ More information on the Quadshot can be found at transition-robotics.com -->
 
  <section name="AUTOPILOT">
    <define name="MODE_MANUAL"  value="AP_MODE_ATTITUDE_DIRECT"/>
-   <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/>
-   <define name="MODE_AUTO2"  value="AP_MODE_RATE_DIRECT"/>
+   <define name="MODE_AUTO1"   value="AP_MODE_HOVER_DIRECT"/>
+   <define name="MODE_AUTO2"   value="AP_MODE_HOVER_DIRECT "/>
 
    <define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/>
  </section>
@@ -211,8 +211,8 @@ More information on the Quadshot can be found at transition-robotics.com -->
 
  <!-- Gains for horizontal navigation-->
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-   <define name="PGAIN" value="100"/>
-   <define name="DGAIN" value="100"/>
+   <define name="PGAIN" value="50"/>
+   <define name="DGAIN" value="50"/>
    <define name="IGAIN" value="0"/>
  </section>
 
@@ -223,8 +223,11 @@ More information on the Quadshot can be found at transition-robotics.com -->
    <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
    <define name="TRANSITION_MAX_OFFSET" value="-82.0" unit="deg"/>
    <define name="RADIO_CONTROL_SPEKTRUM_SIGNS" value=" {1,1,-1,-1,1,-1,1,1,1,1,1,1}"/>
+   <define name="GUIDANCE_H_USE_REF" value="FALSE"/>
 
+<!--    <define name="ALIGN_WITH_WIND" value="TRUE"/> -->
 
+   <define name="SWITCH_STICKS_FOR_RATE_CONTROL" value="TRUE"/>
    <define name="USE_AIRSPEED" value="TRUE"/>
    <define name="AIRSPEED_ETS_I2C_DEV" value="i2c2"/>
  </section>
@@ -279,13 +282,13 @@ More information on the Quadshot can be found at transition-robotics.com -->
       <define name="USE_SERVOS_7AND8"/>
     </subsystem>
 
-    <subsystem name="telemetry"     type="transparent"/>
+    <subsystem name="telemetry"     type="xbee_api"/>
     <subsystem name="imu"           type="aspirin_v2.1"/>
     <subsystem name="gps"           type="ublox"/>
     <subsystem name="stabilization" type="int_quat"/>
 
     <subsystem name="ahrs"          type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="0"/>
+      <configure name="USE_MAGNETOMETER" value="1"/>
       <define name="AHRS_USE_GPS_HEADING" value="0"/>
     </subsystem>
 
