@@ -90,8 +90,8 @@ More information on the Quadshot can be found at transition-robotics.com -->
 
  <section name="AUTOPILOT">
    <define name="MODE_MANUAL"  value="AP_MODE_ATTITUDE_DIRECT"/>
-   <define name="MODE_AUTO1"   value="AP_MODE_HOVER_DIRECT"/>
-   <define name="MODE_AUTO2"   value="AP_MODE_HOVER_DIRECT "/>
+   <define name="MODE_AUTO1"   value="AP_MODE_HOVER_Z_HOLD"/>
+   <define name="MODE_AUTO2"   value="AP_MODE_NAV"/>
 
    <define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/>
  </section>
@@ -263,6 +263,10 @@ More information on the Quadshot can be found at transition-robotics.com -->
       <define name="RADIO_MODE" value="RADIO_AUX1"/>
 <!--       <configure name="USE_SECONDARY_SPEKTRUM_RECEIVER" value="1"/> -->
     </subsystem>
+
+ <!-- ONLY if flashing via JTAG cable -->
+    <configure name="FLASH_MODE"   value="JTAG"/>
+    <configure name="BMP_PORT" value="/dev/ttyACM0" />
 
  <!-- To use an airspeed sensor on I2C, enable I2C2-->
      <define name="USE_I2C2"/>
