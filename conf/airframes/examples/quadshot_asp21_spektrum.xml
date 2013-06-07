@@ -276,6 +276,11 @@ More information on the Quadshot can be found at transition-robotics.com -->
       <subsystem name="radio_control" type="ppm"/>
     </target>
 
+   <target name="sim" board="pc">
+     <subsystem name="radio_control" type="ppm"/>
+   </target>
+ 
+
     <subsystem name="motor_mixing"/>
     <subsystem name="actuators"     type="pwm">
       <define name="SERVO_HZ" value="400"/>
