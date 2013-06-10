@@ -319,7 +319,7 @@ static void guidance_h_traj_run(bool_t in_flight) {
   //Align the vehicle with the wind (forward or backward)
   int32_t norm_distance_error;
   INT32_VECT2_NORM(norm_distance_error, guidance_h_pos_err);
-  if( norm_distance_error > 8) {
+  if( norm_distance_error > POS_BFP_OF_REAL(8.0)) {
     float guidance_h_pos_err_angle_f = atan2f( (float) POS_FLOAT_OF_BFP(guidance_h_pos_err.y), (float) POS_FLOAT_OF_BFP(guidance_h_pos_err.x));
 
     float guidance_heading_diff = guidance_h_pos_err_angle_f - stateGetNedToBodyEulers_f()->psi;

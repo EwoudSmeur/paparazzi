@@ -214,6 +214,8 @@ More information on the Quadshot can be found at transition-robotics.com -->
    <define name="PGAIN" value="50"/>
    <define name="DGAIN" value="50"/>
    <define name="IGAIN" value="0"/>
+
+   <define name="GUIDANCE_H_MAX_BANK" value=" RadOfDeg(40)"/>
  </section>
 
  <section name="MISC">
@@ -225,7 +227,7 @@ More information on the Quadshot can be found at transition-robotics.com -->
    <define name="RADIO_CONTROL_SPEKTRUM_SIGNS" value=" {1,1,-1,-1,1,-1,1,1,1,1,1,1}"/>
    <define name="GUIDANCE_H_USE_REF" value="FALSE"/>
 
-<!--    <define name="ALIGN_WITH_WIND" value="TRUE"/> -->
+   <define name="ALIGN_WITH_WIND" value="TRUE"/>
 
    <define name="SWITCH_STICKS_FOR_RATE_CONTROL" value="TRUE"/>
    <define name="USE_AIRSPEED" value="TRUE"/>
@@ -292,6 +294,7 @@ More information on the Quadshot can be found at transition-robotics.com -->
     </subsystem>
 
     <subsystem name="telemetry"     type="xbee_api"/>
+<!--     <subsystem name="telemetry"     type="transparent"/> -->
     <subsystem name="imu"           type="aspirin_v2.1"/>
     <subsystem name="gps"           type="ublox"/>
     <subsystem name="stabilization" type="int_quat"/>
