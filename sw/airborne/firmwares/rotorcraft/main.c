@@ -38,8 +38,8 @@
 #include "subsystems/datalink/datalink.h"
 #include "subsystems/settings.h"
 #include "subsystems/datalink/xbee.h"
-#if DATALINK == WIFI
-#include "subsystems/datalink/wifi.h"
+#if DATALINK == UDP
+#include "subsystems/datalink/udp.h"
 #endif
 
 #include "subsystems/commands.h"
@@ -76,6 +76,11 @@
 
 /* if PRINT_CONFIG is defined, print some config options */
 PRINT_CONFIG_VAR(PERIODIC_FREQUENCY)
+
+#ifndef TELEMETRY_FREQUENCY
+#define TELEMETRY_FREQUENCY 60
+#endif
+PRINT_CONFIG_VAR(TELEMETRY_FREQUENCY)
 
 #ifndef MODULES_FREQUENCY
 #define MODULES_FREQUENCY 512
@@ -158,8 +163,8 @@ STATIC_INLINE void main_init( void ) {
   xbee_init();
 #endif
 
-#if DATALINK == WIFI
-  wifi_init();
+#if DATALINK == UDP
+  udp_init();
 #endif
 
   // register the timers for the periodic functions
@@ -169,7 +174,7 @@ STATIC_INLINE void main_init( void ) {
   failsafe_tid = sys_time_register_timer(0.05, NULL);
   electrical_tid = sys_time_register_timer(0.1, NULL);
   baro_tid = sys_time_register_timer(1./BARO_PERIODIC_FREQUENCY, NULL);
-  telemetry_tid = sys_time_register_timer((1./60.), NULL);
+  telemetry_tid = sys_time_register_timer((1./TELEMETRY_FREQUENCY), NULL);
 }
 
 STATIC_INLINE void handle_periodic_tasks( void ) {
