@@ -323,30 +323,34 @@ static void guidance_h_traj_run(bool_t in_flight) {
   VECT2_STRIM(guidance_h_speed_err, -MAX_SPEED_ERR, MAX_SPEED_ERR);
 
   /* update pos error integral, zero it if not in_flight */
-  if (in_flight) {
+   if (in_flight) {
     VECT2_ADD(guidance_h_pos_err_sum, guidance_h_pos_err);
     /* saturate it               */
     VECT2_STRIM(guidance_h_pos_err_sum, -MAX_POS_ERR_SUM, MAX_POS_ERR_SUM);
-  } else {
-    INT_VECT2_ZERO(guidance_h_pos_err_sum);
-  }
+   } else {
+     INT_VECT2_ZERO(guidance_h_pos_err_sum);
+   }
 
 #ifdef ALIGN_WITH_WIND
   //Align the vehicle with the wind (forward or backward)
-  int32_t norm_distance_error;
-  INT32_VECT2_NORM(norm_distance_error, guidance_h_pos_err);
-  if( norm_distance_error > POS_BFP_OF_REAL(8.0)) {
-    float guidance_h_pos_err_angle_f = atan2f( (float) POS_FLOAT_OF_BFP(guidance_h_pos_err.y), (float) POS_FLOAT_OF_BFP(guidance_h_pos_err.x));
+//   int32_t norm_distance_error_sum;
+  //To avoid overflow, go back to 12 bitshifts total
+//   INT32_VECT2_NORM(norm_distance_error_sum, (guidance_h_pos_err_sum >> 12));
+  //If the integrator is higher than 1/4 of its maximum, start utilising wind alignment. This is to avoid rapid heading changes.
+  if( (abs(guidance_h_pos_err_sum.x) > (MAX_POS_ERR_SUM>>3)) || (abs(guidance_h_pos_err_sum.y) > (MAX_POS_ERR_SUM>>3)) ) {
+    //Calculate the angle of the integrated position error. guidance_h_pos_err_sum does not have a unit/scale, but because we are calculating the angle it does not matter.
+    float guidance_h_pos_err_sum_angle_f = atan2f( (float) POS_FLOAT_OF_BFP(guidance_h_pos_err_sum.y), (float) POS_FLOAT_OF_BFP(guidance_h_pos_err_sum.x));
 
-    float guidance_heading_diff = guidance_h_pos_err_angle_f - stateGetNedToBodyEulers_f()->psi;
-
+    //The difference of the current heading with the required heading. This determines forward or backward alignment.
+    float guidance_heading_diff = guidance_h_pos_err_sum_angle_f - stateGetNedToBodyEulers_f()->psi;
     FLOAT_ANGLE_NORMALIZE(guidance_heading_diff);
-    
+
+    //Give the heading command.
     if(guidance_heading_diff > RadOfDeg(-90.0) && guidance_heading_diff < RadOfDeg(90.0)) {
-      guidance_h_command_body.psi = ANGLE_BFP_OF_REAL(guidance_h_pos_err_angle_f);
+      guidance_h_command_body.psi = ANGLE_BFP_OF_REAL(guidance_h_pos_err_sum_angle_f);
     }
     else {
-      float backward_angle = guidance_h_pos_err_angle_f + RadOfDeg(180.0);
+      float backward_angle = guidance_h_pos_err_sum_angle_f + RadOfDeg(180.0);
       FLOAT_ANGLE_NORMALIZE(backward_angle);
       guidance_h_command_body.psi = ANGLE_BFP_OF_REAL(backward_angle);
     }

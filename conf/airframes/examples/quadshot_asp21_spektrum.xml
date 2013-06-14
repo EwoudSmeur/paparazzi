@@ -88,18 +88,18 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="BODY_TO_IMU_PSI"   value="0." unit="deg"/>
   </section>
 
- <section name="AUTOPILOT">
-   <define name="MODE_MANUAL"  value="AP_MODE_ATTITUDE_DIRECT"/>
-   <define name="MODE_AUTO1"   value="AP_MODE_HOVER_Z_HOLD"/>
-   <define name="MODE_AUTO2"   value="AP_MODE_NAV"/>
+  <section name="AUTOPILOT">
+    <define name="MODE_MANUAL"  value="AP_MODE_ATTITUDE_DIRECT"/>
+    <define name="MODE_AUTO1"   value="AP_MODE_HOVER_Z_HOLD"/>
+    <define name="MODE_AUTO2"   value="AP_MODE_NAV"/>
 
-   <define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/>
- </section>
+    <define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/>
+  </section>
 
- <section name="BAT">
-    <define name="MIN_BAT_LEVEL" value="10.4" units="V"/>
-   <define name="CATASTROPHIC_BAT_LEVEL" value="9.3" unit="V"/>
- </section>
+  <section name="BAT">
+      <define name="MIN_BAT_LEVEL" value="10.4" units="V"/>
+    <define name="CATASTROPHIC_BAT_LEVEL" value="9.3" unit="V"/>
+  </section>
 
   <section name="STABILIZATION_RATE" prefix="STABILIZATION_RATE_">
     <define name="SP_MAX_P" value="10000"/>
@@ -187,19 +187,21 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="BARO_SENS" value="22.4" integer="16"/>
   </section>
 
- <!-- Gains for vertical navigation -->
- <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
-   <define name="MIN_ERR_Z"   value="POS_BFP_OF_REAL(-10.)"/>
-   <define name="MAX_ERR_Z"   value="POS_BFP_OF_REAL( 10.)"/>
-   <define name="MIN_ERR_ZD"  value="SPEED_BFP_OF_REAL(-10.)"/>
-   <define name="MAX_ERR_ZD"  value="SPEED_BFP_OF_REAL( 10.)"/>
-   <define name="MAX_SUM_ERR" value="2000000"/>
-   <define name="HOVER_KP"    value="200"/>
-   <define name="HOVER_KD"    value="175"/>
-   <define name="HOVER_KI"    value="72"/>
-   <define name="RC_CLIMB_COEF" value ="163"/>
-   <define name="RC_CLIMB_DEAD_BAND" value ="160000"/>
-   <define name="GUIDANCE_V_NOMINAL_HOVER_THROTTLE" value ="0.4"/>
+  <!-- Gains for vertical navigation -->
+  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
+    <define name="MIN_ERR_Z"   value="POS_BFP_OF_REAL(-10.)"/>
+    <define name="MAX_ERR_Z"   value="POS_BFP_OF_REAL( 10.)"/>
+    <define name="MIN_ERR_ZD"  value="SPEED_BFP_OF_REAL(-10.)"/>
+    <define name="MAX_ERR_ZD"  value="SPEED_BFP_OF_REAL( 10.)"/>
+    <define name="MAX_SUM_ERR" value="2000000"/>
+    <define name="HOVER_KP"    value="200"/>
+    <define name="HOVER_KD"    value="175"/>
+    <define name="HOVER_KI"    value="72"/>
+    <define name="RC_CLIMB_COEF" value ="163"/>
+    <define name="RC_CLIMB_DEAD_BAND" value ="160000"/>
+    <define name="GUIDANCE_V_NOMINAL_HOVER_THROTTLE" value ="0.4"/>
+
+    <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
   </section>
 
   <section name="AHRS" prefix="AHRS_">
@@ -209,54 +211,54 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="H_Z" value=" 0.87161"/>
   </section>
 
- <!-- Gains for horizontal navigation-->
- <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-   <define name="PGAIN" value="50"/>
-   <define name="DGAIN" value="50"/>
-   <define name="IGAIN" value="0"/>
+  <!-- Gains for horizontal navigation-->
+  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
+    <define name="PGAIN" value="50"/>
+    <define name="DGAIN" value="50"/>
+    <define name="IGAIN" value="0"/>
 
-   <define name="GUIDANCE_H_MAX_BANK" value=" RadOfDeg(40)"/>
- </section>
+    <define name="GUIDANCE_H_MAX_BANK" value=" RadOfDeg(40)"/>
+  </section>
 
- <section name="MISC">
-   <define name="REF_QUAT_INFINITESIMAL_STEP" value="TRUE"/>
-   <!--The Quadshot uses a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
-   <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
-   <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
-   <define name="TRANSITION_MAX_OFFSET" value="-82.0" unit="deg"/>
-   <define name="RADIO_CONTROL_SPEKTRUM_SIGNS" value=" {1,1,-1,-1,1,-1,1,1,1,1,1,1}"/>
-   <define name="GUIDANCE_H_USE_REF" value="FALSE"/>
+  <section name="MISC">
+    <define name="REF_QUAT_INFINITESIMAL_STEP" value="TRUE"/>
+    <!--The Quadshot uses a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
+    <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
+    <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
+    <define name="TRANSITION_MAX_OFFSET" value="-78.0" unit="deg"/>
+    <define name="RADIO_CONTROL_SPEKTRUM_SIGNS" value=" {1,1,-1,-1,1,-1,1,1,1,1,1,1}"/>
+    <define name="GUIDANCE_H_USE_REF" value="FALSE"/>
 
-   <define name="ALIGN_WITH_WIND" value="TRUE"/>
+    <define name="ALIGN_WITH_WIND" value="TRUE"/>
 
-   <define name="SWITCH_STICKS_FOR_RATE_CONTROL" value="TRUE"/>
-   <define name="USE_AIRSPEED" value="TRUE"/>
-   <define name="AIRSPEED_ETS_I2C_DEV" value="i2c2"/>
- </section>
+    <define name="SWITCH_STICKS_FOR_RATE_CONTROL" value="TRUE"/>
+    <define name="USE_AIRSPEED" value="TRUE"/>
+    <define name="AIRSPEED_ETS_I2C_DEV" value="i2c2"/>
+  </section>
 
- <section name="SIMULATOR" prefix="NPS_">
-   <define name="ACTUATOR_NAMES"  value="{&quot;front_motor&quot;, &quot;back_motor&quot;, &quot;right_motor&quot;, &quot;left_motor&quot;}"/>
-   <define name="INITIAL_CONDITITONS" value="&quot;reset00&quot;"/>
-   <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_booz2_a1.h&quot;"/>
- </section>
+  <section name="SIMULATOR" prefix="NPS_">
+    <define name="ACTUATOR_NAMES"  value="{&quot;front_motor&quot;, &quot;back_motor&quot;, &quot;right_motor&quot;, &quot;left_motor&quot;}"/>
+    <define name="INITIAL_CONDITITONS" value="&quot;reset00&quot;"/>
+    <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_booz2_a1.h&quot;"/>
+  </section>
 
- <modules main_freq="512">
-   <load name="gps_ubx_ucenter.xml"/>
+  <modules main_freq="512">
+    <load name="gps_ubx_ucenter.xml"/>
 
-   <!-- The the led_safety_status module will make the Quadshot LEDs blink in certain patterns when there are safety violations-->
-   <load name="led_safety_status.xml">
-         <define name="USE_LED_BODY" value="1"/>
-         <define name="SAFETY_WARNING_LED" value="BODY"/>
-   </load>
+    <!-- The the led_safety_status module will make the Quadshot LEDs blink in certain patterns when there are safety violations-->
+    <load name="led_safety_status.xml">
+          <define name="USE_LED_BODY" value="1"/>
+          <define name="SAFETY_WARNING_LED" value="BODY"/>
+    </load>
 
- <!--Use an airspeed sensor and get the measured airspeed in the messages-->
-<!--   <load name="airspeed_ets.xml">
-     <define name="SENSOR_SYNC_SEND"/>
-   </load>-->
+  <!--Use an airspeed sensor and get the measured airspeed in the messages-->
+  <!--   <load name="airspeed_ets.xml">
+      <define name="SENSOR_SYNC_SEND"/>
+    </load>-->
 
- <!-- Load this module to use multiple gain sets, which have to be specified in the gain sets section -->
-   <!--load name="gain_scheduling.xml"/-->
-</modules>
+  <!-- Load this module to use multiple gain sets, which have to be specified in the gain sets section -->
+    <!--load name="gain_scheduling.xml"/-->
+  </modules>
 
   <firmware name="rotorcraft">
     <target name="ap" board="lisa_m_2.0">
@@ -266,11 +268,11 @@ More information on the Quadshot can be found at transition-robotics.com -->
 <!--       <configure name="USE_SECONDARY_SPEKTRUM_RECEIVER" value="1"/> -->
     </subsystem>
 
- <!-- ONLY if flashing via JTAG cable -->
+    <!-- ONLY if flashing via JTAG cable -->
     <configure name="FLASH_MODE"   value="JTAG"/>
     <configure name="BMP_PORT" value="/dev/ttyACM0" />
 
- <!-- To use an airspeed sensor on I2C, enable I2C2-->
+     <!-- To use an airspeed sensor on I2C, enable I2C2-->
      <define name="USE_I2C2"/>
 
     <!-- If using aspirin 2.2, make sure to uncomment the following barometer configuration: -->
@@ -293,8 +295,8 @@ More information on the Quadshot can be found at transition-robotics.com -->
       <define name="USE_SERVOS_7AND8"/>
     </subsystem>
 
-    <subsystem name="telemetry"     type="xbee_api"/>
-<!--     <subsystem name="telemetry"     type="transparent"/> -->
+<!--     <subsystem name="telemetry"     type="xbee_api"/> -->
+    <subsystem name="telemetry"     type="transparent"/>
     <subsystem name="imu"           type="aspirin_v2.1"/>
     <subsystem name="gps"           type="ublox"/>
     <subsystem name="stabilization" type="int_quat"/>
