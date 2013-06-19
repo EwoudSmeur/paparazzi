@@ -97,8 +97,6 @@ struct i2c_periph {
   volatile uint8_t idx_buf;
   void* reg_addr;
   void *init_struct;
-  uint16_t scl_pin;
-  uint16_t sda_pin;
   struct i2c_errors *errors;
 };
 
@@ -149,7 +147,6 @@ extern void i2c0_init(void);
 #endif /* USE_I2C0 */
 
 
-
 #ifdef USE_I2C1
 
 extern struct i2c_periph i2c1;
@@ -158,13 +155,21 @@ extern void i2c1_init(void);
 #endif /* USE_I2C1 */
 
 
-
 #ifdef USE_I2C2
 
 extern struct i2c_periph i2c2;
 extern void i2c2_init(void);
 
 #endif /* USE_I2C2 */
+
+
+#ifdef USE_I2C3
+
+extern struct i2c_periph i2c3;
+extern void i2c3_init(void);
+
+#endif /* USE_I2C3 */
+
 
 extern void   i2c_init(struct i2c_periph* p);
 extern bool_t i2c_idle(struct i2c_periph* p);

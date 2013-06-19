@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2012 The Paparazzi Team
+ * Copyright (C) 2005-2013 The Paparazzi Team
  *
  * This file is part of paparazzi.
  *
@@ -56,9 +56,10 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/exti.h>
 #include <libopencm3/stm32/spi.h>
-#include <libopencm3/stm32/f1/dma.h>
+#include <libopencm3/stm32/dma.h>
 
 #include "mcu_periph/spi.h"
+#include "mcu_periph/gpio.h"
 
 #include BOARD_CONFIG
 
@@ -68,11 +69,11 @@
  * Libopencm3 specifc communication parameters for a SPI peripheral in master mode.
  */
 struct locm3_spi_comm {
-  u32 br;       ///< baudrate (clock divider)
-  u32 cpol;     ///< clock polarity
-  u32 cpha;     ///< clock phase
-  u32 dff;      ///< data frame format 8/16 bits
-  u32 lsbfirst; ///< frame format lsb/msb first
+  uint32_t br;       ///< baudrate (clock divider)
+  uint32_t cpol;     ///< clock polarity
+  uint32_t cpha;     ///< clock phase
+  uint32_t dff;      ///< data frame format 8/16 bits
+  uint32_t lsbfirst; ///< frame format lsb/msb first
 };
 
 /**
@@ -80,19 +81,19 @@ struct locm3_spi_comm {
  * which allows for more code reuse.
  */
 struct spi_periph_dma {
-  u32 spi;                    ///< SPI peripheral identifier
-  u32 spidr;                  ///< SPI DataRegister address for DMA
-  u32 dma;                    ///< DMA controller base address (DMA1 or DMA2)
-  u8  rx_chan;                ///< receive DMA channel number
-  u8  tx_chan;                ///< transmit DMA channel number
-  u8  rx_nvic_irq;            ///< receive interrupt
-  u8  tx_nvic_irq;            ///< transmit interrupt
-  u16 tx_dummy_buf;           ///< dummy tx buffer for receive only cases
+  uint32_t spi;                    ///< SPI peripheral identifier
+  uint32_t spidr;                  ///< SPI DataRegister address for DMA
+  uint32_t dma;                    ///< DMA controller base address (DMA1 or DMA2)
+  uint8_t  rx_chan;                ///< receive DMA channel number
+  uint8_t  tx_chan;                ///< transmit DMA channel number
+  uint8_t  rx_nvic_irq;            ///< receive interrupt
+  uint8_t  tx_nvic_irq;            ///< transmit interrupt
+  uint16_t tx_dummy_buf;           ///< dummy tx buffer for receive only cases
   bool_t tx_extra_dummy_dma;  ///< extra tx dummy dma flag for tx_len < rx_len
-  u16 rx_dummy_buf;           ///< dummy rx buffer for receive only cases
+  uint16_t rx_dummy_buf;           ///< dummy rx buffer for receive only cases
   bool_t rx_extra_dummy_dma;  ///< extra rx dummy dma flag for tx_len > rx_len
   struct locm3_spi_comm comm; ///< current communication paramters
-  u8  comm_sig;               ///< comm config signature used to check for changes
+  uint8_t  comm_sig;               ///< comm config signature used to check for changes
 };
 
 
@@ -111,8 +112,8 @@ static struct spi_periph_dma spi3_dma;
 
 static void spi_start_dma_transaction(struct spi_periph* periph, struct spi_transaction* _trans);
 static void spi_next_transaction(struct spi_periph* periph);
-static void spi_configure_dma(u32 dma, u8 chan, u32 periph_addr, u32 buf_addr,
-                              u16 len, enum SPIDataSizeSelect dss, bool_t increment);
+static void spi_configure_dma(uint32_t dma, uint8_t chan, uint32_t periph_addr, uint32_t buf_addr,
+                              uint16_t len, enum SPIDataSizeSelect dss, bool_t increment);
 static void process_rx_dma_interrupt(struct spi_periph* periph);
 static void process_tx_dma_interrupt(struct spi_periph* periph);
 static void spi_arch_int_enable(struct spi_periph *spi);
@@ -210,57 +211,33 @@ void spi_slave_unselect(uint8_t slave) {
 void spi_init_slaves(void) {
 
 #if USE_SPI_SLAVE0
-  rcc_peripheral_enable_clock(&RCC_APB2ENR,
-                              SPI_SELECT_SLAVE0_PERIPH | RCC_APB2ENR_AFIOEN);
+  gpio_setup_output(SPI_SELECT_SLAVE0_PORT, SPI_SELECT_SLAVE0_PIN);
   SpiSlaveUnselect(0);
-  gpio_set(SPI_SELECT_SLAVE0_PORT, SPI_SELECT_SLAVE0_PIN);
-  gpio_set_mode(SPI_SELECT_SLAVE0_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-                GPIO_CNF_OUTPUT_PUSHPULL, SPI_SELECT_SLAVE0_PIN);
 #endif
 
 #if USE_SPI_SLAVE1
-  rcc_peripheral_enable_clock(&RCC_APB2ENR,
-                              SPI_SELECT_SLAVE1_PERIPH | RCC_APB2ENR_AFIOEN);
+  gpio_setup_output(SPI_SELECT_SLAVE1_PORT, SPI_SELECT_SLAVE1_PIN);
   SpiSlaveUnselect(1);
-  gpio_set(SPI_SELECT_SLAVE1_PORT, SPI_SELECT_SLAVE1_PIN);
-  gpio_set_mode(SPI_SELECT_SLAVE1_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-                GPIO_CNF_OUTPUT_PUSHPULL, SPI_SELECT_SLAVE1_PIN);
 #endif
 
 #if USE_SPI_SLAVE2
-  rcc_peripheral_enable_clock(&RCC_APB2ENR,
-                              SPI_SELECT_SLAVE2_PERIPH | RCC_APB2ENR_AFIOEN);
+  gpio_setup_output(SPI_SELECT_SLAVE2_PORT, SPI_SELECT_SLAVE2_PIN);
   SpiSlaveUnselect(2);
-  gpio_set(SPI_SELECT_SLAVE2_PORT, SPI_SELECT_SLAVE2_PIN);
-  gpio_set_mode(SPI_SELECT_SLAVE2_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-                GPIO_CNF_OUTPUT_PUSHPULL, SPI_SELECT_SLAVE2_PIN);
 #endif
 
 #if USE_SPI_SLAVE3
-  rcc_peripheral_enable_clock(&RCC_APB2ENR,
-                              SPI_SELECT_SLAVE3_PERIPH | RCC_APB2ENR_AFIOEN);
+  gpio_setup_output(SPI_SELECT_SLAVE3_PORT, SPI_SELECT_SLAVE3_PIN);
   SpiSlaveUnselect(3);
-  gpio_set(SPI_SELECT_SLAVE3_PORT, SPI_SELECT_SLAVE3_PIN);
-  gpio_set_mode(SPI_SELECT_SLAVE3_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-                GPIO_CNF_OUTPUT_PUSHPULL, SPI_SELECT_SLAVE3_PIN);
 #endif
 
 #if USE_SPI_SLAVE4
-  rcc_peripheral_enable_clock(&RCC_APB2ENR,
-                              SPI_SELECT_SLAVE4_PERIPH | RCC_APB2ENR_AFIOEN);
+  gpio_setup_output(SPI_SELECT_SLAVE4_PORT, SPI_SELECT_SLAVE4_PIN);
   SpiSlaveUnselect(4);
-  gpio_set(SPI_SELECT_SLAVE4_PORT, SPI_SELECT_SLAVE4_PIN);
-  gpio_set_mode(SPI_SELECT_SLAVE4_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-                GPIO_CNF_OUTPUT_PUSHPULL, SPI_SELECT_SLAVE4_PIN);
 #endif
 
 #if USE_SPI_SLAVE5
-  rcc_peripheral_enable_clock(&RCC_APB2ENR,
-                              SPI_SELECT_SLAVE5_PERIPH | RCC_APB2ENR_AFIOEN);
+  gpio_setup_output(SPI_SELECT_SLAVE5_PORT, SPI_SELECT_SLAVE5_PIN);
   SpiSlaveUnselect(5);
-  gpio_set(SPI_SELECT_SLAVE5_PORT, SPI_SELECT_SLAVE5_PIN);
-  gpio_set_mode(SPI_SELECT_SLAVE5_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-                GPIO_CNF_OUTPUT_PUSHPULL, SPI_SELECT_SLAVE5_PIN);
 #endif
 }
 
@@ -459,8 +436,8 @@ static void set_comm_from_transaction(struct locm3_spi_comm* c, struct spi_trans
  * Helpers for SPI transactions with DMA
  *
  *****************************************************************************/
-static void spi_configure_dma(u32 dma, u8 chan, u32 periph_addr, u32 buf_addr,
-                              u16 len, enum SPIDataSizeSelect dss, bool_t increment)
+static void spi_configure_dma(uint32_t dma, uint8_t chan, uint32_t periph_addr, uint32_t buf_addr,
+                              uint16_t len, enum SPIDataSizeSelect dss, bool_t increment)
 {
   dma_channel_reset(dma, chan);
   dma_set_peripheral_address(dma, chan, periph_addr);
@@ -542,12 +519,12 @@ static void spi_start_dma_transaction(struct spi_periph* periph, struct spi_tran
     dma->comm_sig = sig;
 
     /* apply the new configuration */
-    spi_disable((u32)periph->reg_addr);
-    spi_init_master((u32)periph->reg_addr, dma->comm.br, dma->comm.cpol,
+    spi_disable((uint32_t)periph->reg_addr);
+    spi_init_master((uint32_t)periph->reg_addr, dma->comm.br, dma->comm.cpol,
                     dma->comm.cpha, dma->comm.dff, dma->comm.lsbfirst);
-    spi_enable_software_slave_management((u32)periph->reg_addr);
-    spi_set_nss_high((u32)periph->reg_addr);
-    spi_enable((u32)periph->reg_addr);
+    spi_enable_software_slave_management((uint32_t)periph->reg_addr);
+    spi_set_nss_high((uint32_t)periph->reg_addr);
+    spi_enable((uint32_t)periph->reg_addr);
   }
 
   /*
@@ -577,12 +554,12 @@ static void spi_start_dma_transaction(struct spi_periph* periph, struct spi_tran
    */
   if (trans->input_length == 0) {
     /* run the dummy rx dma for the complete transaction length */
-    spi_configure_dma(dma->dma, dma->rx_chan, (u32)dma->spidr,
-                      (u32)&(dma->rx_dummy_buf), trans->output_length, trans->dss, FALSE);
+    spi_configure_dma(dma->dma, dma->rx_chan, (uint32_t)dma->spidr,
+                      (uint32_t)&(dma->rx_dummy_buf), trans->output_length, trans->dss, FALSE);
   } else {
     /* run the real rx dma for input_length */
-    spi_configure_dma(dma->dma, dma->rx_chan, (u32)dma->spidr,
-                      (u32)trans->input_buf, trans->input_length, trans->dss, TRUE);
+    spi_configure_dma(dma->dma, dma->rx_chan, (uint32_t)dma->spidr,
+                      (uint32_t)trans->input_buf, trans->input_length, trans->dss, TRUE);
     /* use dummy rx dma for the rest */
     if (trans->output_length > trans->input_length) {
       /* Enable use of second dma transfer with dummy buffer (cleared in ISR) */
@@ -604,11 +581,11 @@ static void spi_start_dma_transaction(struct spi_periph* periph, struct spi_tran
    * the dummy is used right from the start.
    */
   if (trans->output_length == 0) {
-    spi_configure_dma(dma->dma, dma->tx_chan, (u32)dma->spidr,
-                      (u32)&(dma->tx_dummy_buf), trans->input_length, trans->dss, FALSE);
+    spi_configure_dma(dma->dma, dma->tx_chan, (uint32_t)dma->spidr,
+                      (uint32_t)&(dma->tx_dummy_buf), trans->input_length, trans->dss, FALSE);
   } else {
-    spi_configure_dma(dma->dma, dma->tx_chan, (u32)dma->spidr,
-                      (u32)trans->output_buf, trans->output_length, trans->dss, TRUE);
+    spi_configure_dma(dma->dma, dma->tx_chan, (uint32_t)dma->spidr,
+                      (uint32_t)trans->output_buf, trans->output_length, trans->dss, TRUE);
     if (trans->input_length > trans->output_length) {
       /* Enable use of second dma transfer with dummy buffer (cleared in ISR) */
       dma->tx_extra_dummy_dma = TRUE;
@@ -627,8 +604,8 @@ static void spi_start_dma_transaction(struct spi_periph* periph, struct spi_tran
   dma_enable_channel(dma->dma, dma->tx_chan);
 
   /* Enable SPI transfers via DMA */
-  spi_enable_rx_dma((u32)periph->reg_addr);
-  spi_enable_tx_dma((u32)periph->reg_addr);
+  spi_enable_rx_dma((uint32_t)periph->reg_addr);
+  spi_enable_tx_dma((uint32_t)periph->reg_addr);
 }
 
 
@@ -642,7 +619,7 @@ static void spi_start_dma_transaction(struct spi_periph* periph, struct spi_tran
 void spi1_arch_init(void) {
 
   // set dma options
-  spi1_dma.spidr = (u32)&SPI1_DR;
+  spi1_dma.spidr = (uint32_t)&SPI1_DR;
   spi1_dma.dma = DMA1;
   spi1_dma.rx_chan = DMA_CHANNEL2;
   spi1_dma.tx_chan = DMA_CHANNEL3;
@@ -713,7 +690,7 @@ void spi1_arch_init(void) {
 void spi2_arch_init(void) {
 
   // set dma options
-  spi2_dma.spidr = (u32)&SPI2_DR;
+  spi2_dma.spidr = (uint32_t)&SPI2_DR;
   spi2_dma.dma = DMA1;
   spi2_dma.rx_chan = DMA_CHANNEL4;
   spi2_dma.tx_chan = DMA_CHANNEL5;
@@ -783,7 +760,7 @@ void spi2_arch_init(void) {
 void spi3_arch_init(void) {
 
   // set the default configuration
-  spi3_dma.spidr = (u32)&SPI3_DR;
+  spi3_dma.spidr = (uint32_t)&SPI3_DR;
   spi3_dma.dma = DMA2;
   spi3_dma.rx_chan = DMA_CHANNEL1;
   spi3_dma.tx_chan = DMA_CHANNEL2;
@@ -937,7 +914,7 @@ void process_rx_dma_interrupt(struct spi_periph *periph) {
   dma_disable_transfer_complete_interrupt(dma->dma, dma->rx_chan);
 
   /* Disable SPI Rx request */
-  spi_disable_rx_dma((u32)periph->reg_addr);
+  spi_disable_rx_dma((uint32_t)periph->reg_addr);
 
   /* Disable DMA rx channel */
   dma_disable_channel(dma->dma, dma->rx_chan);
@@ -954,10 +931,10 @@ void process_rx_dma_interrupt(struct spi_periph *periph) {
     dma->rx_extra_dummy_dma = FALSE;
 
     /* Use the difference in length between rx and tx */
-    u16 len_remaining = trans->output_length - trans->input_length;
+    uint16_t len_remaining = trans->output_length - trans->input_length;
 
-    spi_configure_dma(dma->dma, dma->rx_chan, (u32)dma->spidr,
-                      (u32)&(dma->rx_dummy_buf), len_remaining, trans->dss, FALSE);
+    spi_configure_dma(dma->dma, dma->rx_chan, (uint32_t)dma->spidr,
+                      (uint32_t)&(dma->rx_dummy_buf), len_remaining, trans->dss, FALSE);
     dma_set_read_from_peripheral(dma->dma, dma->rx_chan);
     dma_set_priority(dma->dma, dma->rx_chan, DMA_CCR_PL_HIGH);
 
@@ -966,7 +943,7 @@ void process_rx_dma_interrupt(struct spi_periph *periph) {
     /* Enable DMA channels */
     dma_enable_channel(dma->dma, dma->rx_chan);
     /* Enable SPI transfers via DMA */
-    spi_enable_rx_dma((u32)periph->reg_addr);
+    spi_enable_rx_dma((uint32_t)periph->reg_addr);
   }
   else {
     /*
@@ -999,7 +976,7 @@ void process_tx_dma_interrupt(struct spi_periph *periph) {
   dma_disable_transfer_complete_interrupt(dma->dma, dma->tx_chan);
 
   /* Disable SPI TX request */
-  spi_disable_tx_dma((u32)periph->reg_addr);
+  spi_disable_tx_dma((uint32_t)periph->reg_addr);
 
   /* Disable DMA tx channel */
   dma_disable_channel(dma->dma, dma->tx_chan);
@@ -1015,10 +992,10 @@ void process_tx_dma_interrupt(struct spi_periph *periph) {
     dma->tx_extra_dummy_dma = FALSE;
 
     /* Use the difference in length between tx and rx */
-    u16 len_remaining = trans->input_length - trans->output_length;
+    uint16_t len_remaining = trans->input_length - trans->output_length;
 
-    spi_configure_dma(dma->dma, dma->tx_chan, (u32)dma->spidr,
-                      (u32)&(dma->tx_dummy_buf), len_remaining, trans->dss, FALSE);
+    spi_configure_dma(dma->dma, dma->tx_chan, (uint32_t)dma->spidr,
+                      (uint32_t)&(dma->tx_dummy_buf), len_remaining, trans->dss, FALSE);
     dma_set_read_from_memory(dma->dma, dma->tx_chan);
     dma_set_priority(dma->dma, dma->tx_chan, DMA_CCR_PL_MEDIUM);
 
@@ -1027,7 +1004,7 @@ void process_tx_dma_interrupt(struct spi_periph *periph) {
     /* Enable DMA channels */
     dma_enable_channel(dma->dma, dma->tx_chan);
     /* Enable SPI transfers via DMA */
-    spi_enable_tx_dma((u32)periph->reg_addr);
+    spi_enable_tx_dma((uint32_t)periph->reg_addr);
 
   }
 }

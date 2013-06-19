@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, Tobias Muench
+ * Copyright (C) 2013 Felix Ruess <felix.ruess@gmail.com>
  *
  * This file is part of paparazzi.
  *
@@ -20,17 +20,21 @@
  */
 
 /**
- * @file subsystems/navigation/gls.h
- * @brief gps landing system
+ * @file mcu_periph/gpio.h
+ *
+ * Some architecture independent helper functions for GPIOs.
  */
 
-#ifndef NAV_GLS_H
-#define NAV_GLS_H
-
 #include "std.h"
-#include "paparazzi.h"
+#include "mcu_periph/gpio_arch.h"
 
-extern bool_t gls_init(uint8_t _af, uint8_t _sd, uint8_t _tod, uint8_t _td);
-extern bool_t gls(uint8_t _af, uint8_t _sd, uint8_t _tod, uint8_t _td);
+/**
+ * Setup gpio pin as generic output.
+ */
+extern void gpio_setup_output(uint32_t port, uint16_t pin);
 
-#endif // NAV_GLS_H
+/**
+ * Setup a gpio pin as generic input.
+ */
+extern void gpio_setup_input(uint32_t port, uint16_t pin);
+

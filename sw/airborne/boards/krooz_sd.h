@@ -99,6 +99,17 @@
 #define UART5_GPIO_PORT_TX GPIOC
 #define UART5_GPIO_TX GPIO12
 
+
+/* I2C mapping */
+#define I2C1_GPIO_PORT GPIOB
+#define I2C1_GPIO_SCL GPIO8
+#define I2C1_GPIO_SDA GPIO7
+
+#define I2C2_GPIO_PORT GPIOB
+#define I2C2_GPIO_SCL GPIO10
+#define I2C2_GPIO_SDA GPIO11
+
+
 /* Onboard ADCs */
 #define USE_AD_TIM1 1
 
@@ -375,9 +386,9 @@
 #define PPM_TIMER_INPUT     TIM_IC_IN_TI1
 #define PPM_IRQ             NVIC_TIM2_IRQ
 //#define PPM_IRQ2            NVIC_TIM2_UP_TIM10_IRQ
-#define PPM_IRQ_FLAGS       TIM_DIER_CC2IE
-#define PPM_IRQ_CCIF        TIM_SR_CC2IF
-#define PPM_GPIO_PERIPHERAL RCC_AHB1ENR_IOPBEN
+// Capture/Compare InteruptEnable and InterruptFlag
+#define PPM_CC_EN           TIM_DIER_CC2IE
+#define PPM_CC_IF           TIM_SR_CC2IF
 #define PPM_GPIO_PORT       GPIOB
 #define PPM_GPIO_PIN        GPIO3
 #define PPM_GPIO_AF         GPIO_AF1
@@ -388,6 +399,5 @@
 /* The line that is pulled low at power up to initiate the bind process */
 #define SPEKTRUM_BIND_PIN GPIO8
 #define SPEKTRUM_BIND_PIN_PORT GPIOA
-#define SPEKTRUM_BIND_PIN_RCC_IOP RCC_AHB1ENR_IOPAEN
 
 #endif /* CONFIG_KROOZ_1_0_H */

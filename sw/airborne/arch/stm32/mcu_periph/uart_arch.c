@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2009 Antoine Drouin <poinix@gmail.com>
+ * Copyright (C) 2013 Felix Ruess <felix.ruess@gmail.com>
  *
  * This file is part of paparazzi.
  *
@@ -27,6 +28,7 @@
  */
 
 #include "mcu_periph/uart.h"
+#include "mcu_periph/gpio.h"
 
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/rcc.h>
@@ -40,40 +42,40 @@
 void uart_periph_set_baudrate(struct uart_periph* p, uint32_t baud) {
 
   /* Configure USART */
-  usart_set_baudrate((u32)p->reg_addr, baud);
-  usart_set_databits((u32)p->reg_addr, 8);
-  usart_set_stopbits((u32)p->reg_addr, USART_STOPBITS_1);
-  usart_set_parity((u32)p->reg_addr, USART_PARITY_NONE);
+  usart_set_baudrate((uint32_t)p->reg_addr, baud);
+  usart_set_databits((uint32_t)p->reg_addr, 8);
+  usart_set_stopbits((uint32_t)p->reg_addr, USART_STOPBITS_1);
+  usart_set_parity((uint32_t)p->reg_addr, USART_PARITY_NONE);
 
   /* Disable Idle Line interrupt */
-  USART_CR1((u32)p->reg_addr) &= ~USART_CR1_IDLEIE;
+  USART_CR1((uint32_t)p->reg_addr) &= ~USART_CR1_IDLEIE;
 
   /* Disable LIN break detection interrupt */
-  USART_CR2((u32)p->reg_addr) &= ~USART_CR2_LBDIE;
+  USART_CR2((uint32_t)p->reg_addr) &= ~USART_CR2_LBDIE;
 
   /* Enable USART1 Receive interrupts */
-  USART_CR1((u32)p->reg_addr) |= USART_CR1_RXNEIE;
+  USART_CR1((uint32_t)p->reg_addr) |= USART_CR1_RXNEIE;
 
   /* Enable the USART */
-  usart_enable((u32)p->reg_addr);
+  usart_enable((uint32_t)p->reg_addr);
 
 }
 
 void uart_periph_set_mode(struct uart_periph* p, bool_t tx_enabled, bool_t rx_enabled, bool_t hw_flow_control) {
-  u32 mode = 0;
+  uint32_t mode = 0;
   if (tx_enabled)
     mode |= USART_MODE_TX;
   if (rx_enabled)
     mode |= USART_MODE_RX;
 
   /* set mode to Tx, Rx or TxRx */
-  usart_set_mode((u32)p->reg_addr, mode);
+  usart_set_mode((uint32_t)p->reg_addr, mode);
 
   if (hw_flow_control) {
-    usart_set_flow_control((u32)p->reg_addr, USART_FLOWCONTROL_RTS_CTS);
+    usart_set_flow_control((uint32_t)p->reg_addr, USART_FLOWCONTROL_RTS_CTS);
   }
   else {
-    usart_set_flow_control((u32)p->reg_addr, USART_FLOWCONTROL_NONE);
+    usart_set_flow_control((uint32_t)p->reg_addr, USART_FLOWCONTROL_NONE);
   }
 }
 
@@ -84,7 +86,7 @@ void uart_transmit(struct uart_periph* p, uint8_t data ) {
   if (temp == p->tx_extract_idx)
     return;                          // no room
 
-  USART_CR1((u32)p->reg_addr) &= ~USART_CR1_TXEIE; // Disable TX interrupt
+  USART_CR1((uint32_t)p->reg_addr) &= ~USART_CR1_TXEIE; // Disable TX interrupt
 
   // check if in process of sending data
   if (p->tx_running) { // yes, add to queue
@@ -93,61 +95,61 @@ void uart_transmit(struct uart_periph* p, uint8_t data ) {
   }
   else { // no, set running flag and write to output register
     p->tx_running = TRUE;
-    usart_send((u32)p->reg_addr, data);
+    usart_send((uint32_t)p->reg_addr, data);
   }
 
-  USART_CR1((u32)p->reg_addr) |= USART_CR1_TXEIE; // Enable TX interrupt
+  USART_CR1((uint32_t)p->reg_addr) |= USART_CR1_TXEIE; // Enable TX interrupt
 
 }
 
 static inline void usart_isr(struct uart_periph* p) {
 
-  if (((USART_CR1((u32)p->reg_addr) & USART_CR1_TXEIE) != 0) &&
-      ((USART_SR((u32)p->reg_addr) & USART_SR_TXE) != 0)) {
+  if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_TXEIE) != 0) &&
+      ((USART_SR((uint32_t)p->reg_addr) & USART_SR_TXE) != 0)) {
     // check if more data to send
     if (p->tx_insert_idx != p->tx_extract_idx) {
-      usart_send((u32)p->reg_addr,p->tx_buf[p->tx_extract_idx]);
+      usart_send((uint32_t)p->reg_addr,p->tx_buf[p->tx_extract_idx]);
       p->tx_extract_idx++;
       p->tx_extract_idx %= UART_TX_BUFFER_SIZE;
     }
     else {
       p->tx_running = FALSE;   // clear running flag
-      USART_CR1((u32)p->reg_addr) &= ~USART_CR1_TXEIE; // Disable TX interrupt
+      USART_CR1((uint32_t)p->reg_addr) &= ~USART_CR1_TXEIE; // Disable TX interrupt
     }
   }
 
-  if (((USART_CR1((u32)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
-      ((USART_SR((u32)p->reg_addr) & USART_SR_RXNE) != 0) &&
-      ((USART_SR((u32)p->reg_addr) & USART_SR_ORE) == 0) &&
-      ((USART_SR((u32)p->reg_addr) & USART_SR_NE) == 0) &&
-      ((USART_SR((u32)p->reg_addr) & USART_SR_FE) == 0)) {
+  if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+      ((USART_SR((uint32_t)p->reg_addr) & USART_SR_RXNE) != 0) &&
+      ((USART_SR((uint32_t)p->reg_addr) & USART_SR_ORE) == 0) &&
+      ((USART_SR((uint32_t)p->reg_addr) & USART_SR_NE) == 0) &&
+      ((USART_SR((uint32_t)p->reg_addr) & USART_SR_FE) == 0)) {
     uint16_t temp = (p->rx_insert_idx + 1) % UART_RX_BUFFER_SIZE;;
-    p->rx_buf[p->rx_insert_idx] = usart_recv((u32)p->reg_addr);
+    p->rx_buf[p->rx_insert_idx] = usart_recv((uint32_t)p->reg_addr);
     // check for more room in queue
     if (temp != p->rx_extract_idx)
       p->rx_insert_idx = temp; // update insert index
   }
   else {
     /* ORE, NE or FE error - read USART_DR reg and log the error */
-    if (((USART_CR1((u32)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
-        ((USART_SR((u32)p->reg_addr) & USART_SR_ORE) != 0)) {
-      usart_recv((u32)p->reg_addr);
+    if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+        ((USART_SR((uint32_t)p->reg_addr) & USART_SR_ORE) != 0)) {
+      usart_recv((uint32_t)p->reg_addr);
       p->ore++;
     }
-    if (((USART_CR1((u32)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
-        ((USART_SR((u32)p->reg_addr) & USART_SR_NE) != 0)) {
-      usart_recv((u32)p->reg_addr);
+    if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+        ((USART_SR((uint32_t)p->reg_addr) & USART_SR_NE) != 0)) {
+      usart_recv((uint32_t)p->reg_addr);
       p->ne_err++;
     }
-    if (((USART_CR1((u32)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
-        ((USART_SR((u32)p->reg_addr) & USART_SR_FE) != 0)) {
-      usart_recv((u32)p->reg_addr);
+    if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+        ((USART_SR((uint32_t)p->reg_addr) & USART_SR_FE) != 0)) {
+      usart_recv((uint32_t)p->reg_addr);
       p->fe_err++;
     }
   }
 }
 
-static inline void usart_enable_irq(u8 IRQn) {
+static inline void usart_enable_irq(uint8_t IRQn) {
   /* Note:
    * In libstm32 times the priority of this interrupt was set to
    * preemption priority 2 and sub priority 1
@@ -156,57 +158,6 @@ static inline void usart_enable_irq(u8 IRQn) {
   nvic_enable_irq(IRQn);
 }
 
-/** Set RCC and GPIO mode
- */
-#ifdef STM32F1
-static inline void set_uart_pin(u32 gpioport, u16 gpio, u8 alt_func_remap, bool_t is_output) {
-  switch (gpioport) {
-    case GPIOA:
-      rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPAEN);
-      break;
-    case GPIOB:
-      rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPBEN);
-      break;
-    case GPIOC:
-      rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPCEN);
-      break;
-    case GPIOD:
-      rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPDEN);
-      break;
-    default:
-      break;
-  };
-  if (alt_func_remap) {
-    rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_AFIOEN);
-    AFIO_MAPR |= alt_func_remap;
-  }
-  if (is_output)
-    gpio_set_mode(gpioport, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, gpio);
-  else
-    gpio_set_mode(gpioport, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT, gpio);
-}
-#elif defined STM32F4
-static inline void set_uart_pin(u32 gpioport, u16 gpio, u8 alt_func_num, bool_t foo __attribute__ ((unused))) {
-  switch (gpioport) {
-    case GPIOA:
-      rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPAEN);
-      break;
-    case GPIOB:
-      rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPBEN);
-      break;
-    case GPIOC:
-      rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPCEN);
-      break;
-    case GPIOD:
-      rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPDEN);
-      break;
-    default:
-      break;
-  };
-  gpio_mode_setup(gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, gpio);
-  gpio_set_af(gpioport, alt_func_num, gpio);
-}
-#endif /* STM32F4 */
 
 #ifdef USE_UART1
 
@@ -231,10 +182,10 @@ void uart1_init( void ) {
   rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_USART1EN);
 
 #if USE_UART1_TX
-  set_uart_pin(UART1_GPIO_PORT_TX, UART1_GPIO_TX, UART1_GPIO_AF, TRUE);
+  gpio_setup_pin_af(UART1_GPIO_PORT_TX, UART1_GPIO_TX, UART1_GPIO_AF, TRUE);
 #endif
 #if USE_UART1_RX
-  set_uart_pin(UART1_GPIO_PORT_RX, UART1_GPIO_RX, UART1_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART1_GPIO_PORT_RX, UART1_GPIO_RX, UART1_GPIO_AF, FALSE);
 #endif
 
   /* Enable USART interrupts in the interrupt controller */
@@ -243,8 +194,8 @@ void uart1_init( void ) {
 #if UART1_HW_FLOW_CONTROL
 #warning "USING UART1 FLOW CONTROL. Make sure to pull down CTS if you are not connecting any flow-control-capable hardware."
   /* setup CTS and RTS gpios */
-  set_uart_pin(UART1_GPIO_PORT_CTS, UART1_GPIO_CTS, UART1_GPIO_AF, FALSE);
-  set_uart_pin(UART1_GPIO_PORT_RTS, UART1_GPIO_RTS, UART1_GPIO_AF, TRUE);
+  gpio_setup_pin_af(UART1_GPIO_PORT_CTS, UART1_GPIO_CTS, UART1_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART1_GPIO_PORT_RTS, UART1_GPIO_RTS, UART1_GPIO_AF, TRUE);
 #endif
 
   /* Configure USART1, enable hardware flow control*/
@@ -282,10 +233,10 @@ void uart2_init( void ) {
   rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_USART2EN);
 
 #if USE_UART2_TX
-  set_uart_pin(UART2_GPIO_PORT_TX, UART2_GPIO_TX, UART2_GPIO_AF, TRUE);
+  gpio_setup_pin_af(UART2_GPIO_PORT_TX, UART2_GPIO_TX, UART2_GPIO_AF, TRUE);
 #endif
 #if USE_UART2_RX
-  set_uart_pin(UART2_GPIO_PORT_RX, UART2_GPIO_RX, UART2_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART2_GPIO_PORT_RX, UART2_GPIO_RX, UART2_GPIO_AF, FALSE);
 #endif
 
   /* Enable USART interrupts in the interrupt controller */
@@ -294,8 +245,8 @@ void uart2_init( void ) {
 #if UART2_HW_FLOW_CONTROL && defined(STM32F4)
 #warning "USING UART2 FLOW CONTROL. Make sure to pull down CTS if you are not connecting any flow-control-capable hardware."
   /* setup CTS and RTS pins */
-  set_uart_pin(UART2_GPIO_PORT_CTS, UART2_GPIO_CTS, UART2_GPIO_AF, FALSE);
-  set_uart_pin(UART2_GPIO_PORT_RTS, UART2_GPIO_RTS, UART2_GPIO_AF, TRUE);
+  gpio_setup_pin_af(UART2_GPIO_PORT_CTS, UART2_GPIO_CTS, UART2_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART2_GPIO_PORT_RTS, UART2_GPIO_RTS, UART2_GPIO_AF, TRUE);
 #endif
 
   /* Configure USART Tx,Rx, and hardware flow control*/
@@ -333,10 +284,10 @@ void uart3_init( void ) {
   rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_USART3EN);
 
 #if USE_UART3_TX
-  set_uart_pin(UART3_GPIO_PORT_TX, UART3_GPIO_TX, UART3_GPIO_AF, TRUE);
+  gpio_setup_pin_af(UART3_GPIO_PORT_TX, UART3_GPIO_TX, UART3_GPIO_AF, TRUE);
 #endif
 #if USE_UART3_RX
-  set_uart_pin(UART3_GPIO_PORT_RX, UART3_GPIO_RX, UART3_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART3_GPIO_PORT_RX, UART3_GPIO_RX, UART3_GPIO_AF, FALSE);
 #endif
 
   /* Enable USART interrupts in the interrupt controller */
@@ -345,8 +296,8 @@ void uart3_init( void ) {
 #if UART3_HW_FLOW_CONTROL && defined(STM32F4)
 #warning "USING UART3 FLOW CONTROL. Make sure to pull down CTS if you are not connecting any flow-control-capable hardware."
   /* setup CTS and RTS pins */
-  set_uart_pin(UART3_GPIO_PORT_CTS, UART3_GPIO_CTS, UART3_GPIO_AF, FALSE);
-  set_uart_pin(UART3_GPIO_PORT_RTS, UART3_GPIO_RTS, UART3_GPIO_AF, TRUE);
+  gpio_setup_pin_af(UART3_GPIO_PORT_CTS, UART3_GPIO_CTS, UART3_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART3_GPIO_PORT_RTS, UART3_GPIO_RTS, UART3_GPIO_AF, TRUE);
 #endif
 
   /* Configure USART Tx,Rx, and hardware flow control*/
@@ -380,10 +331,10 @@ void uart4_init( void ) {
   rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_UART4EN);
 
 #if USE_UART4_TX
-  set_uart_pin(UART4_GPIO_PORT_TX, UART4_GPIO_TX, UART4_GPIO_AF, TRUE);
+  gpio_setup_pin_af(UART4_GPIO_PORT_TX, UART4_GPIO_TX, UART4_GPIO_AF, TRUE);
 #endif
 #if USE_UART4_RX
-  set_uart_pin(UART4_GPIO_PORT_RX, UART4_GPIO_RX, UART4_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART4_GPIO_PORT_RX, UART4_GPIO_RX, UART4_GPIO_AF, FALSE);
 #endif
 
   /* Enable USART interrupts in the interrupt controller */
@@ -418,10 +369,10 @@ void uart5_init( void ) {
   rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_UART5EN);
 
 #if USE_UART5_TX
-  set_uart_pin(UART5_GPIO_PORT_TX, UART5_GPIO_TX, UART5_GPIO_AF, TRUE);
+  gpio_setup_pin_af(UART5_GPIO_PORT_TX, UART5_GPIO_TX, UART5_GPIO_AF, TRUE);
 #endif
 #if USE_UART5_RX
-  set_uart_pin(UART5_GPIO_PORT_RX, UART5_GPIO_RX, UART5_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART5_GPIO_PORT_RX, UART5_GPIO_RX, UART5_GPIO_AF, FALSE);
 #endif
 
   /* Enable USART interrupts in the interrupt controller */
@@ -461,10 +412,10 @@ void uart6_init( void ) {
 
   /* init RCC and GPIOs */
 #if USE_UART6_TX
-  set_uart_pin(UART6_GPIO_PORT_TX, UART6_GPIO_TX, UART6_GPIO_AF, TRUE);
+  gpio_setup_pin_af(UART6_GPIO_PORT_TX, UART6_GPIO_TX, UART6_GPIO_AF, TRUE);
 #endif
 #if USE_UART6_RX
-  set_uart_pin(UART6_GPIO_PORT_RX, UART6_GPIO_RX, UART6_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART6_GPIO_PORT_RX, UART6_GPIO_RX, UART6_GPIO_AF, FALSE);
 #endif
 
   /* Enable USART interrupts in the interrupt controller */
@@ -473,8 +424,8 @@ void uart6_init( void ) {
 #if UART6_HW_FLOW_CONTROL
 #warning "USING UART6 FLOW CONTROL. Make sure to pull down CTS if you are not connecting any flow-control-capable hardware."
   /* setup CTS and RTS pins */
-  set_uart_pin(UART6_GPIO_PORT_CTS, UART6_GPIO_CTS, UART6_GPIO_AF, FALSE);
-  set_uart_pin(UART6_GPIO_PORT_RTS, UART6_GPIO_RTS, UART6_GPIO_AF, TRUE);
+  gpio_setup_pin_af(UART6_GPIO_PORT_CTS, UART6_GPIO_CTS, UART6_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART6_GPIO_PORT_RTS, UART6_GPIO_RTS, UART6_GPIO_AF, TRUE);
 #endif
 
   /* Configure USART Tx,Rx and hardware flow control*/
