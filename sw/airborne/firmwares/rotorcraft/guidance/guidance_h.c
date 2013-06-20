@@ -337,7 +337,7 @@ static void guidance_h_traj_run(bool_t in_flight) {
   //To avoid overflow, go back to 12 bitshifts total
 //   INT32_VECT2_NORM(norm_distance_error_sum, (guidance_h_pos_err_sum >> 12));
   //If the integrator is higher than 1/4 of its maximum, start utilising wind alignment. This is to avoid rapid heading changes.
-  if( (abs(guidance_h_pos_err_sum.x) > (MAX_POS_ERR_SUM>>3)) || (abs(guidance_h_pos_err_sum.y) > (MAX_POS_ERR_SUM>>3)) ) {
+  if( (abs(guidance_h_pos_err_sum.x) > (MAX_POS_ERR_SUM>>2)) || (abs(guidance_h_pos_err_sum.y) > (MAX_POS_ERR_SUM>>2)) ) {
     //Calculate the angle of the integrated position error. guidance_h_pos_err_sum does not have a unit/scale, but because we are calculating the angle it does not matter.
     float guidance_h_pos_err_sum_angle_f = atan2f( (float) POS_FLOAT_OF_BFP(guidance_h_pos_err_sum.y), (float) POS_FLOAT_OF_BFP(guidance_h_pos_err_sum.x));
 
@@ -400,6 +400,7 @@ static void guidance_h_hover_enter(void) {
   reset_guidance_reference_from_current_position();
 
   guidance_h_rc_sp.psi = stateGetNedToBodyEulers_i()->psi;
+  guidance_h_command_body.psi = stateGetNedToBodyEulers_i()->psi;
 }
 
 static void guidance_h_nav_enter(void) {

@@ -174,7 +174,7 @@
    <define name="HOVER_KI"    value="72"/>
    <define name="RC_CLIMB_COEF" value ="163"/>
    <define name="RC_CLIMB_DEAD_BAND" value ="160000"/>
-<!--    <define name="GUIDANCE_V_NOMINAL_HOVER_THROTTLE" value ="0.3"/> -->
+<!--    <define name="NOMINAL_HOVER_THROTTLE" value ="0.3"/> -->
   </section>
 
   <section name="AHRS" prefix="AHRS_">
@@ -189,14 +189,13 @@
    <define name="DGAIN" value="100"/>
    <define name="IGAIN" value="0"/>
 
-   <define name="GUIDANCE_H_MAX_BANK" value=" RadOfDeg(40)"/>
+   <define name="MAX_BANK" value=" RadOfDeg(40)"/>
+   <define name="USE_REF" value="FALSE"/>
  </section>
 
  <section name="MISC">
    <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
-<!--    <define name="USE_REFERENCE_SYSTEM" value="FALSE"/> -->
-
-   <define name="GUIDANCE_H_USE_REF" value="FALSE"/>
+   <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
  
    <define name="ALIGN_WITH_WIND" value="TRUE"/>
 
