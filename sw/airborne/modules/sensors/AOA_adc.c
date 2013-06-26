@@ -98,7 +98,7 @@ void AOA_adc_update( void ) {
 	RunOnceEvery(30, DOWNLINK_SEND_AOA_adc(DefaultChannel, DefaultDevice, &adc_AOA_val, &AOA));
 
 #ifdef USE_AOA
-	stateSetAngleOfAttack_f(AOA);
+	stateSetAngleOfAttack_f(&AOA);
 #endif
 }
 

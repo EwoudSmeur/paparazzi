@@ -56,6 +56,10 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="ROLL_COEF"   value="{  256, -256,  256, -256 }"/>
     <define name="YAW_COEF"    value="{ -256,  256,  128, -128 }"/>
     <define name="THRUST_COEF" value="{  256,  256,  256,  256 }"/>
+<!--    <define name="PITCH_COEF"  value="{ 0, 0,  0, 0 }"/>
+    <define name="ROLL_COEF"   value="{ 0, 0,  0, 0 }"/>
+    <define name="YAW_COEF"    value="{ 0, 0,  0, 0 }"/>
+    <define name="THRUST_COEF" value="{ 0, 0,  0, 0 }"/>-->
   </section>
 
 <!-- If you got a caliberation XML document from your IMU supplier, import this in the IMU section -->
@@ -190,7 +194,7 @@ More information on the Quadshot can be found at transition-robotics.com -->
   <!-- Gains for vertical navigation -->
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
     <define name="MIN_ERR_Z"   value="POS_BFP_OF_REAL(-10.)"/>
-    <define name="MAX_ERR_Z"   value="POS_BFP_OF_REAL( 10.)"/>
+    <define name="MAX_ERR_Z"   value="POS_BFP_OF_REAL( 5.)"/> <!--Changed from 10 to 5 because the Quadshot reduced throttle to 0 because of low waypoint-->
     <define name="MIN_ERR_ZD"  value="SPEED_BFP_OF_REAL(-10.)"/>
     <define name="MAX_ERR_ZD"  value="SPEED_BFP_OF_REAL( 10.)"/>
     <define name="MAX_SUM_ERR" value="2000000"/>
@@ -229,10 +233,13 @@ More information on the Quadshot can be found at transition-robotics.com -->
 
     <define name="ALIGN_WITH_WIND" value="TRUE"/>
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
+    <define name="USE_NAV_TRANSITION" value="TRUE"/>
 
     <define name="SWITCH_STICKS_FOR_RATE_CONTROL" value="TRUE"/>
     <define name="USE_AIRSPEED" value="TRUE"/>
     <define name="AIRSPEED_ETS_I2C_DEV" value="i2c2"/>
+
+    <define name="RC_LOST_MODE" value="PPRZ_MODE_AUTO2"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">
@@ -249,6 +256,18 @@ More information on the Quadshot can be found at transition-robotics.com -->
           <define name="USE_LED_BODY" value="1"/>
           <define name="SAFETY_WARNING_LED" value="BODY"/>
     </load>
+
+    <load name="AOA_adc.xml">
+      <configure name="ADC_AOA" value="ADC_2"/>
+<!--      <define name="AOA_OFFSET" value="-0.135000005364"/>
+      <define name="AOA_FILTER" value="0.875999987125"/>-->
+      <define name="AOA_OFFSET" value="0"/>
+      <define name="AOA_FILTER" value="0"/>
+      <define name="USE_AOA"/>
+      <define name="AOA_SENS" value="2.0*M_PI/1024/4"/>
+    </load>
+
+    
 
   <!--Use an airspeed sensor and get the measured airspeed in the messages-->
   <!--   <load name="airspeed_ets.xml">

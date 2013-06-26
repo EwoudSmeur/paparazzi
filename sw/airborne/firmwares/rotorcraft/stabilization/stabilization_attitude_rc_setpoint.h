@@ -64,5 +64,6 @@ extern void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat* q
 extern void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat* q);
 extern void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat* q_sp, bool_t in_flight);
 extern void stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(struct FloatQuat* q_sp, bool_t in_flight);
+extern void stabilization_attitude_read_rc_setpoint_quat_earth_bound_i(struct Int32Quat* q_sp, bool_t in_flight);
 
 #endif /* STABILIZATION_ATTITUDE_RC_SETPOINT_H */

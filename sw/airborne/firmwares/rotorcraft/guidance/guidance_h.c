@@ -80,7 +80,10 @@ int32_t guidance_h_igain;
 int32_t guidance_h_again;
 
 int32_t transition_percentage;
+int32_t transition_percentage_goal;
 int32_t transition_theta_offset;
+int32_t carrot_heading;
+int32_t heading_error;
 
 
 static void guidance_h_update_reference(void);
@@ -88,6 +91,8 @@ static void guidance_h_traj_run(bool_t in_flight);
 static void guidance_h_hover_enter(void);
 static void guidance_h_nav_enter(void);
 static inline void transition_run(void);
+static void guidance_transitioned(bool_t in_flight);
+static void guidance_roll_pitch_earth_quat_f(struct FloatQuat* q, int32_t pitch, int32_t roll);
 
 
 void guidance_h_init(void) {
@@ -105,6 +110,9 @@ void guidance_h_init(void) {
   guidance_h_again = GUIDANCE_H_AGAIN;
   transition_percentage = 0;
   transition_theta_offset = 0;
+  transition_percentage_goal = 100;
+  carrot_heading = 0;
+  heading_error = 0;
 }
 
 
@@ -138,6 +146,7 @@ void guidance_h_mode_changed(uint8_t new_mode) {
     case GUIDANCE_H_MODE_CARE_FREE:
       stabilization_attitude_reset_care_free_heading();
     case GUIDANCE_H_MODE_FORWARD:
+      transition_percentage_goal = 100;
     case GUIDANCE_H_MODE_ATTITUDE:
       stabilization_attitude_enter();
       break;
@@ -222,7 +231,7 @@ void guidance_h_run(bool_t  in_flight) {
       break;
 
     case GUIDANCE_H_MODE_FORWARD:
-      if(transition_percentage < (100<<INT32_PERCENTAGE_FRAC)) {
+      if(transition_percentage < (transition_percentage_goal<<INT32_PERCENTAGE_FRAC)) {
         transition_run();
       }
     case GUIDANCE_H_MODE_CARE_FREE:
@@ -261,14 +270,56 @@ void guidance_h_run(bool_t  in_flight) {
       else {
         INT32_VECT2_NED_OF_ENU(guidance_h_pos_sp, navigation_carrot);
 
+#ifdef USE_NAV_TRANSITION
+        struct Int32Vect2 path_to_waypoint;
+        VECT2_DIFF(path_to_waypoint, navigation_target, *stateGetPositionEnu_i());
+        
+        INT32_VECT2_NORM(dist_to_waypoint, path_to_waypoint);
+        
+        if(dist_to_waypoint > (15 << 8)) {
+
+          if(transition_percentage < (transition_percentage_goal<<INT32_PERCENTAGE_FRAC)) {
+            transition_run();
+          }
+          else {
+            guidance_transitioned(in_flight);
+//             call a function in aircraft_guidance.c?
+            //           adjust heading with roll, only if transitioned
+            //           get airspeed, use ff heading change with roll angle
+
+            //           constant pitch, adjust altitude with throttle?
+
+            //           (adjust speed with throttle)
+            //           (adjust altitude with pitch)
+          }
+          guidance_h_command_body.theta = transition_theta_offset;
+        }
+        else {
+          transition_percentage = 0;
+          transition_theta_offset = 0;
+          
+          guidance_h_update_reference();
+          
+          #ifndef ALIGN_WITH_WIND
+          /* set psi command */
+          guidance_h_command_body.psi = nav_heading;
+          #endif
+          
+          /* compute roll and pitch commands and set final attitude setpoint */
+          guidance_h_traj_run(in_flight);
+        }
+#else
+
         guidance_h_update_reference();
 
 #ifndef ALIGN_WITH_WIND
         /* set psi command */
         guidance_h_command_body.psi = nav_heading;
 #endif
+
         /* compute roll and pitch commands and set final attitude setpoint */
         guidance_h_traj_run(in_flight);
+#endif
       }
       stabilization_attitude_run(in_flight);
       break;
@@ -421,4 +472,89 @@ static inline void transition_run(void) {
   const int32_t max_offset = ANGLE_BFP_OF_REAL(TRANSITION_MAX_OFFSET);
   transition_theta_offset = INT_MULT_RSHIFT((transition_percentage<<(INT32_ANGLE_FRAC-INT32_PERCENTAGE_FRAC))/100, max_offset, INT32_ANGLE_FRAC);
 #endif
+}
+
+#define FORWARD_MAX_BANK BFP_OF_REAL(30, INT32_ANGLE_FRAC)
+
+static void guidance_transitioned(bool_t in_flight) {
+  //Update the reference in case it is used for hovering
+  VECT2_COPY(guidance_h_pos_ref, guidance_h_pos_sp);
+  INT_VECT2_ZERO(guidance_h_speed_ref);
+  INT_VECT2_ZERO(guidance_h_accel_ref);
+
+  /* compute position error    */
+  VECT2_DIFF(guidance_h_pos_err, guidance_h_pos_sp, *stateGetPositionNed_i());
+
+  carrot_heading = ANGLE_BFP_OF_REAL(atan2f( (float) POS_FLOAT_OF_BFP(guidance_h_pos_err.y), (float) POS_FLOAT_OF_BFP(guidance_h_pos_err.x)));
+
+  heading_error = carrot_heading - stateGetNedToBodyEulers_i()->psi;
+  INT32_ANGLE_NORMALIZE(heading_error);
+
+  //proportional roll angle
+  guidance_h_command_body.phi = heading_error/3;
+  //saturate it
+  if(guidance_h_command_body.phi > FORWARD_MAX_BANK)
+    guidance_h_command_body.phi = FORWARD_MAX_BANK;
+  else if(guidance_h_command_body.phi < -FORWARD_MAX_BANK)
+    guidance_h_command_body.phi = -FORWARD_MAX_BANK;
+
+  //Coordinated turn
+  //feedforward estimate angular rotation omega = g*tan(phi)/v
+  //Take for now a constant v = 9.81/1.3 m/s
+  int32_t omega;
+  
+  omega = ANGLE_BFP_OF_REAL(1.3*tanf(ANGLE_FLOAT_OF_BFP(guidance_h_command_body.phi)));
+  
+  guidance_h_command_body.psi += omega/512;
+
+  INT32_ANGLE_NORMALIZE(guidance_h_command_body.psi);
+
+  struct FloatQuat q_rp_cmd;
+  guidance_roll_pitch_earth_quat_f(&q_rp_cmd, guidance_h_command_body.theta, guidance_h_command_body.phi);
+
+  struct Int32Quat q_rp_cmd_i;
+  QUAT_BFP_OF_REAL(q_rp_cmd_i, q_rp_cmd);
+  
+  const struct Int32Vect3 zaxis = {0, 0, 1};
+  
+  if (in_flight) {
+    /* get current heading setpoint */
+    struct Int32Quat q_yaw_sp;
+    
+    INT32_QUAT_OF_AXIS_ANGLE(q_yaw_sp, zaxis, guidance_h_command_body.psi);
+    
+    INT32_QUAT_COMP(stab_att_sp_quat, q_yaw_sp, q_rp_cmd_i);
+  }
+  else {
+    struct Int32Quat q_yaw;
+    INT32_QUAT_OF_AXIS_ANGLE(q_yaw, zaxis, stateGetNedToBodyEulers_i()->psi);
+    
+    /* roll/pitch commands applied to to current heading */
+    struct Int32Quat q_rp_sp;
+    INT32_QUAT_COMP(q_rp_sp, q_yaw, q_rp_cmd_i);
+    INT32_QUAT_NORMALIZE(q_rp_sp);
+    
+    QUAT_COPY(stab_att_sp_quat, q_rp_sp);
+  }
+
+//   heading error -> roll angle --> heading sp change
+}
+
+void guidance_roll_pitch_earth_quat_f(struct FloatQuat* q, int32_t pitch, int32_t roll) {
+  /* only non-zero entries for roll quaternion */
+  float roll2 = ANGLE_FLOAT_OF_BFP(roll)/2;
+  float qx_roll = sinf(roll2);
+  float qi_roll = cosf(roll2);
+  
+  //An offset is added if in forward mode
+  /* only non-zero entries for pitch quaternion */
+  float pitch2 = ANGLE_FLOAT_OF_BFP(pitch) / 2;
+  float qy_pitch = sinf(pitch2);
+  float qi_pitch = cosf(pitch2);
+  
+  /* only multiply non-zero entries of FLOAT_QUAT_COMP(*q, q_roll, q_pitch) */
+  q->qi = qi_roll * qi_pitch;
+  q->qx = qx_roll * qi_pitch;
+  q->qy = qi_roll * qy_pitch;
+  q->qz = qx_roll * qy_pitch;
 }

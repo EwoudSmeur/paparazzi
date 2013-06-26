@@ -317,10 +317,10 @@ void stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(struct FloatQuat
   stabilization_attitude_read_rc_setpoint_eulers_f(&stab_att_sp_euler, in_flight);
   #endif
 
-  const struct FloatVect3 zaxis = {0., 0., 1.};
-
   struct FloatQuat q_rp_cmd;
   stabilization_attitude_read_rc_roll_pitch_earth_quat_f(&q_rp_cmd);
+
+  const struct FloatVect3 zaxis = {0., 0., 1.};
 
   if (in_flight) {
     /* get current heading setpoint */
@@ -342,6 +342,41 @@ void stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(struct FloatQuat
     struct FloatQuat q_rp_sp;
     FLOAT_QUAT_COMP(q_rp_sp, q_yaw, q_rp_cmd);
     FLOAT_QUAT_NORMALIZE(q_rp_sp);
+
+    QUAT_COPY(*q_sp, q_rp_sp);
+  }
+}
+
+//Function that reads the rc setpoint in an earth bound frame
+void stabilization_attitude_read_rc_setpoint_quat_earth_bound_i(struct Int32Quat* q_sp, bool_t in_flight) {
+  // FIXME: remove me, do in quaternion directly
+  // is currently still needed, since the yaw setpoint integration is done in eulers
+  stabilization_attitude_read_rc_setpoint_eulers(&stab_att_sp_euler, in_flight);
+  
+  struct FloatQuat q_rp_cmd;
+  stabilization_attitude_read_rc_roll_pitch_earth_quat_f(&q_rp_cmd);
+
+  struct Int32Quat q_rp_cmd_i;
+  QUAT_BFP_OF_REAL(q_rp_cmd_i, q_rp_cmd);
+  
+  const struct Int32Vect3 zaxis = {0, 0, 1};
+  
+  if (in_flight) {
+    /* get current heading setpoint */
+    struct Int32Quat q_yaw_sp;
+    
+    INT32_QUAT_OF_AXIS_ANGLE(q_yaw_sp, zaxis, stab_att_sp_euler.psi);
+    
+    INT32_QUAT_COMP(*q_sp, q_yaw_sp, q_rp_cmd_i);
+  }
+  else {
+    struct Int32Quat q_yaw;
+    INT32_QUAT_OF_AXIS_ANGLE(q_yaw, zaxis, stateGetNedToBodyEulers_i()->psi);
+
+    /* roll/pitch commands applied to to current heading */
+    struct Int32Quat q_rp_sp;
+    INT32_QUAT_COMP(q_rp_sp, q_yaw, q_rp_cmd_i);
+    INT32_QUAT_NORMALIZE(q_rp_sp);
 
     QUAT_COPY(*q_sp, q_rp_sp);
   }

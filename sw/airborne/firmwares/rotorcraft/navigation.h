@@ -62,6 +62,7 @@ extern int32_t nav_circle_radius, nav_circle_qdr, nav_circle_radians;
 extern int32_t nav_roll, nav_pitch;     ///< with #INT32_ANGLE_FRAC
 extern int32_t nav_heading, nav_course; ///< with #INT32_ANGLE_FRAC
 extern float nav_radius;
+extern int32_t dist_to_waypoint;
 
 extern int32_t nav_leg_progress;
 extern int32_t nav_leg_length;

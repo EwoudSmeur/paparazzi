@@ -5,6 +5,8 @@
   security_height="2">
   <header>
     #include "autopilot.h"
+    #include "subsystems/radio_control.h"
+    #include "subsystems/electrical.h"
   </header>
   <waypoints>
     <waypoint name="HOME" x="0.0" y="0.0" />
@@ -12,6 +14,10 @@
     <waypoint name="p1" x="3.6" y="-13.9" />
     <waypoint name="p2" x="27.5" y="-48.2" />
   </waypoints>
+  <exceptions>
+    <exception cond="radio_control.status > RC_OK" deroute="land here"/>
+   <exception cond="10 > (electrical.vsupply/10.0)" deroute="land here"/>
+  </exceptions>
   <blocks>
     <block name="Wait GPS">
       <call fun="NavKillThrottle()" />

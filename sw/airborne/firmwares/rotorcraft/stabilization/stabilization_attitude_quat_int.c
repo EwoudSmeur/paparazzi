@@ -192,11 +192,12 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 }
 
 void stabilization_attitude_read_rc(bool_t in_flight) {
-  struct FloatQuat q_sp;
+  struct Int32Quat q_sp;
 #if USE_EARTH_BOUND_RC_SETPOINT
-  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight);
+  stabilization_attitude_read_rc_setpoint_quat_earth_bound_i(&q_sp, in_flight);
 #else
   stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight);
 #endif
-  QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
+  QUAT_COPY(stab_att_sp_quat,q_sp);
+//   QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
 }

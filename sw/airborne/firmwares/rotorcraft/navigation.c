@@ -67,6 +67,7 @@ int32_t nav_leg_length;
 int32_t nav_roll, nav_pitch;
 int32_t nav_heading, nav_course;
 float nav_radius;
+int32_t dist_to_waypoint;
 
 #ifndef DEFAULT_CIRCLE_RADIUS
 #define DEFAULT_CIRCLE_RADIUS 0.
@@ -114,6 +115,7 @@ void nav_init(void) {
   nav_climb = 0;
   nav_leg_progress = 0;
   nav_leg_length = 1;
+  dist_to_waypoint = 0;
 
 }
 
@@ -125,7 +127,6 @@ static inline void nav_advance_carrot(void) {
   /* saturate it */
   VECT2_STRIM(path_to_waypoint, -(1<<15), (1<<15));
 
-  int32_t dist_to_waypoint;
   INT32_VECT2_NORM(dist_to_waypoint, path_to_waypoint);
 
   if (dist_to_waypoint < CLOSE_TO_WAYPOINT) {
