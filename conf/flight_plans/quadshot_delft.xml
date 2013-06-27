@@ -16,7 +16,7 @@
   </waypoints>
   <exceptions>
     <exception cond="radio_control.status > RC_OK" deroute="land here"/>
-   <exception cond="10 > (electrical.vsupply/10.0)" deroute="land here"/>
+    <exception cond="10 > (electrical.vsupply/10.0)" deroute="land here"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">

@@ -53,6 +53,10 @@
 #define GUIDANCE_H_MAX_BANK RadOfDeg(20)
 #endif
 
+#ifndef GUIDANCE_H_FORWARD_MAX_BANK
+#define GUIDANCE_H_FORWARD_MAX_BANK RadOfDeg(30)
+#endif
+
 PRINT_CONFIG_VAR(GUIDANCE_H_USE_REF)
 
 
@@ -280,8 +284,12 @@ void guidance_h_run(bool_t  in_flight) {
 
           if(transition_percentage < (transition_percentage_goal<<INT32_PERCENTAGE_FRAC)) {
             transition_run();
+            guidance_h_command_body.theta = transition_theta_offset;
+            guidance_h_command_body.phi = 0;
+            stabilization_attitude_set_from_eulers_i(&guidance_h_command_body);
           }
           else {
+            guidance_h_command_body.theta = transition_theta_offset;
             guidance_transitioned(in_flight);
 //             call a function in aircraft_guidance.c?
             //           adjust heading with roll, only if transitioned
@@ -292,7 +300,6 @@ void guidance_h_run(bool_t  in_flight) {
             //           (adjust speed with throttle)
             //           (adjust altitude with pitch)
           }
-          guidance_h_command_body.theta = transition_theta_offset;
         }
         else {
           transition_percentage = 0;
@@ -474,7 +481,8 @@ static inline void transition_run(void) {
 #endif
 }
 
-#define FORWARD_MAX_BANK BFP_OF_REAL(30, INT32_ANGLE_FRAC)
+/** maximum bank angle: default 20 deg */
+#define FORWARD_MAX_BANK BFP_OF_REAL(GUIDANCE_H_FORWARD_MAX_BANK, INT32_ANGLE_FRAC)
 
 static void guidance_transitioned(bool_t in_flight) {
   //Update the reference in case it is used for hovering
@@ -487,7 +495,9 @@ static void guidance_transitioned(bool_t in_flight) {
 
   carrot_heading = ANGLE_BFP_OF_REAL(atan2f( (float) POS_FLOAT_OF_BFP(guidance_h_pos_err.y), (float) POS_FLOAT_OF_BFP(guidance_h_pos_err.x)));
 
-  heading_error = carrot_heading - stateGetNedToBodyEulers_i()->psi;
+  int32_t heading_state = ANGLE_BFP_OF_REAL(stabilization_attitude_get_heading_f());
+
+  heading_error = carrot_heading - heading_state;
   INT32_ANGLE_NORMALIZE(heading_error);
 
   //proportional roll angle
