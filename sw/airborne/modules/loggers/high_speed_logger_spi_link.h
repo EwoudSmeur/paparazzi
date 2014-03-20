@@ -31,22 +31,41 @@ extern void high_speed_logger_spi_link_periodic(void);
 #define PACKED __attribute__((__packed__))
 
 struct PACKED high_speed_logger_spi_link_data {
-    int32_t id;         // 1
-    int32_t gyro_p;     // 2
-    int32_t gyro_q;
-    int32_t gyro_r;
-    int32_t acc_x;      // 5
-    int32_t acc_y;
-    int32_t acc_z;
-    int32_t mag_x;      // 8
-    int32_t mag_y;
-    int32_t mag_z;
-    int32_t phi;        // 11
-    int32_t theta;
-    int32_t psi;
-    int32_t extra1;     // 14
-    int32_t extra2;     // 15
-    int32_t extra3;     // 16
+  int32_t id;         // 1
+  int32_t thrust;     // 2
+  int32_t airspeed;
+  int32_t alt;
+  int32_t alpha;      // 5
+  int32_t gps_x;
+  int32_t ref_qi;
+  int32_t ref_qx;      // 8
+  int32_t ref_qy;
+  int32_t ref_qz;
+  int32_t att_qi;        // 11
+  int32_t att_qx;
+  int32_t att_qy;
+  int32_t att_qz;     // 14
+  int32_t gps_speedx;     // 15
+  int32_t gps_speedy;     // 16
+};
+
+struct PACKED high_speed_logger_spi_link_data2 {
+  int32_t id;         // 1
+  int32_t acc_x;     // 2
+  int32_t acc_y;
+  int32_t acc_z;
+  int32_t gyro_p;      // 5
+  int32_t gyro_q;
+  int32_t gyro_r;
+  int32_t mag_x;       // 8
+  int32_t mag_y;
+  int32_t mag_z;
+  int32_t gps_y;        // 11
+  int32_t cmd_roll;
+  int32_t cmd_pitch;
+  int32_t cmd_yaw;     // 14
+  int32_t gps_speedx;     // 15
+  int32_t gps_speedy;     // 16
 };
 
 #endif /* HIGH_SPEED_LOGGER_SPI_LINK_H_ */

@@ -28,11 +28,11 @@ More information on the Quadshot can be found at transition-robotics.com -->
 
  <!-- Mode dependent actuator laws for the elevons. The elevons act different in rc attitude flight mode-->
  <!-- First the correct feedback is stored in variables -->
-    <let var="aileron_feedback_left"  value="@YAW"/>
-    <let var="aileron_feedback_right" value="@YAW"/>
+    <let var="aileron_feedback_left"  value="-@YAW"/>
+    <let var="aileron_feedback_right" value="-@YAW"/>
 
-    <let var="elevator_feedback_left"  value="+@PITCH"/>
-    <let var="elevator_feedback_right" value="-@PITCH"/>
+    <let var="elevator_feedback_left"  value="-@PITCH"/>
+    <let var="elevator_feedback_right" value="+@PITCH"/>
 
  <!-- Here the gains are defined for the two feedback cases, hover and forward-->
     <let var="hover_left"  value="3*$aileron_feedback_left"/>
@@ -56,6 +56,10 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="ROLL_COEF"   value="{  256, -256,  256, -256 }"/>
     <define name="YAW_COEF"    value="{ -256,  256,  128, -128 }"/>
     <define name="THRUST_COEF" value="{  256,  256,  256,  256 }"/>
+<!--    <define name="PITCH_COEF"  value="{ 0, 0, 0, 0}"/>
+    <define name="ROLL_COEF"   value="{ 0, 0, 0, 0 }"/>
+    <define name="YAW_COEF"    value="{ 0, 0, 0, 0 }"/>
+    <define name="THRUST_COEF" value="{ 0, 0, 0, 0 }"/>-->
   </section>
 
 <!-- If you got a caliberation XML document from your IMU supplier, import this in the IMU section -->
@@ -88,18 +92,18 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="BODY_TO_IMU_PSI"   value="0." unit="deg"/>
   </section>
 
- <section name="AUTOPILOT">
-   <define name="MODE_MANUAL"  value="AP_MODE_ATTITUDE_DIRECT"/>
-   <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/>
-   <define name="MODE_AUTO2"  value="AP_MODE_RATE_DIRECT"/>
+  <section name="AUTOPILOT">
+    <define name="MODE_MANUAL"  value="AP_MODE_ATTITUDE_DIRECT"/>
+    <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/>
+    <define name="MODE_AUTO2"  value="AP_MODE_RATE_DIRECT"/>
 
-   <define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/>
- </section>
+    <define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/>
+  </section>
 
- <section name="BAT">
+  <section name="BAT">
     <define name="MIN_BAT_LEVEL" value="10.4" units="V"/>
-   <define name="CATASTROPHIC_BAT_LEVEL" value="9.3" unit="V"/>
- </section>
+    <define name="CATASTROPHIC_BAT_LEVEL" value="9.3" unit="V"/>
+  </section>
 
   <section name="STABILIZATION_RATE" prefix="STABILIZATION_RATE_">
     <define name="SP_MAX_P" value="10000"/>
@@ -118,8 +122,8 @@ More information on the Quadshot can be found at transition-robotics.com -->
  <!-- These gains are used when the gain scheduling module is enabled (by loading it in the modules section)-->
   <section name ="GAIN_SETS">
     <define name="NUMBER_OF_GAINSETS" value="2"/>
-    <define name="SCHEDULING_VARIABLE" value="(radio.values[COMMAND_THRUST]+ transition_status"/>
-    <define name="SCHEDULING_POINTS" value="{1000, 6000}"/>
+    <define name="SCHEDULING_VARIABLE" value="stabilization_cmd[COMMAND_THRUST]"/>
+    <define name="SCHEDULING_POINTS" value="{1000, 2000}"/>
     <define name="SCHEDULING_VARIABLE_FRAC" value="0"/>
 
     <define name="PHI_P" value="{230, 230}"/>
@@ -160,9 +164,9 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="REF_MAX_QDOT" value="RadOfDeg(7000.)"/>
 
     <define name="REF_OMEGA_R"  value="3000" unit="deg/s"/>
-    <define name="REF_ZETA_R"   value="0.9"/>
-    <define name="REF_MAX_R"    value="90." unit="deg/s"/>
-    <define name="REF_MAX_RDOT" value="RadOfDeg(900.)"/>
+    <define name="REF_ZETA_R"   value="0.85"/>
+    <define name="REF_MAX_R"    value="300." unit="deg/s"/>
+    <define name="REF_MAX_RDOT" value="RadOfDeg(7000.)"/>
 
     <!-- feedback -->
     <define name="PHI_PGAIN"  value="230"/>
@@ -187,76 +191,105 @@ More information on the Quadshot can be found at transition-robotics.com -->
   </section>
 
  <!-- Gains for vertical navigation -->
- <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
-   <define name="MIN_ERR_Z"   value="POS_BFP_OF_REAL(-10.)"/>
-   <define name="MAX_ERR_Z"   value="POS_BFP_OF_REAL( 10.)"/>
-   <define name="MIN_ERR_ZD"  value="SPEED_BFP_OF_REAL(-10.)"/>
-   <define name="MAX_ERR_ZD"  value="SPEED_BFP_OF_REAL( 10.)"/>
-   <define name="MAX_SUM_ERR" value="2000000"/>
-   <define name="HOVER_KP"    value="200"/>
-   <define name="HOVER_KD"    value="175"/>
-   <define name="HOVER_KI"    value="72"/>
-   <define name="NOMINAL_HOVER_THROTTLE" value ="0.4"/>
-   <define name="ADAPT_THROTTLE_ENABLED" value="FALSE"/>
+  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
+    <define name="MIN_ERR_Z"   value="POS_BFP_OF_REAL(-10.)"/>
+    <define name="MAX_ERR_Z"   value="POS_BFP_OF_REAL( 10.)"/>
+    <define name="MIN_ERR_ZD"  value="SPEED_BFP_OF_REAL(-10.)"/>
+    <define name="MAX_ERR_ZD"  value="SPEED_BFP_OF_REAL( 10.)"/>
+    <define name="MAX_SUM_ERR" value="2000000"/>
+    <define name="HOVER_KP"    value="200"/>
+    <define name="HOVER_KD"    value="175"/>
+    <define name="HOVER_KI"    value="72"/>
+    <define name="NOMINAL_HOVER_THROTTLE" value ="0.4"/>
+    <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
   </section>
 
   <section name="AHRS" prefix="AHRS_">
-    <define name="H_X" value=" 0.47577"/>
-    <define name="H_Y" value=" 0.11811"/>
-    <define name="H_Z" value=" 0.87161"/>
+    <!--     Delft magnetic field -->
+    <define name="H_X" value="0.39103582"/>
+    <define name="H_Y" value="0.00239644"/>
+    <define name="H_Z" value="0.92037234"/>
   </section>
 
  <!-- Gains for horizontal navigation-->
- <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-   <define name="PGAIN" value="100"/>
-   <define name="DGAIN" value="100"/>
-   <define name="IGAIN" value="0"/>
- </section>
+  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
+    <define name="PGAIN" value="50"/>
+    <define name="DGAIN" value="50"/>
+    <define name="IGAIN" value="65"/>
 
- <section name="MISC">
-   <define name="REF_QUAT_INFINITESIMAL_STEP" value="TRUE"/>
-   <!--The Quadshot uses a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
-   <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
-   <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
-   <define name="TRANSITION_MAX_OFFSET" value="-82.0" unit="deg"/>
-   <define name="RADIO_CONTROL_SPEKTRUM_SIGNS" value=" {1,1,-1,-1,1,-1,1,1,1,1,1,1}"/>
+    <define name="MAX_BANK" value="RadOfDeg(55)"/>
+    <define name="FORWARD_MAX_BANK" value="RadOfDeg(35)"/>
+    <define name="USE_REF" value="FALSE"/>
+  </section>
 
+  <section name="MISC">
+    <define name="REF_QUAT_INFINITESIMAL_STEP" value="TRUE"/>
+    <!--The Quadshot uses a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
+    <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
+    <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
+    <define name="TRANSITION_MAX_OFFSET" value="-70.0" unit="deg"/>
+    <define name="RADIO_CONTROL_SPEKTRUM_SIGNS" value=" {1,1,-1,-1,1,-1,1,1,1,1,1,1}"/>
 
-   <define name="USE_AIRSPEED" value="TRUE"/>
-   <define name="AIRSPEED_ETS_I2C_DEV" value="i2c2"/>
- </section>
+    <define name="RC_LOST_MODE" value="PPRZ_MODE_AUTO2"/>
 
- <section name="SIMULATOR" prefix="NPS_">
-   <define name="ACTUATOR_NAMES"  value="{&quot;front_motor&quot;, &quot;back_motor&quot;, &quot;right_motor&quot;, &quot;left_motor&quot;}"/>
-   <define name="JSBSIM_INIT" value="&quot;reset00&quot;"/>
-   <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_booz2_a1.h&quot;"/>
- </section>
+    <define name="SWITCH_STICKS_FOR_RATE_CONTROL" value="TRUE"/>
 
- <modules main_freq="512">
-   <load name="gps_ubx_ucenter.xml"/>
+    <define name="AIRSPEED_ETS_I2C_DEV" value="i2c2"/>
 
-   <!-- The the led_safety_status module will make the Quadshot LEDs blink in certain patterns when there are safety violations-->
-   <load name="led_safety_status.xml">
-         <define name="USE_LED_BODY" value="1"/>
-         <define name="SAFETY_WARNING_LED" value="BODY"/>
-   </load>
+    <define name="AHRS_MAG_UPDATE_ALL_AXES" value="FALSE"/>
 
- <!--Use an airspeed sensor and get the measured airspeed in the messages-->
-   <load name="airspeed_ets.xml">
-     <define name="AIRSPEED_ETS_SYNC_SEND"/>
-   </load>
+    <define name="THRESHOLD_GROUND_DETECT" value="25.0"/>
+    <define name="KILL_ON_GROUND_DETECT" value="TRUE"/>
+    <define name="FAILSAFE_GROUND_DETECT" value="TRUE"/>
+  </section>
 
- <!-- Load this module to use multiple gain sets, which have to be specified in the gain sets section -->
-   <!--load name="gain_scheduling.xml"/-->
-</modules>
+  <section name="SIMULATOR" prefix="NPS_">
+    <define name="ACTUATOR_NAMES"  value="{&quot;front_motor&quot;, &quot;back_motor&quot;, &quot;right_motor&quot;, &quot;left_motor&quot;}"/>
+    <define name="JSBSIM_INIT" value="&quot;reset00&quot;"/>
+    <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_booz2_a1.h&quot;"/>
+  </section>
+
+  <modules main_freq="512">
+    <load name="gps_ubx_ucenter.xml"/>
+
+    <!-- The the led_safety_status module will make the Quadshot LEDs blink in certain patterns when there are safety violations-->
+    <load name="led_safety_status.xml">
+          <define name="USE_LED_BODY" value="1"/>
+          <define name="SAFETY_WARNING_LED" value="BODY"/>
+    </load>
+
+  <!--Use an airspeed sensor and get the measured airspeed in the messages-->
+    <load name="airspeed_ets.xml">
+      <define name="AIRSPEED_ETS_SYNC_SEND"/>
+    </load>
+
+    <load name="high_speed_logger_spi_link.xml"/>
+
+    <load name="AOA_adc.xml">
+      <configure name="ADC_AOA" value="ADC_2"/>
+      <!--      <define name="AOA_OFFSET" value="-0.135000005364"/>
+      <define name="AOA_FILTER" value="0.875999987125"/>-->
+      <define name="AOA_OFFSET" value="0"/>
+      <define name="AOA_FILTER" value="0"/>
+      <define name="USE_AOA"/>
+      <define name="AOA_SENS" value="2.0*M_PI/1024/4"/>
+    </load>
+
+  <!-- Load this module to use multiple gain sets, which have to be specified in the gain sets section -->
+    <load name="gain_scheduling.xml"/>
+  </modules>
 
   <firmware name="rotorcraft">
     <target name="ap" board="lisa_m_2.0">
     <subsystem name="radio_control" type="spektrum">
       <!-- Put the mode on channel AUX1-->
-      <define name="RADIO_MODE" value="RADIO_AUX1"/>
+<!--      <define name="RADIO_MODE" value="RADIO_AUX1"/>-->
 <!--       <configure name="USE_SECONDARY_SPEKTRUM_RECEIVER" value="1"/> -->
     </subsystem>
+
+    <!-- ONLY if flashing via JTAG cable -->
+    <configure name="FLASH_MODE"   value="JTAG"/>
+    <configure name="BMP_PORT" value="/dev/ttyACM0" />
 
  <!-- To use an airspeed sensor on I2C, enable I2C2-->
      <define name="USE_I2C2"/>
@@ -276,13 +309,14 @@ More information on the Quadshot can be found at transition-robotics.com -->
       <define name="USE_SERVOS_7AND8"/>
     </subsystem>
 
-    <subsystem name="telemetry"     type="transparent"/>
+    <subsystem name="telemetry"     type="xbee_api"/>
+<!--    <subsystem name="telemetry"     type="transparent"/>-->
     <subsystem name="imu"           type="aspirin_v2.1"/>
     <subsystem name="gps"           type="ublox"/>
     <subsystem name="stabilization" type="int_quat"/>
 
     <subsystem name="ahrs"          type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="0"/>
+      <configure name="USE_MAGNETOMETER" value="1"/>
       <define name="AHRS_USE_GPS_HEADING" value="0"/>
     </subsystem>
 
