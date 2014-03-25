@@ -1165,7 +1165,14 @@
     <field name="status" type="uint8" values="UNINIT|RUNNING|LOCKED"/>
   </message>
 
-  <!-- 138 is free -->
+ <message name="STAB_ATTITUDE_INDI" id="138">
+   <field name="p"    type="float"/>
+   <field name="pdot"    type="float"/>
+   <field name="pdotdot"    type="float"/>
+   <field name="ref_pdot"    type="float"/>
+   <field name="u_p"    type="float"/>
+   <field name="du_p"    type="float"/>
+ </message>
 
   <message name="FILTER_COR" id="139">
     <field name="mphi"   type="int32"/>
@@ -1187,7 +1194,7 @@
     <field name="sp_phi"        type="int32" alt_unit="deg" alt_unit_coef="0.0139882"/>
     <field name="sp_theta"      type="int32" alt_unit="deg" alt_unit_coef="0.0139882"/>
     <field name="sp_psi"        type="int32" alt_unit="deg" alt_unit_coef="0.0139882"/>
-    <field name="sum_err_phi"   type="int32"/>
+    <field name="sum_err_phi"   type="float"/>
     <field name="sum_err_theta" type="int32"/>
     <field name="sum_err_psi"   type="int32"/>
     <field name="delta_a_fb"    type="int32" alt_unit_coef="0.0000153"/>
