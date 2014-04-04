@@ -28,6 +28,7 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #include "sensors/airspeed_ets.h"
 #include "sensors/aoa_adc.h"
+#include "subsystems/actuators/motor_mixing.h"
 
 struct high_speed_logger_spi_link_data high_speed_logger_spi_link_data;
 struct high_speed_logger_spi_link_data2 high_speed_logger_spi_link_data2;
@@ -76,19 +77,6 @@ void high_speed_logger_spi_link_periodic(void)
   {
     struct Int32Quat* att_quaternion = stateGetNedToBodyQuat_i();
 
-    int32_t log_body_rate_q_int = stateGetBodyRates_i()->q;
-    int32_t log_body_rate_q = RATE_BFP_OF_REAL(stateGetBodyRates_f()->q);
-    int32_t log_filtered_rate = RATE_BFP_OF_REAL(filtered_rate.q);
-    int32_t log_filtered_rate_deriv = RATE_BFP_OF_REAL(filtered_rate_deriv.q);
-    int32_t log_filtered_rate_2deriv = RATE_BFP_OF_REAL(filtered_rate_2deriv.q);
-    int32_t log_angular_accel_ref = RATE_BFP_OF_REAL(angular_accel_ref.q);
-    int32_t log_indi_u = RATE_BFP_OF_REAL(indi_u.q);
-    int32_t log_indi_du = RATE_BFP_OF_REAL(indi_du.q);
-    int32_t log_u_act_dyn = RATE_BFP_OF_REAL(u_act_dyn.q);
-    int32_t log_u_in = RATE_BFP_OF_REAL(u_in.q);
-    int32_t log_udot = RATE_BFP_OF_REAL(udot.q);
-    int32_t log_udotdot = RATE_BFP_OF_REAL(udotdot.q);
-
     high_speed_logger_spi_link_ready = FALSE;
     high_speed_logger_spi_link_data.id = high_speed_logger_spi_link_data.id + 2;
     high_speed_logger_spi_link_data.thrust     = stabilization_cmd[COMMAND_THRUST];
@@ -107,20 +95,20 @@ void high_speed_logger_spi_link_periodic(void)
 //     high_speed_logger_spi_link_data.gps_speedx = stateGetSpeedNed_i()->x;
 //     high_speed_logger_spi_link_data.gps_speedy = stateGetSpeedNed_i()->y;
 
-    high_speed_logger_spi_link_data.airspeed   = airspeed_ets_raw;
-    high_speed_logger_spi_link_data.alt        = stateGetPositionNed_i()->z;
-    high_speed_logger_spi_link_data.alpha      = log_body_rate_q_int;
-    high_speed_logger_spi_link_data.gps_x      = log_body_rate_q;
-    high_speed_logger_spi_link_data.ref_qi     = log_filtered_rate;
-    high_speed_logger_spi_link_data.ref_qx     = log_filtered_rate_deriv;
-    high_speed_logger_spi_link_data.ref_qy     = log_filtered_rate_2deriv;
-    high_speed_logger_spi_link_data.ref_qz     = log_angular_accel_ref;
-    high_speed_logger_spi_link_data.att_qi     = log_indi_u;
-    high_speed_logger_spi_link_data.att_qx     = log_indi_du;
-    high_speed_logger_spi_link_data.att_qy     = log_u_act_dyn;
-    high_speed_logger_spi_link_data.att_qz     = log_u_in;
-    high_speed_logger_spi_link_data.gps_speedx = log_udot;
-    high_speed_logger_spi_link_data.gps_speedy = log_udotdot;
+    high_speed_logger_spi_link_data.airspeed   = RATE_BFP_OF_REAL(filtered_rate.r);
+    high_speed_logger_spi_link_data.alt        = RATE_BFP_OF_REAL(filtered_rate_deriv.r);
+    high_speed_logger_spi_link_data.alpha      = RATE_BFP_OF_REAL(angular_accel_ref.r);
+    high_speed_logger_spi_link_data.gps_x      = RATE_BFP_OF_REAL(indi_u.r);
+    high_speed_logger_spi_link_data.ref_qi     = RATE_BFP_OF_REAL(indi_du.r);
+    high_speed_logger_spi_link_data.ref_qx     = RATE_BFP_OF_REAL(filtered_rate.p);
+    high_speed_logger_spi_link_data.ref_qy     = RATE_BFP_OF_REAL(filtered_rate_deriv.p);
+    high_speed_logger_spi_link_data.ref_qz     = RATE_BFP_OF_REAL(angular_accel_ref.p);
+    high_speed_logger_spi_link_data.att_qi     = RATE_BFP_OF_REAL(indi_u.p);
+    high_speed_logger_spi_link_data.att_qx     = RATE_BFP_OF_REAL(indi_du.p);
+    high_speed_logger_spi_link_data.att_qy     = RATE_BFP_OF_REAL(filtered_rate.q);
+    high_speed_logger_spi_link_data.att_qz     = RATE_BFP_OF_REAL(filtered_rate_deriv.q);
+    high_speed_logger_spi_link_data.gps_speedx = RATE_BFP_OF_REAL(angular_accel_ref.q);
+    high_speed_logger_spi_link_data.gps_speedy = RATE_BFP_OF_REAL(indi_u.q);
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction);
 
@@ -131,10 +119,10 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data2.gyro_p     = imu.gyro_unscaled.p;
     high_speed_logger_spi_link_data2.gyro_q     = imu.gyro_unscaled.q;
     high_speed_logger_spi_link_data2.gyro_r     = imu.gyro_unscaled.r;
-    high_speed_logger_spi_link_data2.mag_x      = imu.mag_unscaled.x;
-    high_speed_logger_spi_link_data2.mag_y      = imu.mag_unscaled.y;
+    high_speed_logger_spi_link_data2.mag_x      = pitch_coef[0];
+    high_speed_logger_spi_link_data2.mag_y      = elevator_gain;
     high_speed_logger_spi_link_data2.mag_z      = imu.mag_unscaled.z;
-    high_speed_logger_spi_link_data2.gps_y      = stateGetPositionNed_i()->y;
+    high_speed_logger_spi_link_data2.gps_y      = RATE_BFP_OF_REAL(indi_du.q);
     high_speed_logger_spi_link_data2.cmd_roll   = stabilization_cmd[COMMAND_ROLL];
     high_speed_logger_spi_link_data2.cmd_pitch  = stabilization_cmd[COMMAND_PITCH];
     high_speed_logger_spi_link_data2.cmd_yaw    = stabilization_cmd[COMMAND_YAW];

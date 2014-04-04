@@ -33,6 +33,9 @@ extern float m_c_p;
 extern float kp_q;
 extern float kd_q;
 extern float m_c_q;
+extern float kp_r;
+extern float kd_r;
+extern float m_c_r;
 
 extern struct FloatRates filtered_rate;
 extern struct FloatRates filtered_rate_deriv;
@@ -47,5 +50,12 @@ extern struct FloatRates udotdot;
 
 void stabilization_indi_filter_gyro(void);
 void stabilization_indi_filter_inputs(void);
+void stabilization_indi_adaptive_gains(void);
+
+extern int32_t elevator_gain;
+extern int32_t aileron_gain;
+
+extern int32_t elevator_gain_goal;
+extern int32_t aileron_gain_goal;
 
 #endif /* STABILIZATION_ATTITUDE_QUAT_INT_H */

@@ -38,8 +38,8 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <let var="hover_left"  value="3*$aileron_feedback_left"/>
     <let var="hover_right" value="3*$aileron_feedback_right"/>
 
-    <let var="forward_left"  value="6*$aileron_feedback_left+4*$elevator_feedback_left"/>
-    <let var="forward_right" value="6*$aileron_feedback_right+4*$elevator_feedback_right"/>
+    <let var="forward_left"  value="aileron_gain*$aileron_feedback_left+elevator_gain*$elevator_feedback_left"/>
+    <let var="forward_right" value="aileron_gain*$aileron_feedback_right+elevator_gain*$elevator_feedback_right"/>
 
  <!-- This statement tells the autopilot to use the hover feedback if in mode attitude direct and to use the forward feedback in all other cases-->
     <set servo="ELEVON_LEFT"    value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? $hover_left  : $forward_left" />
@@ -52,14 +52,14 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="TRIM_YAW" value="0"/>
     <define name="NB_MOTOR" value="4"/>
     <define name="SCALE" value="256"/>
-    <define name="PITCH_COEF"  value="{ -256, -256,  256,  256 }"/>
+<!--    <define name="PITCH_COEF"  value="{ -256, -256,  256,  256 }"/>
     <define name="ROLL_COEF"   value="{  256, -256,  256, -256 }"/>
     <define name="YAW_COEF"    value="{ -256,  256,  128, -128 }"/>
-    <define name="THRUST_COEF" value="{  256,  256,  256,  256 }"/>
-<!--    <define name="PITCH_COEF"  value="{ 0, 0, 0, 0}"/>
+    <define name="THRUST_COEF" value="{  256,  256,  256,  256 }"/>-->
+    <define name="PITCH_COEF"  value="{ 0, 0, 0, 0 }"/>
     <define name="ROLL_COEF"   value="{ 0, 0, 0, 0 }"/>
     <define name="YAW_COEF"    value="{ 0, 0, 0, 0 }"/>
-    <define name="THRUST_COEF" value="{ 0, 0, 0, 0 }"/>-->
+    <define name="THRUST_COEF" value="{ 0, 0, 0, 0 }"/>
   </section>
 
 <!-- If you got a caliberation XML document from your IMU supplier, import this in the IMU section -->
@@ -147,7 +147,7 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <!-- setpoints -->
     <define name="SP_MAX_PHI"     value="60." unit="deg"/>
     <define name="SP_MAX_THETA"   value="60." unit="deg"/>
-    <define name="SP_MAX_R"       value="90." unit="deg/s"/>
+    <define name="SP_MAX_R"       value="180." unit="deg/s"/>
     <define name="DEADBAND_R"     value="250"/>
     <define name="DEADBAND_A"     value="250"/>
     <define name="SP_PSI_DELTA_LIMIT" value="90" unit="deg"/>
@@ -227,8 +227,8 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <!--The Quadshot uses a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
     <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
     <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
-    <define name="TRANSITION_MAX_OFFSET" value="-70.0" unit="deg"/>
-    <define name="RADIO_CONTROL_SPEKTRUM_SIGNS" value=" {1,1,-1,-1,1,-1,1,1,1,1,1,1}"/>
+    <define name="TRANSITION_MAX_OFFSET" value="-65.0" unit="deg"/>
+    <define name="RADIO_CONTROL_SPEKTRUM_SIGNS" value=" {1,1,-1,-1,1,1,1,1,1,1,1,1}"/>
 
     <define name="RC_LOST_MODE" value="PPRZ_MODE_AUTO2"/>
 

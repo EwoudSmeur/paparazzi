@@ -33,6 +33,8 @@
 #include "state.h"
 #include "generated/airframe.h"
 #include "subsystems/imu.h"
+#include "subsystems/actuators/motor_mixing.h"
+#include "firmwares/rotorcraft/guidance/guidance_h.h"
 
 struct Int32AttitudeGains stabilization_gains = {
   {STABILIZATION_ATTITUDE_PHI_PGAIN, STABILIZATION_ATTITUDE_THETA_PGAIN, STABILIZATION_ATTITUDE_PSI_PGAIN },
@@ -67,16 +69,34 @@ struct FloatRates angular_accel_ref = {0., 0., 0.};
 struct FloatRates indi_u = {0., 0., 0.};
 struct FloatRates indi_du = {0., 0., 0.};
 float kp_p = 95;
-float kd_p = 6;
-float kp_q = 95;
-float kd_q = 6;
-float m_c_p = 56;
-float m_c_q = 27;
+float kd_p = 10;
+float m_c_p = 40;
+float kp_q = 120;
+float kd_q = 12;
+float m_c_q = 14;
+float kp_r = 20;
+float kd_r = 5;
+float m_c_r = 170;
 float att_err_x = 0;
 struct FloatRates u_act_dyn = {0., 0., 0.};
 struct FloatRates u_in = {0., 0., 0.};
 struct FloatRates udot = {0., 0., 0.};
 struct FloatRates udotdot = {0., 0., 0.};
+struct FloatRates filt_rate = {0., 0., 0.};
+
+int32_t pitch_coef_orig[MOTOR_MIXING_NB_MOTOR] = MOTOR_MIXING_PITCH_COEF;
+
+int32_t elevator_gain = 4;
+int32_t aileron_gain = 6;
+int32_t elevator_gain_goal = 4;
+int32_t aileron_gain_goal = 6;
+
+float filtered_rate_deriv_prev = 0;
+float u_prev = 0;
+float drate = 0;
+float filt_du = 0;
+float d_eff = 0;
+float invact_eff = 1.0/15.0;
 
 #define IERROR_SCALE 1024
 #define GAIN_PRESCALER_FF 48
@@ -84,9 +104,13 @@ struct FloatRates udotdot = {0., 0., 0.};
 #define GAIN_PRESCALER_D 48
 #define GAIN_PRESCALER_I 48
 
-#define ZETA 0.6
-#define OMEGA 30
-#define OMEGA2 900
+#define ZETA 0.37
+#define OMEGA 50
+#define OMEGA2 2500
+
+#define ZETA_R 0.5
+#define OMEGA_R 20
+#define OMEGA2_R 400
 
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
@@ -95,18 +119,18 @@ static void send_att(void) { //FIXME really use this message here ?
   struct Int32Rates* body_rate = stateGetBodyRates_i();
   struct Int32Eulers* att = stateGetNedToBodyEulers_i();
   DOWNLINK_SEND_STAB_ATTITUDE_INT(DefaultChannel, DefaultDevice,
-      &(body_rate->p), &(body_rate->q), &(body_rate->r),
-      &(att->phi), &(att->theta), &(att->psi),
+      &pitch_coef[0], &pitch_coef[1], &pitch_coef[2],
+      &pitch_coef[3], &(att->theta), &(att->psi),
       &stab_att_sp_euler.phi,
       &stab_att_sp_euler.theta,
       &stab_att_sp_euler.psi,
       &att_err_x,
       &stabilization_att_sum_err.theta,
       &stabilization_att_sum_err.psi,
-      &stabilization_att_fb_cmd[COMMAND_ROLL],
-      &stabilization_att_fb_cmd[COMMAND_PITCH],
-      &stabilization_att_fb_cmd[COMMAND_YAW],
-      &stabilization_att_ff_cmd[COMMAND_ROLL],
+      &pitch_coef[0],
+      &pitch_coef[1],
+      &pitch_coef[2],
+      &pitch_coef[3],
       &stabilization_att_ff_cmd[COMMAND_PITCH],
       &stabilization_att_ff_cmd[COMMAND_YAW],
       &stabilization_cmd[COMMAND_ROLL],
@@ -145,23 +169,13 @@ static void send_ahrs_ref_quat(void) {
 
 static void send_att_indi(void) {
   DOWNLINK_SEND_STAB_ATTITUDE_INDI(DefaultChannel, DefaultDevice,
-                                   &filtered_rate.q,
-                                   &filtered_rate_deriv.q,
-                                   &filtered_rate_2deriv.q,
-                                   &stateGetBodyRates_f()->q,
-                                   &indi_u.q,
-                                   &indi_du.q);
+                                   &filtered_rate.r,
+                                   &filtered_rate_deriv.r,
+                                   &filtered_rate_2deriv.r,
+                                   &u_in.p,
+                                   &u_in.q,
+                                   &u_in.r);
 }
-
-// static void send_att_indi(void) {
-//   DOWNLINK_SEND_STAB_ATTITUDE_INDI(DefaultChannel, DefaultDevice,
-//                               &filtered_rate,
-//                               &filtered_rate_deriv,
-//                               &filtered_rate_2deriv,
-//                               &angular_accel_ref,
-//                               &indi_u,
-//                               &indi_du);
-// }
 #endif
 
 void stabilization_attitude_init(void) {
@@ -199,6 +213,7 @@ void stabilization_attitude_enter(void) {
   FLOAT_RATES_ZERO(u_in);
   FLOAT_RATES_ZERO(udot);
   FLOAT_RATES_ZERO(udotdot);
+  FLOAT_RATES_ZERO(filt_rate);
 
 }
 
@@ -237,28 +252,41 @@ void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t head
 #define OFFSET_AND_ROUND(_a, _b) (((_a)+(1<<((_b)-1)))>>(_b))
 #define OFFSET_AND_ROUND2(_a, _b) (((_a)+(1<<((_b)-1))-((_a)<0?1:0))>>(_b))
 
-static void attitude_run_ff(int32_t ff_commands[], struct Int32AttitudeGains *gains, struct Int32Rates *ref_accel)
-{
-  /* Compute feedforward based on reference acceleration */
-
-  ff_commands[COMMAND_ROLL]  = GAIN_PRESCALER_FF * gains->dd.x * RATE_FLOAT_OF_BFP(ref_accel->p) / (1 << 7);
-  ff_commands[COMMAND_PITCH] = GAIN_PRESCALER_FF * gains->dd.y * RATE_FLOAT_OF_BFP(ref_accel->q) / (1 << 7);
-  ff_commands[COMMAND_YAW]   = GAIN_PRESCALER_FF * gains->dd.z * RATE_FLOAT_OF_BFP(ref_accel->r) / (1 << 7);
+#define BOUND_CONTROLS(_v, _min, _max) {         \
+_v = _v < _min ? _min : _v > _max ? _max : _v;  \
 }
 
 static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *gains, struct Int32Quat *att_err,
     struct Int32Rates *rate_err, struct Int32Quat *sum_err)
 {
-  angular_accel_ref.p = kp_p * QUAT1_FLOAT_OF_BFP(att_err->qx) - kd_p * stateGetBodyRates_f()->p;
-  angular_accel_ref.q = kp_q * QUAT1_FLOAT_OF_BFP(att_err->qy) - kd_q * stateGetBodyRates_f()->q;
+
+//   filt_rate.p = filt_rate.p + 0.2*(stateGetBodyRates_f()->p - filt_rate.p);
+//   filt_rate.q = filt_rate.q + 0.2*(stateGetBodyRates_f()->q - filt_rate.q);
+//   filt_rate.r = filt_rate.r + 0.2*(stateGetBodyRates_f()->r - filt_rate.r);
+  
+  angular_accel_ref.p = kp_p * QUAT1_FLOAT_OF_BFP(att_err->qx) - kd_p * filtered_rate.p;
+  angular_accel_ref.q = kp_q * QUAT1_FLOAT_OF_BFP(att_err->qy) - kd_q * filtered_rate.q;
+  angular_accel_ref.r = kp_r * QUAT1_FLOAT_OF_BFP(att_err->qz) - kd_r * filtered_rate.r;
 // angular_accel_ref = - kd_p * stateGetBodyRates_f()->p;
 
   indi_du.p = m_c_p * (angular_accel_ref.p - filtered_rate_deriv.p);
   indi_du.q = m_c_q * (angular_accel_ref.q - filtered_rate_deriv.q);
+  indi_du.r = m_c_r * (angular_accel_ref.r - filtered_rate_deriv.r);
 //   indi_du = m_c_p * (-filtered_rate_deriv);
 
   u_in.p = indi_u.p + indi_du.p;
   u_in.q = indi_u.q + indi_du.q;
+  u_in.r = indi_u.r + indi_du.r;
+
+  BOUND_CONTROLS(u_in.p, -4500, 4500);
+  BOUND_CONTROLS(u_in.q, -4500, 4500);
+  float half_thrust = ((float) stabilization_cmd[COMMAND_THRUST]/2);
+  BOUND_CONTROLS(u_in.r, -half_thrust, half_thrust);
+
+//   if(u_in.r > ((float) stabilization_cmd[COMMAND_THRUST]/2))
+//     u_in.r = ((float) stabilization_cmd[COMMAND_THRUST]/2);
+//   else if(u_in.r < -((float) stabilization_cmd[COMMAND_THRUST]/2))
+//     u_in.r = -((float) stabilization_cmd[COMMAND_THRUST]/2);
 
   //Propagate input filters
   stabilization_indi_filter_inputs();
@@ -276,23 +304,75 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
   //Save error for displaying purposes
   att_err_x = QUAT1_FLOAT_OF_BFP(att_err->qx);
 
-  
-  /*  PID feedback */
-  fb_commands[COMMAND_ROLL] = u_in.p;
-//     GAIN_PRESCALER_P * gains->p.x  * QUAT1_FLOAT_OF_BFP(att_err->qx) / 4 +
-//     GAIN_PRESCALER_D * gains->d.x  * RATE_FLOAT_OF_BFP(rate_err->p) / 16 +
-//     GAIN_PRESCALER_I * gains->i.x  * QUAT1_FLOAT_OF_BFP(sum_err->qx) / 2;
+  if(radio_control.values[5] > 0) {
+    /*  INDI feedback */
+    fb_commands[COMMAND_ROLL] = u_in.p;
+    fb_commands[COMMAND_PITCH] = u_in.q;
+    fb_commands[COMMAND_YAW] = u_in.r;
+    if(transition_percentage > (90 << INT32_PERCENTAGE_FRAC)) {
+      if(radio_control.values[6] > 8000) {
+        pitch_coef[0]  = 0;
+        pitch_coef[1]  = 0;
+        pitch_coef[2]  = 0;
+        pitch_coef[3]  = 0;
+        elevator_gain = elevator_gain_goal;
+      }
+      else if(radio_control.values[6] < -8000) {
+        pitch_coef[0]  = pitch_coef_orig[0];
+        pitch_coef[1]  = pitch_coef_orig[1];
+        pitch_coef[2]  = pitch_coef_orig[2];
+        pitch_coef[3]  = pitch_coef_orig[3];
+        elevator_gain = 0;
+      }
+      else {
+        pitch_coef[0]  = (pitch_coef_orig[0] *(8000 - radio_control.values[6]))/16000;
+        pitch_coef[1]  = (pitch_coef_orig[1] *(8000 - radio_control.values[6]))/16000;
+        pitch_coef[2]  = (pitch_coef_orig[2] *(8000 - radio_control.values[6]))/16000;
+        pitch_coef[3]  = (pitch_coef_orig[3] *(8000 - radio_control.values[6]))/16000;
+        elevator_gain = (elevator_gain_goal *(8000 + radio_control.values[6]))/16000;
+      }
+    }
+    else {
+      pitch_coef[0]  = pitch_coef_orig[0];
+      pitch_coef[1]  = pitch_coef_orig[1];
+      pitch_coef[2]  = pitch_coef_orig[2];
+      pitch_coef[3]  = pitch_coef_orig[3];
+      elevator_gain = 0;
+    }
+  }
+  else {
+    pitch_coef[0]  = pitch_coef_orig[0];
+    pitch_coef[1]  = pitch_coef_orig[1];
+    pitch_coef[2]  = pitch_coef_orig[2];
+    pitch_coef[3]  = pitch_coef_orig[3];
+    elevator_gain = 4;
+    aileron_gain = 6;
+    /*  PID feedback */
+    fb_commands[COMMAND_ROLL] = 
+        GAIN_PRESCALER_P * gains->p.x  * QUAT1_FLOAT_OF_BFP(att_err->qx) / 4 +
+        GAIN_PRESCALER_D * gains->d.x  * RATE_FLOAT_OF_BFP(rate_err->p) / 16 +
+        GAIN_PRESCALER_I * gains->i.x  * QUAT1_FLOAT_OF_BFP(sum_err->qx) / 2;
+    
+    fb_commands[COMMAND_PITCH] = 
+        GAIN_PRESCALER_P * gains->p.y  * QUAT1_FLOAT_OF_BFP(att_err->qy) / 4 +
+        GAIN_PRESCALER_D * gains->d.y  * RATE_FLOAT_OF_BFP(rate_err->q)  / 16 +
+        GAIN_PRESCALER_I * gains->i.y  * QUAT1_FLOAT_OF_BFP(sum_err->qy) / 2;
+    
+    fb_commands[COMMAND_YAW] = 
+        GAIN_PRESCALER_P * gains->p.z  * QUAT1_FLOAT_OF_BFP(att_err->qz) / 4 +
+        GAIN_PRESCALER_D * gains->d.z  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16 +
+        GAIN_PRESCALER_I * gains->i.z  * QUAT1_FLOAT_OF_BFP(sum_err->qz) / 2;
 
-  fb_commands[COMMAND_PITCH] = u_in.q;
-//     GAIN_PRESCALER_P * gains->p.y  * QUAT1_FLOAT_OF_BFP(att_err->qy) / 4 +
-//     GAIN_PRESCALER_D * gains->d.y  * RATE_FLOAT_OF_BFP(rate_err->q)  / 16 +
-//     GAIN_PRESCALER_I * gains->i.y  * QUAT1_FLOAT_OF_BFP(sum_err->qy) / 2;
+    FLOAT_RATES_ZERO(indi_u);
+    FLOAT_RATES_ZERO(indi_du);
+    FLOAT_RATES_ZERO(u_act_dyn);
+    FLOAT_RATES_ZERO(u_in);
+    FLOAT_RATES_ZERO(udot);
+    FLOAT_RATES_ZERO(udotdot);
+  }
 
-  fb_commands[COMMAND_YAW] =
-    GAIN_PRESCALER_P * gains->p.z  * QUAT1_FLOAT_OF_BFP(att_err->qz) / 4 +
-    GAIN_PRESCALER_D * gains->d.z  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16 +
-    GAIN_PRESCALER_I * gains->i.z  * QUAT1_FLOAT_OF_BFP(sum_err->qz) / 2;
-
+//   stabilization_indi_adaptive_gains();
+//   m_c_q = 1.0/invact_eff;
 }
 
 void stabilization_attitude_run(bool_t enable_integrator) {
@@ -310,7 +390,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   /* attitude error                          */
   struct Int32Quat att_err;
   struct Int32Quat* att_quat = stateGetNedToBodyQuat_i();
-  INT32_QUAT_INV_COMP(att_err, *att_quat, stab_att_ref_quat);
+  INT32_QUAT_INV_COMP(att_err, *att_quat, stab_att_sp_quat);
   /* wrap it in the shortest direction       */
   INT32_QUAT_WRAP_SHORTEST(att_err);
   INT32_QUAT_NORMALIZE(att_err);
@@ -324,34 +404,33 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   struct Int32Rates* body_rate = stateGetBodyRates_i();
   RATES_DIFF(rate_err, rate_ref_scaled, (*body_rate));
 
-  /* integrated error */
-  if (enable_integrator) {
-    struct Int32Quat new_sum_err, scaled_att_err;
-    /* update accumulator */
-    scaled_att_err.qi = att_err.qi;
-    scaled_att_err.qx = att_err.qx / IERROR_SCALE;
-    scaled_att_err.qy = att_err.qy / IERROR_SCALE;
-    scaled_att_err.qz = att_err.qz / IERROR_SCALE;
-    INT32_QUAT_COMP(new_sum_err, stabilization_att_sum_err_quat, scaled_att_err);
-    INT32_QUAT_NORMALIZE(new_sum_err);
-    QUAT_COPY(stabilization_att_sum_err_quat, new_sum_err);
-    INT32_EULERS_OF_QUAT(stabilization_att_sum_err, stabilization_att_sum_err_quat);
-  } else {
-    /* reset accumulator */
-    INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
-    INT_EULERS_ZERO( stabilization_att_sum_err );
+  if(radio_control.values[5] < 0) {
+    /* integrated error */
+    if (enable_integrator) {
+      struct Int32Quat new_sum_err, scaled_att_err;
+      /* update accumulator */
+      scaled_att_err.qi = att_err.qi;
+      scaled_att_err.qx = att_err.qx / IERROR_SCALE;
+      scaled_att_err.qy = att_err.qy / IERROR_SCALE;
+      scaled_att_err.qz = att_err.qz / IERROR_SCALE;
+      INT32_QUAT_COMP(new_sum_err, stabilization_att_sum_err_quat, scaled_att_err);
+      INT32_QUAT_NORMALIZE(new_sum_err);
+      QUAT_COPY(stabilization_att_sum_err_quat, new_sum_err);
+      INT32_EULERS_OF_QUAT(stabilization_att_sum_err, stabilization_att_sum_err_quat);
+    } else {
+      /* reset accumulator */
+      INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
+      INT_EULERS_ZERO( stabilization_att_sum_err );
+    }
   }
-
-  /* compute the feed forward command */
-  attitude_run_ff(stabilization_att_ff_cmd, &stabilization_gains, &stab_att_ref_accel);
 
   /* compute the feed back command */
   attitude_run_fb(stabilization_att_fb_cmd, &stabilization_gains, &att_err, &rate_err, &stabilization_att_sum_err_quat);
 
   /* sum feedforward and feedback */
-  stabilization_cmd[COMMAND_ROLL] = stabilization_att_fb_cmd[COMMAND_ROLL] + stabilization_att_ff_cmd[COMMAND_ROLL];
-  stabilization_cmd[COMMAND_PITCH] = stabilization_att_fb_cmd[COMMAND_PITCH] + stabilization_att_ff_cmd[COMMAND_PITCH];
-  stabilization_cmd[COMMAND_YAW] = stabilization_att_fb_cmd[COMMAND_YAW] + stabilization_att_ff_cmd[COMMAND_YAW];
+  stabilization_cmd[COMMAND_ROLL] = stabilization_att_fb_cmd[COMMAND_ROLL];
+  stabilization_cmd[COMMAND_PITCH] = stabilization_att_fb_cmd[COMMAND_PITCH];
+  stabilization_cmd[COMMAND_YAW] = stabilization_att_fb_cmd[COMMAND_YAW];
 
   /* bound the result */
   BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
@@ -380,15 +459,15 @@ void stabilization_indi_filter_gyro(void) {
   
   filtered_rate_2deriv.p = -filtered_rate_deriv.p * 2*ZETA*OMEGA + ( stateGetBodyRates_f()->p - filtered_rate.p)*OMEGA2;
   filtered_rate_2deriv.q = -filtered_rate_deriv.q * 2*ZETA*OMEGA + ( stateGetBodyRates_f()->q - filtered_rate.q)*OMEGA2;
-  filtered_rate_2deriv.r = -filtered_rate_deriv.r * 2*ZETA*OMEGA + ( stateGetBodyRates_f()->r - filtered_rate.r)*OMEGA2;
+  filtered_rate_2deriv.r = -filtered_rate_deriv.r * 2*ZETA_R*OMEGA_R + ( stateGetBodyRates_f()->r - filtered_rate.r)*OMEGA2_R;
 }
 
 void stabilization_indi_filter_inputs(void) {
 
   //actuator dynamics
-  u_act_dyn.p = u_act_dyn.p + 0.05*( u_in.p - u_act_dyn.p);
-  u_act_dyn.q = u_act_dyn.q + 0.05*( u_in.q - u_act_dyn.q);
-  u_act_dyn.r = u_act_dyn.r + 0.05*( u_in.r - u_act_dyn.r);
+  u_act_dyn.p = u_act_dyn.p + 0.02*( u_in.p - u_act_dyn.p);
+  u_act_dyn.q = u_act_dyn.q + 0.02*( u_in.q - u_act_dyn.q);
+  u_act_dyn.r = u_act_dyn.r + 0.02*( u_in.r - u_act_dyn.r);
 
   //Sensor dynamics (same filter as on gyro measurements)
   indi_u.p = indi_u.p + udot.p/512.0;
@@ -401,5 +480,24 @@ void stabilization_indi_filter_inputs(void) {
   
   udotdot.p = -udot.p * 2*ZETA*OMEGA + (u_act_dyn.p - indi_u.p)*OMEGA2;
   udotdot.q = -udot.q * 2*ZETA*OMEGA + (u_act_dyn.q - indi_u.q)*OMEGA2;
-  udotdot.r = -udot.r * 2*ZETA*OMEGA + (u_act_dyn.r - indi_u.r)*OMEGA2;
+  udotdot.r = -udot.r * 2*ZETA_R*OMEGA_R + (u_act_dyn.r - indi_u.r)*OMEGA2_R;
+}
+
+void stabilization_indi_adaptive_gains(void) {
+  filt_du = indi_u.q - u_prev;
+  drate = filtered_rate_deriv.q - filtered_rate_deriv_prev;
+
+  u_prev = indi_u.q;
+  filtered_rate_deriv_prev = filtered_rate_deriv.q;
+  
+  if( (filt_du != 0) && (drate != 0) && (fabs(filt_du) > 1)) {
+    d_eff = 0.0001*((drate/filt_du) - invact_eff);
+    if(d_eff > 0.001)
+      d_eff = 0.001;
+    else if(d_eff < -0.001)
+      d_eff = -0.001;
+    invact_eff = invact_eff + d_eff;
+    }
+  else
+    invact_eff = invact_eff;
 }
