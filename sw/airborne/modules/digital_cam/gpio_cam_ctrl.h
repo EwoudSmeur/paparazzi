@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Antoine Blais, Antoine Drouin
+ * Copyright (C) 2010-2014 The Paparazzi Team
  *
  * This file is part of paparazzi.
  *
@@ -17,37 +17,23 @@
  * along with paparazzi; see the file COPYING.  If not, write to
  * the Free Software Foundation, 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
- *
  */
 
-#ifndef VOR_FLOAT_DEMOD_H
-#define VOR_FLOAT_DEMOD_H
+/** @file modules/digital_cam/gpio_cam_ctrl.h
+ *  @brief Digital Camera Control
+ *
+ * Provides the control of the shutter and the zoom of a digital camera
+ * through standard binary IOs of the board.
+ *
+ * The required initialization (dc_init()) and periodic (4Hz) process.
+ */
 
-extern void vor_float_demod_init( void);
-extern void vor_float_demod_run ( float sample);
+#ifndef GPIO_CAM_CTRL_H
+#define GPIO_CAM_CTRL_H
 
-extern const float vfd_te;
+extern void gpio_cam_ctrl_init(void);
 
-extern const float vfd_ref_freq;
-extern       float vfd_ref_phi;
-extern       float vfd_ref_err;
-extern const float vfd_ref_alpha;
+/** 4Hz Periodic */
+extern void gpio_cam_ctrl_periodic(void);
 
-extern const float vfd_var_freq;
-extern       float vfd_var_phi;
-extern       float vfd_var_err;
-extern const float vfd_var_alpha;
-
-extern const float vfd_fm_freq;
-extern       float vfd_fm_phi;
-extern       float vfd_fm_err;
-extern const float vfd_fm_alpha;
-
-extern       float vfd_qdr;
-
-
-extern       float vfd_var_sig;
-extern       float vfd_fm_local_sig;
-
-#endif /* VOR_FLOAT_DEMOD_H */
-
+#endif // GPIO_CAM_CTRL_H
