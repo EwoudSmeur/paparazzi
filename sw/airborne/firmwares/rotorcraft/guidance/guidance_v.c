@@ -30,6 +30,7 @@
 #include "subsystems/radio_control.h"
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/navigation.h"
+#include "firmwares/rotorcraft/guidance/guidance_h.h"
 
 #include "state.h"
 
@@ -74,6 +75,9 @@ PRINT_CONFIG_VAR(GUIDANCE_V_ADAPT_THROTTLE_ENABLED)
 #define GUIDANCE_V_MAX_RC_DESCENT_SPEED GUIDANCE_V_REF_MAX_ZD
 #endif
 
+#ifndef QUADSHOT_NAVIGATION
+#define QUADSHOT_NAVIGATION FALSE
+#endif
 
 uint8_t guidance_v_mode;
 int32_t guidance_v_ff_cmd;
@@ -108,6 +112,8 @@ int32_t guidance_v_ki;
 int32_t guidance_v_z_sum_err;
 
 int32_t guidance_v_thrust_coeff;
+int32_t v_control_pitch;
+float alt_pitch_gain = 1.0;
 
 
 #define GuidanceVSetRef(_pos, _speed, _accel) { \
@@ -299,6 +305,28 @@ void guidance_v_run(bool_t in_flight) {
         guidance_v_z_sum_err = 0;
         guidance_v_delta_t = nav_throttle;
       }
+#if QUADSHOT_NAVIGATION
+      if(norm_ref_airspeed < (4<<8)) {
+        //if airspeed ref < 4 only thrust
+        stabilization_cmd[COMMAND_THRUST] = guidance_v_delta_t;
+        v_control_pitch = 0;
+      }
+      else if(norm_ref_airspeed > (8<<8)) { //if airspeed ref > 8 only pitch, 
+        //at 15 m/s the thrust has to be 33%
+        stabilization_cmd[COMMAND_THRUST] = MAX_PPRZ/5 + (((norm_ref_airspeed - (8<<8)) / 7 * (MAX_PPRZ/3 - MAX_PPRZ/5))>>8);
+        //stabilization_cmd[COMMAND_THRUST] = MAX_PPRZ/5;
+//         stabilization_cmd[COMMAND_THRUST] = ((norm_ref_airspeed - (8<<8)) / 7 * (MAX_PPRZ/3 - MAX_PPRZ/5))>>8 + 9600/5;
+        //Control altitude with pitch, now only proportional control
+        float alt_control_pitch =  (guidance_v_delta_t - MAX_PPRZ/2)*alt_pitch_gain;
+        v_control_pitch = ANGLE_BFP_OF_REAL(alt_control_pitch/MAX_PPRZ);
+      }
+      else {//if airspeed ref > 4 && < 8 both
+        int32_t airspeed_transition = (norm_ref_airspeed - (4<<8))/4;
+        stabilization_cmd[COMMAND_THRUST] = (MAX_PPRZ/5 * airspeed_transition + guidance_v_delta_t * ( (1<<8) - airspeed_transition))>>8;
+        v_control_pitch = 0;
+      }
+
+#else
 #if NO_RC_THRUST_LIMIT
       stabilization_cmd[COMMAND_THRUST] = guidance_v_delta_t;
 #else
@@ -307,6 +335,7 @@ void guidance_v_run(bool_t in_flight) {
         stabilization_cmd[COMMAND_THRUST] = Min(guidance_v_rc_delta_t, guidance_v_delta_t);
       else
         stabilization_cmd[COMMAND_THRUST] = guidance_v_delta_t;
+#endif
 #endif
       break;
     }

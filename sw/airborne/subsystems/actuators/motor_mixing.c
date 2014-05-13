@@ -76,7 +76,7 @@
 
 static const int32_t roll_coef[MOTOR_MIXING_NB_MOTOR]   = MOTOR_MIXING_ROLL_COEF;
 int32_t pitch_coef[MOTOR_MIXING_NB_MOTOR]  = MOTOR_MIXING_PITCH_COEF;
-static const int32_t yaw_coef[MOTOR_MIXING_NB_MOTOR]    = MOTOR_MIXING_YAW_COEF;
+int32_t yaw_coef[MOTOR_MIXING_NB_MOTOR]    = MOTOR_MIXING_YAW_COEF;
 static const int32_t thrust_coef[MOTOR_MIXING_NB_MOTOR] = MOTOR_MIXING_THRUST_COEF;
 
 struct MotorMixing motor_mixing;
@@ -167,13 +167,14 @@ void motor_mixing_run(bool_t motors_on, bool_t override_on, pprz_t in_cmd[] ) {
     int32_t max_cmd = INT32_MIN;
     /* do the mixing in float to avoid overflows, implicitly casted back to int32_t */
     for (i=0; i<MOTOR_MIXING_NB_MOTOR; i++) {
-      motor_mixing.commands[i] = MOTOR_MIXING_MIN_MOTOR +
-        (thrust_coef[i] * in_cmd[COMMAND_THRUST] +
-         roll_coef[i]   * in_cmd[COMMAND_ROLL]   +
-         pitch_coef[i]  * in_cmd[COMMAND_PITCH]  +
-         yaw_coef[i]    * in_cmd[COMMAND_YAW]    +
-         motor_mixing.trim[i]) / MOTOR_MIXING_SCALE *
-        (MOTOR_MIXING_MAX_MOTOR - MOTOR_MIXING_MIN_MOTOR) / MAX_PPRZ;
+//       motor_mixing.commands[i] = MOTOR_MIXING_MIN_MOTOR +
+//         (thrust_coef[i] * in_cmd[COMMAND_THRUST] +
+//          roll_coef[i]   * in_cmd[COMMAND_ROLL]   +
+//          pitch_coef[i]  * in_cmd[COMMAND_PITCH]  +
+//          yaw_coef[i]    * in_cmd[COMMAND_YAW]    +
+//          motor_mixing.trim[i]) / MOTOR_MIXING_SCALE *
+//         (MOTOR_MIXING_MAX_MOTOR - MOTOR_MIXING_MIN_MOTOR) / MAX_PPRZ;
+      motor_mixing.commands[i] = MOTOR_MIXING_MIN_MOTOR;
       if (motor_mixing.commands[i] < min_cmd)
         min_cmd = motor_mixing.commands[i];
       if (motor_mixing.commands[i] > max_cmd)

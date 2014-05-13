@@ -52,14 +52,14 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="TRIM_YAW" value="0"/>
     <define name="NB_MOTOR" value="4"/>
     <define name="SCALE" value="256"/>
-<!--    <define name="PITCH_COEF"  value="{ -256, -256,  256,  256 }"/>
+    <define name="PITCH_COEF"  value="{ -256, -256,  256,  256 }"/>
     <define name="ROLL_COEF"   value="{  256, -256,  256, -256 }"/>
     <define name="YAW_COEF"    value="{ -256,  256,  128, -128 }"/>
-    <define name="THRUST_COEF" value="{  256,  256,  256,  256 }"/>-->
-    <define name="PITCH_COEF"  value="{ 0, 0, 0, 0 }"/>
+    <define name="THRUST_COEF" value="{  256,  256,  256,  256 }"/>
+<!--    <define name="PITCH_COEF"  value="{ 0, 0, 0, 0 }"/>
     <define name="ROLL_COEF"   value="{ 0, 0, 0, 0 }"/>
     <define name="YAW_COEF"    value="{ 0, 0, 0, 0 }"/>
-    <define name="THRUST_COEF" value="{ 0, 0, 0, 0 }"/>
+    <define name="THRUST_COEF" value="{ 0, 0, 0, 0 }"/>-->
   </section>
 
 <!-- If you got a caliberation XML document from your IMU supplier, import this in the IMU section -->
@@ -95,7 +95,7 @@ More information on the Quadshot can be found at transition-robotics.com -->
   <section name="AUTOPILOT">
     <define name="MODE_MANUAL"  value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/>
-    <define name="MODE_AUTO2"  value="AP_MODE_RATE_DIRECT"/>
+    <define name="MODE_AUTO2"  value="AP_MODE_NAV"/>
 
     <define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/>
   </section>
@@ -241,6 +241,7 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="THRESHOLD_GROUND_DETECT" value="25.0"/>
     <define name="KILL_ON_GROUND_DETECT" value="TRUE"/>
     <define name="FAILSAFE_GROUND_DETECT" value="TRUE"/>
+    <define name="QUADSHOT_NAVIGATION" value="TRUE"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">

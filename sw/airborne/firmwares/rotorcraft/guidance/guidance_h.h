@@ -86,6 +86,8 @@ extern struct Int32Vect2  guidance_h_cmd_earth;
 extern struct Int32Eulers guidance_h_rc_sp;         ///< with #INT32_ANGLE_FRAC
 extern int32_t guidance_h_heading_sp;               ///< with #INT32_ANGLE_FRAC
 
+extern struct Int32Vect2 guidance_h_airspeed_sp;
+
 extern int32_t guidance_h_pgain;
 extern int32_t guidance_h_dgain;
 extern int32_t guidance_h_igain;
@@ -93,6 +95,8 @@ extern int32_t guidance_h_again;
 
 extern int32_t transition_percentage;
 extern int32_t transition_theta_offset;
+extern int32_t horizontal_speed_gain;
+extern int32_t norm_ref_airspeed;
 
 extern void guidance_h_init(void);
 extern void guidance_h_mode_changed(uint8_t new_mode);

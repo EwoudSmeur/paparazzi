@@ -83,6 +83,12 @@ struct Int32Vect2  guidance_h_cmd_earth;
 struct Int32Eulers guidance_h_rc_sp;
 int32_t guidance_h_heading_sp;
 
+struct Int32Eulers guidance_h_ypr_sp;
+struct Int32Vect2 guidance_h_airspeed_sp;
+struct Int32Vect2 guidance_h_airspeed_ref;
+struct Int32Vect2 wind_estimate;
+struct FloatVect2 wind_estimate_f;
+
 int32_t guidance_h_pgain;
 int32_t guidance_h_dgain;
 int32_t guidance_h_igain;
@@ -91,6 +97,14 @@ int32_t guidance_h_again;
 int32_t transition_percentage;
 int32_t transition_theta_offset;
 
+int32_t norm_sp_airspeed_disp;
+int32_t heading_diff_disp;
+int32_t omega_disp;
+int32_t high_res_psi;
+int32_t airspeed_sp_heading_disp;
+bool_t guidance_hovering;
+int32_t horizontal_speed_gain;
+int32_t norm_ref_airspeed;
 
 static void guidance_h_update_reference(void);
 static void guidance_h_traj_run(bool_t in_flight);
@@ -98,6 +112,10 @@ static void guidance_h_hover_enter(void);
 static void guidance_h_nav_enter(void);
 static inline void transition_run(void);
 static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool_t in_flight);
+void stabilization_attitude_set_cmd_i(struct Int32Eulers *sp_cmd);
+void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp);
+void guidance_h_position_to_airspeed(void);
+void guidance_h_determine_wind_estimate(void);
 
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
@@ -115,20 +133,20 @@ static void send_hover_loop(void) {
   struct NedCoor_i* speed = stateGetSpeedNed_i();
   struct NedCoor_i* accel = stateGetAccelNed_i();
   DOWNLINK_SEND_HOVER_LOOP(DefaultChannel, DefaultDevice,
-                           &guidance_h_pos_sp.x,
-                           &guidance_h_pos_sp.y,
+                           &guidance_h_airspeed_sp.x,
+                           &guidance_h_airspeed_sp.y,
                            &(pos->x), &(pos->y),
                            &(speed->x), &(speed->y),
                            &(accel->x), &(accel->y),
                            &guidance_h_pos_err.x,
                            &guidance_h_pos_err.y,
-                           &guidance_h_speed_err.x,
-                           &guidance_h_speed_err.y,
-                           &guidance_h_trim_att_integrator.x,
-                           &guidance_h_trim_att_integrator.y,
-                           &guidance_h_cmd_earth.x,
-                           &guidance_h_cmd_earth.y,
-                           &guidance_h_heading_sp);
+                           &airspeed_sp_heading_disp,
+                           &omega_disp,
+                           &norm_sp_airspeed_disp,
+                           &heading_diff_disp,
+                           &guidance_h_ypr_sp.theta,
+                           &guidance_h_ypr_sp.phi,
+                           &guidance_h_ypr_sp.psi);
 }
 
 static void send_href(void) {
@@ -164,6 +182,9 @@ void guidance_h_init(void) {
   INT_VECT2_ZERO(guidance_h_pos_sp);
   INT_VECT2_ZERO(guidance_h_trim_att_integrator);
   INT_EULERS_ZERO(guidance_h_rc_sp);
+  INT_EULERS_ZERO(guidance_h_ypr_sp);
+  INT_VECT2_ZERO(guidance_h_airspeed_sp);
+  INT_VECT2_ZERO(guidance_h_airspeed_ref);
   guidance_h_heading_sp = 0;
   guidance_h_pgain = GUIDANCE_H_PGAIN;
   guidance_h_igain = GUIDANCE_H_IGAIN;
@@ -171,6 +192,12 @@ void guidance_h_init(void) {
   guidance_h_again = GUIDANCE_H_AGAIN;
   transition_percentage = 0;
   transition_theta_offset = 0;
+  high_res_psi = 0;
+  guidance_hovering = true;
+  horizontal_speed_gain = 4;
+  norm_ref_airspeed = 0;
+  INT_VECT2_ZERO(wind_estimate);
+  FLOAT_VECT2_ZERO(wind_estimate_f);
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, "GUIDANCE_H_INT", send_gh);
@@ -198,6 +225,8 @@ void guidance_h_mode_changed(uint8_t new_mode) {
      transition_percentage = 0;
      transition_theta_offset = 0;
    }
+
+   norm_ref_airspeed = 0;
 
   switch (new_mode) {
     case GUIDANCE_H_MODE_RC_DIRECT:
@@ -347,6 +376,15 @@ void guidance_h_run(bool_t  in_flight) {
         stabilization_attitude_set_rpy_setpoint_i(&sp_cmd_i);
       }
       else {
+
+#if QUADSHOT_NAVIGATION
+        guidance_h_determine_wind_estimate();
+        guidance_h_position_to_airspeed();
+
+        guidance_h_airspeed_to_attitude(&guidance_h_ypr_sp);
+
+        stabilization_attitude_set_cmd_i(&guidance_h_ypr_sp);
+#else
         INT32_VECT2_NED_OF_ENU(guidance_h_pos_sp, navigation_carrot);
 
         guidance_h_update_reference();
@@ -359,6 +397,7 @@ void guidance_h_run(bool_t  in_flight) {
         /* set final attitude setpoint */
         stabilization_attitude_set_earth_cmd_i(&guidance_h_cmd_earth,
                                                guidance_h_heading_sp);
+#endif
       }
       stabilization_attitude_run(in_flight);
       break;
@@ -532,4 +571,181 @@ static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool_t in_flig
     speed_sp->x = 0;
     speed_sp->y = 0;
   }
+}
+
+#define INT32_ANGLE_HIGH_RES_FRAC 18
+#define INT32_ANGLE_HIGH_RES_NORMALIZE(_a) {             \
+  while ((_a) > (INT32_ANGLE_PI << (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC)))  (_a) -= (INT32_ANGLE_2_PI << (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC));    \
+  while ((_a) < (-INT32_ANGLE_PI << (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC))) (_a) += (INT32_ANGLE_2_PI << (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC));    \
+}
+
+/// Convert a required airspeed to a certain attitude for the Quadshot
+void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
+
+  //notes:
+  //in forward flight, it is preferred to first get to min(airspeed_sp, airspeed_ref) and then change heading and then get to airspeed_sp
+  //in hover, just a gradual change is needed, or maybe not even needed
+  //changes between flight regimes should be handled
+
+  //determine the heading of the airspeed_sp vector
+  int32_t omega;
+  float airspeed_sp_heading = atan2f( (float) POS_FLOAT_OF_BFP(guidance_h_airspeed_sp.y), (float) POS_FLOAT_OF_BFP(guidance_h_airspeed_sp.x));
+  //only for debugging
+  airspeed_sp_heading_disp = (int32_t) (DegOfRad(airspeed_sp_heading));
+
+  //The difference of the current heading with the required heading.
+  float heading_diff = airspeed_sp_heading - ANGLE_FLOAT_OF_BFP(ypr_sp->psi);
+  FLOAT_ANGLE_NORMALIZE(heading_diff);
+
+  //only for debugging
+  heading_diff_disp = (int32_t) (heading_diff/3.14*180.0);
+
+  //calculate the norm of the airspeed setpoint
+  int32_t norm_sp_airspeed;
+  INT32_VECT2_NORM(norm_sp_airspeed,guidance_h_airspeed_sp);
+
+  //reference goes with a steady pace towards the setpoint airspeed
+  //hold ref norm below 4 m/s until heading is aligned
+  if( !((norm_sp_airspeed > (4<<8)) && (norm_ref_airspeed < (4<<8)) && (norm_ref_airspeed > ((4<<8)-10)) && (fabs(heading_diff) > (15.0/180.0*3.14))) ) 
+    norm_ref_airspeed = norm_ref_airspeed +  2*( (int32_t) (norm_sp_airspeed > norm_ref_airspeed) * 2 - 1);
+
+  norm_sp_airspeed_disp = norm_sp_airspeed;
+
+  int32_t psi = ypr_sp->psi;
+  int32_t s_psi, c_psi;
+  PPRZ_ITRIG_SIN(s_psi, psi);
+  PPRZ_ITRIG_COS(c_psi, psi);
+
+  if(norm_ref_airspeed < (4<<8)) {
+    /// if required speed is lower than 4 m/s act like a rotorcraft
+    // translate speed_sp into bank angle and heading
+
+    // change heading to direction of airspeed, faster if the airspeed is higher
+    if(heading_diff > 0.0)
+      omega = (norm_ref_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/5;
+    else if(heading_diff < 0.0)
+      omega = (norm_ref_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/-5;
+
+    // 2) calculate roll/pitch commands
+    struct Int32Vect2 hover_sp;
+    if(norm_sp_airspeed > (4<<8)) { //if the setpoint is beyond 4m/s but the ref is not, the norm of the hover sp will stay at 4m/s
+      hover_sp.x = (guidance_h_airspeed_sp.x << 8)/norm_sp_airspeed * 4;
+      hover_sp.y = (guidance_h_airspeed_sp.y << 8)/norm_sp_airspeed * 4;
+    }
+    else {
+      hover_sp.x = guidance_h_airspeed_sp.x;
+      hover_sp.y = guidance_h_airspeed_sp.y;
+    }
+
+    // gain of 10 means that for 4 m/s an angle of 40 degrees is needed
+    ypr_sp->theta = (((- ( c_psi * hover_sp.x + s_psi * hover_sp.y)) >> INT32_TRIG_FRAC) * 10*INT32_ANGLE_PI/180) >> 8;
+    ypr_sp->phi = (((( - s_psi * hover_sp.x + c_psi * hover_sp.y)) >> INT32_TRIG_FRAC) * 10*INT32_ANGLE_PI/180) >>  8;
+  }
+  else {
+    /// if required speed is higher than 4 m/s act like a fixedwing
+    // translate speed_sp into theta + thrust
+    // coordinated turns to change heading
+
+    // calculate required pitch angle from airspeed_sp magnitude
+    if(norm_ref_airspeed > (15<<8))
+      ypr_sp->theta = -ANGLE_BFP_OF_REAL(RadOfDeg(78.0));
+    else if(norm_ref_airspeed > (8<<8))
+      ypr_sp->theta = -(( (norm_ref_airspeed - (8<<8)) * 2*INT32_ANGLE_PI/180) >> 8) - ANGLE_BFP_OF_REAL(RadOfDeg(68.0));
+    else 
+      ypr_sp->theta = -(( (norm_ref_airspeed - (4<<8)) * 7*INT32_ANGLE_PI/180) >> 8) - ANGLE_BFP_OF_REAL(RadOfDeg(40.0));
+
+    // if the sp_airspeed is within hovering range, don't start a coordinated turn
+    if(norm_sp_airspeed < (4<<8)) {
+      omega = 0;
+      ypr_sp->phi = 0;
+    }
+    else { // coordinated turn
+      if(heading_diff > RadOfDeg(60.0))
+        ypr_sp->phi = ANGLE_BFP_OF_REAL(RadOfDeg(30.0));
+      else if(heading_diff < RadOfDeg(-60.0))
+        ypr_sp->phi = ANGLE_BFP_OF_REAL(RadOfDeg(-30.0));
+      else
+        ypr_sp->phi = ANGLE_BFP_OF_REAL(heading_diff/2.0);
+
+      //feedforward estimate angular rotation omega = g*tan(phi)/v
+      omega = ANGLE_BFP_OF_REAL(9.81/POS_FLOAT_OF_BFP(norm_ref_airspeed)*tanf(ANGLE_FLOAT_OF_BFP(ypr_sp->phi)));
+    }
+  }
+
+  //only for debugging purposes
+  omega_disp = omega;
+
+  //go to higher resolution because else the increment is too small to be added
+  high_res_psi += (omega << (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC))/512;
+
+  INT32_ANGLE_HIGH_RES_NORMALIZE(high_res_psi);
+
+  // go back to angle_frac
+  ypr_sp->psi = high_res_psi >> (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC);
+}
+
+#define MAX_AIRSPEED (15<<8)
+void guidance_h_position_to_airspeed(void) {
+  /* compute position error    */
+  VECT2_DIFF(guidance_h_pos_err, guidance_h_pos_sp, *stateGetPositionNed_i());
+
+  // Compute ground speed setpoint
+  VECT2_SDIV(guidance_h_airspeed_sp, guidance_h_pos_err, horizontal_speed_gain);
+
+  // Add the wind to get the airspeed setpoint
+  VECT2_ADD(guidance_h_airspeed_sp, wind_estimate);
+
+  //limit the airspeed setpoint to 15 m/s, because else saturation+windup will occur
+  int32_t norm_airspeed_sp;
+  INT32_VECT2_NORM(norm_airspeed_sp, guidance_h_airspeed_sp);
+  if(norm_airspeed_sp > MAX_AIRSPEED) {
+    guidance_h_airspeed_sp.x = guidance_h_airspeed_sp.x*MAX_AIRSPEED/norm_airspeed_sp;
+    guidance_h_airspeed_sp.y = guidance_h_airspeed_sp.y*MAX_AIRSPEED/norm_airspeed_sp;
+  }
+}
+
+void guidance_h_determine_wind_estimate(void) {
+  /* compute speed error    */
+  struct Int32Vect2 wind_estimate_measured;
+  VECT2_DIFF(wind_estimate_measured, guidance_h_airspeed_sp, *stateGetSpeedNed_i());
+
+  //use float values for the filter
+  struct FloatVect2 wind_estimate_measured_f;
+  wind_estimate_measured_f.x = POS_FLOAT_OF_BFP(wind_estimate_measured.x);
+  wind_estimate_measured_f.y = POS_FLOAT_OF_BFP(wind_estimate_measured.y);
+
+  //Low pass wind_estimate, because we know the wind usually only changes slowly
+  //But not too slow, because the wind_estimate is also an adaptive element for the airspeed model inaccuracies
+  VECT2_SMUL(wind_estimate_f, wind_estimate_f,1000);
+  VECT2_ADD(wind_estimate_f, wind_estimate_measured_f);
+  VECT2_SDIV(wind_estimate_f, wind_estimate_f, 1001);
+
+  // go back to integers
+  wind_estimate.x = POS_BFP_OF_REAL(wind_estimate_f.x);
+  wind_estimate.y = POS_BFP_OF_REAL(wind_estimate_f.y);
+}
+
+void stabilization_attitude_set_cmd_i(struct Int32Eulers *sp_cmd) {
+  /// @todo calc sp_quat in fixed-point
+  
+  /* orientation vector describing simultaneous rotation of roll/pitch */
+  struct FloatVect3 ov;
+  ov.x = ANGLE_FLOAT_OF_BFP(sp_cmd->phi);
+  ov.y = ANGLE_FLOAT_OF_BFP(sp_cmd->theta);
+  ov.z = 0.0;
+  /* quaternion from that orientation vector */
+  struct FloatQuat q_rp;
+  FLOAT_QUAT_OF_ORIENTATION_VECT(q_rp, ov);
+  struct Int32Quat q_rp_i;
+  QUAT_BFP_OF_REAL(q_rp_i, q_rp);
+  
+  //   get the vertical vector to rotate the roll pitch setpoint around
+  const struct Int32Vect3 zaxis = {0, 0, 1};
+  
+  /* get current heading setpoint */
+  struct Int32Quat q_yaw_sp;
+  INT32_QUAT_OF_AXIS_ANGLE(q_yaw_sp, zaxis, sp_cmd->psi);
+  
+  //   first apply the roll/pitch setpoint and then the yaw
+  INT32_QUAT_COMP(stab_att_sp_quat, q_yaw_sp, q_rp_i);
 }

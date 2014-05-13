@@ -44,6 +44,7 @@ struct MotorMixing {
 extern struct MotorMixing motor_mixing;
 
 extern int32_t pitch_coef[MOTOR_MIXING_NB_MOTOR];
+extern int32_t yaw_coef[MOTOR_MIXING_NB_MOTOR];
 
 extern void motor_mixing_init(void);
 extern void motor_mixing_run(bool_t motors_on, bool_t override_on, pprz_t in_cmd[]);

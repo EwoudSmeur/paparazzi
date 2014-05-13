@@ -71,8 +71,8 @@ struct FloatRates indi_du = {0., 0., 0.};
 float kp_p = 95;
 float kd_p = 10;
 float m_c_p = 40;
-float kp_q = 120;
-float kd_q = 12;
+float kp_q = 95;
+float kd_q = 9;
 float m_c_q = 14;
 float kp_r = 20;
 float kd_r = 5;
@@ -85,11 +85,12 @@ struct FloatRates udotdot = {0., 0., 0.};
 struct FloatRates filt_rate = {0., 0., 0.};
 
 int32_t pitch_coef_orig[MOTOR_MIXING_NB_MOTOR] = MOTOR_MIXING_PITCH_COEF;
+int32_t yaw_coef_orig[MOTOR_MIXING_NB_MOTOR] = MOTOR_MIXING_YAW_COEF;
 
-int32_t elevator_gain = 4;
-int32_t aileron_gain = 6;
-int32_t elevator_gain_goal = 4;
-int32_t aileron_gain_goal = 6;
+int32_t elevator_gain = 0;
+int32_t aileron_gain = 1;
+int32_t elevator_gain_goal = 0;
+int32_t aileron_gain_goal = 1;
 
 float filtered_rate_deriv_prev = 0;
 float u_prev = 0;
@@ -127,10 +128,10 @@ static void send_att(void) { //FIXME really use this message here ?
       &att_err_x,
       &stabilization_att_sum_err.theta,
       &stabilization_att_sum_err.psi,
-      &pitch_coef[0],
-      &pitch_coef[1],
-      &pitch_coef[2],
-      &pitch_coef[3],
+      &yaw_coef[0],
+      &yaw_coef[1],
+      &yaw_coef[2],
+      &yaw_coef[3],
       &stabilization_att_ff_cmd[COMMAND_PITCH],
       &stabilization_att_ff_cmd[COMMAND_YAW],
       &stabilization_cmd[COMMAND_ROLL],
@@ -215,6 +216,19 @@ void stabilization_attitude_enter(void) {
   FLOAT_RATES_ZERO(udotdot);
   FLOAT_RATES_ZERO(filt_rate);
 
+  yaw_coef[0]  = yaw_coef_orig[0];
+  yaw_coef[1]  = yaw_coef_orig[1];
+  yaw_coef[2]  = yaw_coef_orig[2];
+  yaw_coef[3]  = yaw_coef_orig[3];
+  
+  pitch_coef[0]  = pitch_coef_orig[0];
+  pitch_coef[1]  = pitch_coef_orig[1];
+  pitch_coef[2]  = pitch_coef_orig[2];
+  pitch_coef[3]  = pitch_coef_orig[3];
+  elevator_gain = 0;
+  aileron_gain = 3;
+  m_c_r = 170;
+
 }
 
 void stabilization_attitude_set_failsafe_setpoint(void) {
@@ -281,88 +295,110 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
   BOUND_CONTROLS(u_in.p, -4500, 4500);
   BOUND_CONTROLS(u_in.q, -4500, 4500);
   float half_thrust = ((float) stabilization_cmd[COMMAND_THRUST]/2);
-  BOUND_CONTROLS(u_in.r, -half_thrust, half_thrust);
 
 //   if(u_in.r > ((float) stabilization_cmd[COMMAND_THRUST]/2))
 //     u_in.r = ((float) stabilization_cmd[COMMAND_THRUST]/2);
 //   else if(u_in.r < -((float) stabilization_cmd[COMMAND_THRUST]/2))
 //     u_in.r = -((float) stabilization_cmd[COMMAND_THRUST]/2);
 
-  //Propagate input filters
-  stabilization_indi_filter_inputs();
-
-  //Don't increment if thrust is off
-  if(stabilization_cmd[COMMAND_THRUST]<300) {
-  FLOAT_RATES_ZERO(indi_u);
-  FLOAT_RATES_ZERO(indi_du);
-  FLOAT_RATES_ZERO(u_act_dyn);
-  FLOAT_RATES_ZERO(u_in);
-  FLOAT_RATES_ZERO(udot);
-  FLOAT_RATES_ZERO(udotdot);
-  }
-
   //Save error for displaying purposes
   att_err_x = QUAT1_FLOAT_OF_BFP(att_err->qx);
 
-  if(radio_control.values[5] > 0) {
+//   if(radio_control.values[5] > 0) {
     /*  INDI feedback */
     fb_commands[COMMAND_ROLL] = u_in.p;
     fb_commands[COMMAND_PITCH] = u_in.q;
     fb_commands[COMMAND_YAW] = u_in.r;
-    if(transition_percentage > (90 << INT32_PERCENTAGE_FRAC)) {
-      if(radio_control.values[6] > 8000) {
-        pitch_coef[0]  = 0;
-        pitch_coef[1]  = 0;
-        pitch_coef[2]  = 0;
-        pitch_coef[3]  = 0;
-        elevator_gain = elevator_gain_goal;
-      }
-      else if(radio_control.values[6] < -8000) {
-        pitch_coef[0]  = pitch_coef_orig[0];
-        pitch_coef[1]  = pitch_coef_orig[1];
-        pitch_coef[2]  = pitch_coef_orig[2];
-        pitch_coef[3]  = pitch_coef_orig[3];
-        elevator_gain = 0;
-      }
-      else {
-        pitch_coef[0]  = (pitch_coef_orig[0] *(8000 - radio_control.values[6]))/16000;
-        pitch_coef[1]  = (pitch_coef_orig[1] *(8000 - radio_control.values[6]))/16000;
-        pitch_coef[2]  = (pitch_coef_orig[2] *(8000 - radio_control.values[6]))/16000;
-        pitch_coef[3]  = (pitch_coef_orig[3] *(8000 - radio_control.values[6]))/16000;
-        elevator_gain = (elevator_gain_goal *(8000 + radio_control.values[6]))/16000;
-      }
+    //if(transition_percentage > (90 << INT32_PERCENTAGE_FRAC)) {
+    if( (norm_ref_airspeed > (8<<8)) || (transition_percentage > (90 << INT32_PERCENTAGE_FRAC)) ) {
+      yaw_coef[0]  = 0;
+      yaw_coef[1]  = 0;
+      yaw_coef[2]  = 0;
+      yaw_coef[3]  = 0;
+      aileron_gain = 1;
+      elevator_gain = 1;
+      m_c_r = 30;
+      BOUND_CONTROLS(u_in.r, -9600, 9600);
+      
+//       if(radio_control.values[6] > 8000) {
+//         pitch_coef[0]  = 0;
+//         pitch_coef[1]  = 0;
+//         pitch_coef[2]  = 0;
+//         pitch_coef[3]  = 0;
+//         elevator_gain = elevator_gain_goal;
+//       }
+//       else if(radio_control.values[6] < -8000) {
+//         pitch_coef[0]  = pitch_coef_orig[0];
+//         pitch_coef[1]  = pitch_coef_orig[1];
+//         pitch_coef[2]  = pitch_coef_orig[2];
+//         pitch_coef[3]  = pitch_coef_orig[3];
+//         elevator_gain = 0;
+//       }
+//       else {
+//         pitch_coef[0]  = (pitch_coef_orig[0] *(8000 - radio_control.values[6]))/16000;
+//         pitch_coef[1]  = (pitch_coef_orig[1] *(8000 - radio_control.values[6]))/16000;
+//         pitch_coef[2]  = (pitch_coef_orig[2] *(8000 - radio_control.values[6]))/16000;
+//         pitch_coef[3]  = (pitch_coef_orig[3] *(8000 - radio_control.values[6]))/16000;
+//         elevator_gain = (elevator_gain_goal *(8000 + radio_control.values[6]))/16000;
+//       }
     }
     else {
+      yaw_coef[0]  = yaw_coef_orig[0];
+      yaw_coef[1]  = yaw_coef_orig[1];
+      yaw_coef[2]  = yaw_coef_orig[2];
+      yaw_coef[3]  = yaw_coef_orig[3];
+      
       pitch_coef[0]  = pitch_coef_orig[0];
       pitch_coef[1]  = pitch_coef_orig[1];
       pitch_coef[2]  = pitch_coef_orig[2];
       pitch_coef[3]  = pitch_coef_orig[3];
       elevator_gain = 0;
+      aileron_gain = 3;
+      m_c_r = 170;
+      BOUND_CONTROLS(u_in.r, -half_thrust, half_thrust);
     }
-  }
-  else {
-    pitch_coef[0]  = pitch_coef_orig[0];
-    pitch_coef[1]  = pitch_coef_orig[1];
-    pitch_coef[2]  = pitch_coef_orig[2];
-    pitch_coef[3]  = pitch_coef_orig[3];
-    elevator_gain = 4;
-    aileron_gain = 6;
-    /*  PID feedback */
-    fb_commands[COMMAND_ROLL] = 
-        GAIN_PRESCALER_P * gains->p.x  * QUAT1_FLOAT_OF_BFP(att_err->qx) / 4 +
-        GAIN_PRESCALER_D * gains->d.x  * RATE_FLOAT_OF_BFP(rate_err->p) / 16 +
-        GAIN_PRESCALER_I * gains->i.x  * QUAT1_FLOAT_OF_BFP(sum_err->qx) / 2;
-    
-    fb_commands[COMMAND_PITCH] = 
-        GAIN_PRESCALER_P * gains->p.y  * QUAT1_FLOAT_OF_BFP(att_err->qy) / 4 +
-        GAIN_PRESCALER_D * gains->d.y  * RATE_FLOAT_OF_BFP(rate_err->q)  / 16 +
-        GAIN_PRESCALER_I * gains->i.y  * QUAT1_FLOAT_OF_BFP(sum_err->qy) / 2;
-    
-    fb_commands[COMMAND_YAW] = 
-        GAIN_PRESCALER_P * gains->p.z  * QUAT1_FLOAT_OF_BFP(att_err->qz) / 4 +
-        GAIN_PRESCALER_D * gains->d.z  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16 +
-        GAIN_PRESCALER_I * gains->i.z  * QUAT1_FLOAT_OF_BFP(sum_err->qz) / 2;
+//   }
+//   else {
+//     pitch_coef[0]  = pitch_coef_orig[0];
+//     pitch_coef[1]  = pitch_coef_orig[1];
+//     pitch_coef[2]  = pitch_coef_orig[2];
+//     pitch_coef[3]  = pitch_coef_orig[3];
+//     yaw_coef[0]  = yaw_coef_orig[0];
+//     yaw_coef[1]  = yaw_coef_orig[1];
+//     yaw_coef[2]  = yaw_coef_orig[2];
+//     yaw_coef[3]  = yaw_coef_orig[3];
+//     elevator_gain = 4;
+//     aileron_gain = 6;
+//     m_c_r = 170;
+//     /*  PID feedback */
+//     fb_commands[COMMAND_ROLL] = 
+//         GAIN_PRESCALER_P * gains->p.x  * QUAT1_FLOAT_OF_BFP(att_err->qx) / 4 +
+//         GAIN_PRESCALER_D * gains->d.x  * RATE_FLOAT_OF_BFP(rate_err->p) / 16 +
+//         GAIN_PRESCALER_I * gains->i.x  * QUAT1_FLOAT_OF_BFP(sum_err->qx) / 2;
+//     
+//     fb_commands[COMMAND_PITCH] = 
+//         GAIN_PRESCALER_P * gains->p.y  * QUAT1_FLOAT_OF_BFP(att_err->qy) / 4 +
+//         GAIN_PRESCALER_D * gains->d.y  * RATE_FLOAT_OF_BFP(rate_err->q)  / 16 +
+//         GAIN_PRESCALER_I * gains->i.y  * QUAT1_FLOAT_OF_BFP(sum_err->qy) / 2;
+//     
+//     fb_commands[COMMAND_YAW] = 
+//         GAIN_PRESCALER_P * gains->p.z  * QUAT1_FLOAT_OF_BFP(att_err->qz) / 4 +
+//         GAIN_PRESCALER_D * gains->d.z  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16 +
+//         GAIN_PRESCALER_I * gains->i.z  * QUAT1_FLOAT_OF_BFP(sum_err->qz) / 2;
+// 
+//     FLOAT_RATES_ZERO(indi_u);
+//     FLOAT_RATES_ZERO(indi_du);
+//     FLOAT_RATES_ZERO(u_act_dyn);
+//     FLOAT_RATES_ZERO(u_in);
+//     FLOAT_RATES_ZERO(udot);
+//     FLOAT_RATES_ZERO(udotdot);
+//   }
 
+  //Propagate input filters
+  stabilization_indi_filter_inputs();
+
+  //Don't increment if thrust is off
+  if(stabilization_cmd[COMMAND_THRUST]<300) {
     FLOAT_RATES_ZERO(indi_u);
     FLOAT_RATES_ZERO(indi_du);
     FLOAT_RATES_ZERO(u_act_dyn);
@@ -465,9 +501,9 @@ void stabilization_indi_filter_gyro(void) {
 void stabilization_indi_filter_inputs(void) {
 
   //actuator dynamics
-  u_act_dyn.p = u_act_dyn.p + 0.02*( u_in.p - u_act_dyn.p);
-  u_act_dyn.q = u_act_dyn.q + 0.02*( u_in.q - u_act_dyn.q);
-  u_act_dyn.r = u_act_dyn.r + 0.02*( u_in.r - u_act_dyn.r);
+  u_act_dyn.p = u_act_dyn.p + 0.03*( u_in.p - u_act_dyn.p);
+  u_act_dyn.q = u_act_dyn.q + 0.03*( u_in.q - u_act_dyn.q);
+  u_act_dyn.r = u_act_dyn.r + 0.03*( u_in.r - u_act_dyn.r);
 
   //Sensor dynamics (same filter as on gyro measurements)
   indi_u.p = indi_u.p + udot.p/512.0;

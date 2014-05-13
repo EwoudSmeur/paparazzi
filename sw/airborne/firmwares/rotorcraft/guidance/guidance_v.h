@@ -93,6 +93,8 @@ extern bool_t guidance_v_adapt_throttle_enabled;
 
 
 extern int32_t guidance_v_thrust_coeff;
+extern int32_t v_control_pitch;
+extern float alt_pitch_gain;
 
 extern int32_t guidance_v_kp; ///< vertical control P-gain
 extern int32_t guidance_v_kd; ///< vertical control D-gain
