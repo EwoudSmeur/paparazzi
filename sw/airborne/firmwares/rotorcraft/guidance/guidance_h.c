@@ -105,6 +105,7 @@ int32_t airspeed_sp_heading_disp;
 bool_t guidance_hovering;
 int32_t horizontal_speed_gain;
 int32_t norm_ref_airspeed;
+int32_t wind_low_pass;
 
 static void guidance_h_update_reference(void);
 static void guidance_h_traj_run(bool_t in_flight);
@@ -142,7 +143,7 @@ static void send_hover_loop(void) {
                            &guidance_h_pos_err.y,
                            &airspeed_sp_heading_disp,
                            &omega_disp,
-                           &norm_sp_airspeed_disp,
+                           &norm_ref_airspeed,
                            &heading_diff_disp,
                            &guidance_h_ypr_sp.theta,
                            &guidance_h_ypr_sp.phi,
@@ -195,6 +196,7 @@ void guidance_h_init(void) {
   high_res_psi = 0;
   guidance_hovering = true;
   horizontal_speed_gain = 4;
+  wind_low_pass = 1000;
   norm_ref_airspeed = 0;
   INT_VECT2_ZERO(wind_estimate);
   FLOAT_VECT2_ZERO(wind_estimate_f);
@@ -716,9 +718,9 @@ void guidance_h_determine_wind_estimate(void) {
 
   //Low pass wind_estimate, because we know the wind usually only changes slowly
   //But not too slow, because the wind_estimate is also an adaptive element for the airspeed model inaccuracies
-  VECT2_SMUL(wind_estimate_f, wind_estimate_f,1000);
+  VECT2_SMUL(wind_estimate_f, wind_estimate_f,wind_low_pass);
   VECT2_ADD(wind_estimate_f, wind_estimate_measured_f);
-  VECT2_SDIV(wind_estimate_f, wind_estimate_f, 1001);
+  VECT2_SDIV(wind_estimate_f, wind_estimate_f, wind_low_pass+1);
 
   // go back to integers
   wind_estimate.x = POS_BFP_OF_REAL(wind_estimate_f.x);

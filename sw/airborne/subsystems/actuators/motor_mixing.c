@@ -167,14 +167,13 @@ void motor_mixing_run(bool_t motors_on, bool_t override_on, pprz_t in_cmd[] ) {
     int32_t max_cmd = INT32_MIN;
     /* do the mixing in float to avoid overflows, implicitly casted back to int32_t */
     for (i=0; i<MOTOR_MIXING_NB_MOTOR; i++) {
-//       motor_mixing.commands[i] = MOTOR_MIXING_MIN_MOTOR +
-//         (thrust_coef[i] * in_cmd[COMMAND_THRUST] +
-//          roll_coef[i]   * in_cmd[COMMAND_ROLL]   +
-//          pitch_coef[i]  * in_cmd[COMMAND_PITCH]  +
-//          yaw_coef[i]    * in_cmd[COMMAND_YAW]    +
-//          motor_mixing.trim[i]) / MOTOR_MIXING_SCALE *
-//         (MOTOR_MIXING_MAX_MOTOR - MOTOR_MIXING_MIN_MOTOR) / MAX_PPRZ;
-      motor_mixing.commands[i] = MOTOR_MIXING_MIN_MOTOR;
+      motor_mixing.commands[i] = MOTOR_MIXING_MIN_MOTOR +
+        (thrust_coef[i] * in_cmd[COMMAND_THRUST] +
+         roll_coef[i]   * in_cmd[COMMAND_ROLL]   +
+         pitch_coef[i]  * in_cmd[COMMAND_PITCH]  +
+         yaw_coef[i]    * in_cmd[COMMAND_YAW]    +
+         motor_mixing.trim[i]) / MOTOR_MIXING_SCALE *
+        (MOTOR_MIXING_MAX_MOTOR - MOTOR_MIXING_MIN_MOTOR) / MAX_PPRZ;
       if (motor_mixing.commands[i] < min_cmd)
         min_cmd = motor_mixing.commands[i];
       if (motor_mixing.commands[i] > max_cmd)
