@@ -1,3 +1,9 @@
+Paparazzi 5.1.0_testing
+=======================
+
+First release candidate for next stable release.
+
+
 Paparazzi 5.1_devel
 ===================
 
@@ -12,12 +18,22 @@ General
 - GCS: higher max zoom level
   [#632] (https://github.com/paparazzi/paparazzi/issues/632)
 - GCS: different aircraft icons (added flying wing, quadrotor)
+- GCS: proper GPSd home icon resizing
+  [#601] (https://github.com/paparazzi/paparazzi/issues/601)
 - GUI for selecting the desired active list of airframes (select_conf.py)
   [#536] (https://github.com/paparazzi/paparazzi/issues/536)
 - paparazzi center: flash mode selection via drop down menu
   [#597] (https://github.com/paparazzi/paparazzi/pull/597)
 - add support for new telemetry types
   [#589] (https://github.com/paparazzi/paparazzi/pull/589)
+- build aircraft firmware in var/aircrafts/'ac_name'
+  [#601] (https://github.com/paparazzi/paparazzi/issues/601)
+- parallel build of firmwares with J=AUTO
+  [#683] (https://github.com/paparazzi/paparazzi/pull/683)
+- add simple verify to flashing via dfu-util
+  [#673] (https://github.com/paparazzi/paparazzi/pull/673)
+- app_server: connection between the ground station and a GCS Android application
+  (https://github.com/paparazzi/PPRZonDroid)
 
 Simulation
 ----------
@@ -38,6 +54,14 @@ Hardware support
   - ST LSM303DLHC 3D accelerometer and magnetometer (I2C)
   - converted barometers MS5611, BMP085 to generic peripherals
     [#515] (https://github.com/paparazzi/paparazzi/pull/515)
+- I2C watchdog for STM32
+  [#662] (https://github.com/paparazzi/paparazzi/pull/662)
+- Dual PWM servo driver
+  [#678] (https://github.com/paparazzi/paparazzi/pull/678)
+- SBus radio control driver (single and dual receivers)
+  [#485] (https://github.com/paparazzi/paparazzi/pull/485)
+  [#674] (https://github.com/paparazzi/paparazzi/pull/674)
+  [#693] (https://github.com/paparazzi/paparazzi/pull/693)
 
 Airborne
 --------
@@ -58,8 +82,15 @@ Airborne
   [#644] (https://github.com/paparazzi/paparazzi/pull/644)
 - INS alt_float: remove ALT_KALMAN_ENABLED
   [#594] (https://github.com/paparazzi/paparazzi/issues/594)
+- IIR filter for horizontal position Kalman Filter
+  [#677] (https://github.com/paparazzi/paparazzi/pull/677)
 - barometer interface via ABI
   [#525] (https://github.com/paparazzi/paparazzi/pull/525)
+  - baros always output pressure in Pascal
+  - standard atmosphere model is used to convert pressure to altitude
+  - INS_BARO_SENS is hence not needed anymore
+- sonar interface using ABI
+  [#654] (https://github.com/paparazzi/paparazzi/pull/654)
 - AHRS int_cmpl_quat frequency scaling
   [#371] (https://github.com/paparazzi/paparazzi/pull/371)
 
@@ -72,16 +103,29 @@ Rotorcraft firmware
 - guidance improvements
   [#539] (https://github.com/paparazzi/paparazzi/pull/539)
   [#546] (https://github.com/paparazzi/paparazzi/pull/546)
+- horizontal guidance: dynamically adjustable max_speed
+  [#664] (https://github.com/paparazzi/paparazzi/pull/664)
 - adaptive thrust estimation limits
   [#495] (https://github.com/paparazzi/paparazzi/issues/495)
 - improve in_flight detection heuristic
   [#469] (https://github.com/paparazzi/paparazzi/pull/469)
+- stabilization quaternion: fix scale of angle in 2nd order model
+  [#664] (https://github.com/paparazzi/paparazzi/pull/663)
+- HITL using reference position to fake GPS
+  [#640] (https://github.com/paparazzi/paparazzi/pull/640)
+- add a HOME mode
+  [#562] (https://github.com/paparazzi/paparazzi/pull/562)
+- nav: split waypoint proximity check from time spend at waypoint
+  [#690] (https://github.com/paparazzi/paparazzi/pull/690)
 
 Fixedwing firmware
 ------------------
 
 - alt_float: remove ALT_KALMAN_ENABLED
   [#594] (https://github.com/paparazzi/paparazzi/issues/594)
+- extra navigation routines as modules
+  [#512] (https://github.com/paparazzi/paparazzi/pull/512)
+- NavSetAltitudeReferenceHere added
 
 
 Paparazzi 5.0.4_stable

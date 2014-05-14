@@ -43,6 +43,7 @@
     <field name="agl"    type="float" unit="m"/>
     <field name="unix_time"    type="float" unit="s (Unix time)"/>
     <field name="itow"   type="uint32" unit="ms"/>
+    <field name="airspeed" type="float" unit="m/s"/>
   </message>
 */
 
@@ -106,7 +107,7 @@ static void update_gps(struct gps_data_t *gpsdata,
             printf("sending gps info viy Ivy: lat %g, lon %g, speed %g, course %g, alt %g, climb %g\n",
                    gpsdata->fix.latitude, gpsdata->fix.longitude, fix_speed, fix_track, fix_altitude, fix_climb);
 
-        IvySendMsg("%s %s %s %f %f %f %f %f %f %f %f %f %f %f %d",
+        IvySendMsg("%s %s %s %f %f %f %f %f %f %f %f %f %f %f %d %f",
                 MSG_DEST,
                 MSG_NAME,
                 MSG_ID, // ac_id
@@ -121,7 +122,8 @@ static void update_gps(struct gps_data_t *gpsdata,
                 fix_climb,
                 0.0, // agl
                 gpsdata->fix.time,
-                0); // itow
+                0, // itow
+                0.0); // airspeed
 
         fix_time = gpsdata->fix.time;
     }

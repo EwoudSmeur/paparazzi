@@ -317,10 +317,11 @@ let () =
 
     let value = fun attrib -> ExtXml.attrib aircraft_xml attrib in
 
-    let aircraft_dir = Env.paparazzi_home // "var" // aircraft in
+    let aircraft_dir = Env.paparazzi_home // "var" // "aircrafts" // aircraft in
     let aircraft_conf_dir = aircraft_dir // "conf" in
 
     mkdir (Env.paparazzi_home // "var");
+    mkdir (Env.paparazzi_home // "var" // "aircrafts");
     mkdir aircraft_dir;
     mkdir (aircraft_dir // "fbw");
     mkdir (aircraft_dir // "autopilot");

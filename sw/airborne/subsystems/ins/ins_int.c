@@ -76,6 +76,9 @@ static void sonar_cb(uint8_t sender_id, const float *distance);
 #ifndef INS_SONAR_OFFSET
 #define INS_SONAR_OFFSET 0.
 #endif
+#ifndef INS_SONAR_MIN_RANGE
+#define INS_SONAR_MIN_RANGE 0.001
+#endif
 #define VFF_R_SONAR_0 0.1
 #define VFF_R_SONAR_OF_M 0.2
 
@@ -101,8 +104,13 @@ PRINT_CONFIG_MSG("USE_INS_NAV_INIT defaulting to TRUE")
 
 /** default barometer to use in INS */
 #ifndef INS_BARO_ID
+#if USE_BARO_BOARD
 #define INS_BARO_ID BARO_BOARD_SENDER_ID
+#else
+#define INS_BARO_ID ABI_BROADCAST
 #endif
+#endif
+PRINT_CONFIG_VAR(INS_BARO_ID)
 abi_event baro_ev;
 static void baro_cb(uint8_t sender_id, const float *pressure);
 
@@ -195,7 +203,12 @@ void ins_reset_local_origin(void) {
 
 void ins_reset_altitude_ref(void) {
 #if USE_GPS
-  ins_impl.ltp_def.lla.alt = gps.lla_pos.alt;
+  struct LlaCoor_i lla = {
+    state.ned_origin_i.lla.lon,
+    state.ned_origin_i.lla.lat,
+    gps.lla_pos.alt
+  };
+  ltp_def_from_lla_i(&ins_impl.ltp_def, &lla),
   ins_impl.ltp_def.hmsl = gps.hmsl;
   stateSetLocalOrigin_i(&ins_impl.ltp_def);
 #endif
@@ -343,10 +356,7 @@ static void sonar_cb(uint8_t __attribute__((unused)) sender_id, const float *dis
 #endif
 
   /* update filter assuming a flat ground */
-  if (*distance < INS_SONAR_MAX_RANGE
-#ifdef INS_SONAR_MIN_RANGE
-      && *distance > INS_SONAR_MIN_RANGE
-#endif
+  if (*distance < INS_SONAR_MAX_RANGE && *distance > INS_SONAR_MIN_RANGE
 #ifdef INS_SONAR_THROTTLE_THRESHOLD
       && stabilization_cmd[COMMAND_THRUST] < INS_SONAR_THROTTLE_THRESHOLD
 #endif

@@ -725,10 +725,12 @@ let create_ac = fun alert (geomap:G.widget) (acs_notebook:GPack.notebook) (ac_id
                 fprintf stderr "Warning: %s not setable from GCS strip (i.e. not listed in the xml settings file)\n" setting_name in
 
           connect "flight_altitude" (fun f -> ac.strip#connect_shift_alt (fun x -> f (ac.target_alt+.x)));
-          connect "launch" ac.strip#connect_launch;
+          connect "launch" ~warning:false ac.strip#connect_launch;
           connect "kill_throttle" ac.strip#connect_kill;
-          connect "nav_shift" ac.strip#connect_shift_lateral;
-          connect "pprz_mode" ac.strip#connect_mode;
+          (* try to connect either pprz_mode (fixedwing) or autopilot_mode (rotorcraft) *)
+          connect "pprz_mode" ~warning:false (ac.strip#connect_mode 2.);
+          connect "autopilot_mode" ~warning:false (ac.strip#connect_mode 13.);
+          connect "nav_shift" ~warning:false  ac.strip#connect_shift_lateral;
           connect "autopilot_flight_time" ac.strip#connect_flight_time;
           let get_ac_unix_time = fun () -> ac.last_unix_time in
           connect ~warning:false "snav_desired_tow" (ac.strip#connect_apt get_ac_unix_time);
@@ -753,8 +755,7 @@ let create_ac = fun alert (geomap:G.widget) (acs_notebook:GPack.notebook) (ac_id
               let gps_reset_id = settings_tab#assoc "gps.reset" in
               gps_page#connect_reset
                 (fun x -> dl_setting_callback gps_reset_id (float x))
-            with Not_found ->
-              prerr_endline "Warning: GPS reset not setable from GCS (i.e. 'gps.reset' not listed in the xml settings file)"
+            with Not_found -> ()
           end
       | None -> ()
   end;
@@ -1048,13 +1049,24 @@ module GCS_icon = struct
   let timeout = 10000 (* ms : time before changing to outdated color *)
 
   let display = fun (geomap:G.widget) vs ->
+    let lat = Pprz.float_assoc "lat" vs
+    and lon = Pprz.float_assoc "long" vs in
+    let wgs84 = LL.make_geo_deg lat lon in
+
     let item =
       match !status with
           None -> (* First call, create the graphical object *)
-            GnoCanvas.ellipse ~fill_color ~props:[`WIDTH_PIXELS 2]
+            let item = GnoCanvas.ellipse ~fill_color ~props:[`WIDTH_PIXELS 2]
               ~x1: ~-.radius ~y1:  ~-.radius ~x2:radius ~y2:radius
-              geomap#canvas#root
-        | Some (item, timeout_handle) -> (* Remove the timeouted color modification *)
+              geomap#canvas#root in
+            (* connect callback on zoom change *)
+            ignore(geomap#zoom_adj#connect#value_changed (fun () ->
+              match !status with
+              | None -> ()
+              | Some (item, _, wgs84) -> geomap#move_item ~z:geomap#current_zoom item wgs84
+            ));
+            item
+        | Some (item, timeout_handle, _) -> (* Remove the timeouted color modification *)
           Glib.Timeout.remove timeout_handle;
           item in
 
@@ -1062,14 +1074,10 @@ module GCS_icon = struct
     let change_color_if_not_updated =
       Glib.Timeout.add 10000 (fun ()  -> item#set [`OUTLINE_COLOR outdated_color]; false) in
 
-    (* Store the object and the timeout to change its color *)
-    status := Some (item, change_color_if_not_updated);
+    (* Store the object, the position and the timeout to change its color *)
+    status := Some (item, change_color_if_not_updated, wgs84);
 
-    let lat = Pprz.float_assoc "lat" vs
-    and lon = Pprz.float_assoc "long" vs in
-    let wgs84 = LL.make_geo_deg lat lon in
-
-    geomap#move_item item wgs84
+    geomap#move_item ~z:geomap#current_zoom item wgs84
 end (* module GCS_icon *)
 
 

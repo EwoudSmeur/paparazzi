@@ -91,6 +91,7 @@ extern struct Int32Vect2 guidance_h_airspeed_sp;
 extern int32_t guidance_h_pgain;
 extern int32_t guidance_h_dgain;
 extern int32_t guidance_h_igain;
+extern int32_t guidance_h_vgain;
 extern int32_t guidance_h_again;
 
 extern int32_t transition_percentage;

@@ -58,8 +58,13 @@ PRINT_CONFIG_MSG("USE_BAROMETER is TRUE: Using baro for altitude estimation.")
 
 // Baro event on ABI
 #ifndef INS_BARO_ID
+#if USE_BARO_BOARD
 #define INS_BARO_ID BARO_BOARD_SENDER_ID
+#else
+#define INS_BARO_ID ABI_BROADCAST
 #endif
+#endif
+PRINT_CONFIG_VAR(INS_BARO_ID)
 abi_event baro_ev;
 static void baro_cb(uint8_t sender_id, const float *pressure);
 #endif /* USE_BAROMETER */
@@ -168,8 +173,16 @@ void ins_update_gps(void) {
 
 #if !USE_BAROMETER
   float falt = gps.hmsl / 1000.0f;
-  alt_kalman(falt);
-  ins_impl.alt_dot = -gps.ned_vel.z / 100.0f;
+  if (ins_impl.reset_alt_ref) {
+    ins_impl.reset_alt_ref = FALSE;
+    ins_impl.alt = falt;
+    ins_impl.alt_dot = 0.0f;
+    alt_kalman_reset();
+  }
+  else {
+    alt_kalman(falt);
+    ins_impl.alt_dot = -gps.ned_vel.z / 100.0f;
+  }
 #endif
   utm.alt = ins_impl.alt;
   // set position
