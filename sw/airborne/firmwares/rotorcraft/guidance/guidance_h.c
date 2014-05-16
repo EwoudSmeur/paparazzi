@@ -721,6 +721,7 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
 
   // go back to angle_frac
   ypr_sp->psi = high_res_psi >> (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC);
+  ypr_sp->theta = ypr_sp->theta + v_control_pitch;
 }
 
 void guidance_h_position_to_airspeed(void) {
