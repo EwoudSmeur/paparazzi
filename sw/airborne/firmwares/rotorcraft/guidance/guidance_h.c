@@ -65,6 +65,9 @@ PRINT_CONFIG_VAR(GUIDANCE_H_USE_SPEED_REF)
 #define GUIDANCE_H_APPROX_FORCE_BY_THRUST FALSE
 #endif
 
+// max airspeed for quadshot guidance
+#define MAX_AIRSPEED 15
+
 
 uint8_t guidance_h_mode;
 bool_t guidance_h_use_ref;
@@ -90,6 +93,7 @@ struct Int32Vect2 guidance_h_airspeed_sp;
 struct Int32Vect2 guidance_h_airspeed_ref;
 struct Int32Vect2 wind_estimate;
 struct FloatVect2 wind_estimate_f;
+struct Int32Vect2 guidance_h_ref_airspeed;
 
 int32_t guidance_h_pgain;
 int32_t guidance_h_dgain;
@@ -109,6 +113,7 @@ bool_t guidance_hovering;
 int32_t horizontal_speed_gain;
 int32_t norm_ref_airspeed;
 int32_t wind_low_pass;
+int32_t max_airspeed = MAX_AIRSPEED;
 
 static void guidance_h_update_reference(void);
 static void guidance_h_traj_run(bool_t in_flight);
@@ -141,7 +146,7 @@ static void send_hover_loop(void) {
                            &guidance_h_airspeed_sp.y,
                            &(pos->x), &(pos->y),
                            &(speed->x), &(speed->y),
-                           &(accel->x), &(accel->y),
+                           &wind_estimate.x, &wind_estimate.y,
                            &guidance_h_pos_err.x,
                            &guidance_h_pos_err.y,
                            &airspeed_sp_heading_disp,
@@ -175,6 +180,24 @@ static void send_tune_hover(void) {
       &(stateGetNedToBodyEulers_i()->psi));
 }
 
+static void send_vel_guidance(void) {
+  struct NedCoor_i* pos = stateGetPositionNed_i();
+  struct NedCoor_i* speed = stateGetSpeedNed_i();
+  DOWNLINK_SEND_VEL_GUIDANCE(DefaultChannel, DefaultDevice,
+                           &(pos->x), &(pos->y),
+                           &(speed->x), &(speed->y),
+                           &wind_estimate.x, &wind_estimate.y,
+                           &guidance_h_pos_err.x,
+                           &guidance_h_pos_err.y,
+                           &guidance_h_airspeed_sp.x,
+                           &guidance_h_airspeed_sp.y,
+                           &norm_ref_airspeed,
+                           &heading_diff_disp,
+                           &guidance_h_ypr_sp.phi,
+                           &guidance_h_ypr_sp.theta,
+                           &guidance_h_ypr_sp.psi);
+}
+
 #endif
 
 void guidance_h_init(void) {
@@ -203,6 +226,7 @@ void guidance_h_init(void) {
   wind_low_pass = 1000;
   norm_ref_airspeed = 0;
   INT_VECT2_ZERO(wind_estimate);
+  INT_VECT2_ZERO(guidance_h_ref_airspeed);
   FLOAT_VECT2_ZERO(wind_estimate_f);
 
 #if PERIODIC_TELEMETRY
@@ -210,6 +234,7 @@ void guidance_h_init(void) {
   register_periodic_telemetry(DefaultPeriodic, "HOVER_LOOP", send_hover_loop);
   register_periodic_telemetry(DefaultPeriodic, "GUIDANCE_H_REF", send_href);
   register_periodic_telemetry(DefaultPeriodic, "ROTORCRAFT_TUNE_HOVER", send_tune_hover);
+  register_periodic_telemetry(DefaultPeriodic, "VEL_GUIDANCE", send_vel_guidance);
 #endif
 }
 
@@ -386,6 +411,7 @@ void guidance_h_run(bool_t  in_flight) {
       else {
 
 #if QUADSHOT_NAVIGATION
+        INT32_VECT2_NED_OF_ENU(guidance_h_pos_sp, navigation_target);
         guidance_h_determine_wind_estimate();
         guidance_h_position_to_airspeed();
 
@@ -598,7 +624,7 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
   //changes between flight regimes should be handled
 
   //determine the heading of the airspeed_sp vector
-  int32_t omega;
+  int32_t omega = 0;
   float airspeed_sp_heading = atan2f( (float) POS_FLOAT_OF_BFP(guidance_h_airspeed_sp.y), (float) POS_FLOAT_OF_BFP(guidance_h_airspeed_sp.x));
   //only for debugging
   airspeed_sp_heading_disp = (int32_t) (DegOfRad(airspeed_sp_heading));
@@ -616,7 +642,7 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
 
   //reference goes with a steady pace towards the setpoint airspeed
   //hold ref norm below 4 m/s until heading is aligned
-  if( !((norm_sp_airspeed > (4<<8)) && (norm_ref_airspeed < (4<<8)) && (norm_ref_airspeed > ((4<<8)-10)) && (fabs(heading_diff) > (15.0/180.0*3.14))) ) 
+  if( !((norm_sp_airspeed > (4<<8)) && (norm_ref_airspeed < (4<<8)) && (norm_ref_airspeed > ((4<<8)-10)) && (fabs(heading_diff) > (15.0/180.0*3.14))) )
     norm_ref_airspeed = norm_ref_airspeed +  2*( (int32_t) (norm_sp_airspeed > norm_ref_airspeed) * 2 - 1);
 
   norm_sp_airspeed_disp = norm_sp_airspeed;
@@ -626,15 +652,18 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
   PPRZ_ITRIG_SIN(s_psi, psi);
   PPRZ_ITRIG_COS(c_psi, psi);
 
+  guidance_h_ref_airspeed.x = (norm_ref_airspeed * c_psi) >> INT32_TRIG_FRAC;
+  guidance_h_ref_airspeed.y = (norm_ref_airspeed * s_psi) >> INT32_TRIG_FRAC;
+
   if(norm_ref_airspeed < (4<<8)) {
     /// if required speed is lower than 4 m/s act like a rotorcraft
     // translate speed_sp into bank angle and heading
 
     // change heading to direction of airspeed, faster if the airspeed is higher
     if(heading_diff > 0.0)
-      omega = (norm_ref_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/5;
+      omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/5;
     else if(heading_diff < 0.0)
-      omega = (norm_ref_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/-5;
+      omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/-5;
 
     // 2) calculate roll/pitch commands
     struct Int32Vect2 hover_sp;
@@ -694,7 +723,6 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
   ypr_sp->psi = high_res_psi >> (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC);
 }
 
-#define MAX_AIRSPEED (15<<8)
 void guidance_h_position_to_airspeed(void) {
   /* compute position error    */
   VECT2_DIFF(guidance_h_pos_err, guidance_h_pos_sp, *stateGetPositionNed_i());
@@ -705,19 +733,22 @@ void guidance_h_position_to_airspeed(void) {
   // Add the wind to get the airspeed setpoint
   VECT2_ADD(guidance_h_airspeed_sp, wind_estimate);
 
-  //limit the airspeed setpoint to 15 m/s, because else saturation+windup will occur
+//   limit the airspeed setpoint to 15 m/s, because else saturation+windup will occur
   int32_t norm_airspeed_sp;
   INT32_VECT2_NORM(norm_airspeed_sp, guidance_h_airspeed_sp);
-  if(norm_airspeed_sp > MAX_AIRSPEED) {
-    guidance_h_airspeed_sp.x = guidance_h_airspeed_sp.x*MAX_AIRSPEED/norm_airspeed_sp;
-    guidance_h_airspeed_sp.y = guidance_h_airspeed_sp.y*MAX_AIRSPEED/norm_airspeed_sp;
+  if(norm_airspeed_sp > (max_airspeed<<8)) {
+    guidance_h_airspeed_sp.x = guidance_h_airspeed_sp.x*(max_airspeed<<8)/norm_airspeed_sp;
+    guidance_h_airspeed_sp.y = guidance_h_airspeed_sp.y*(max_airspeed<<8)/norm_airspeed_sp;
   }
 }
 
 void guidance_h_determine_wind_estimate(void) {
+  
   /* compute speed error    */
   struct Int32Vect2 wind_estimate_measured;
-  VECT2_DIFF(wind_estimate_measured, guidance_h_airspeed_sp, *stateGetSpeedNed_i());
+  struct Int32Vect2 measured_ground_speed;
+  INT32_VECT2_RSHIFT(measured_ground_speed, *stateGetSpeedNed_i(), 11);
+  VECT2_DIFF(wind_estimate_measured, guidance_h_ref_airspeed, measured_ground_speed );
 
   //use float values for the filter
   struct FloatVect2 wind_estimate_measured_f;

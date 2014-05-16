@@ -31,6 +31,9 @@
       <dl_setting var="flight_altitude" MIN="0" STEP="0.1" MAX="400" module="navigation" unit="m" handler="SetFlightAltitude"/>
       <dl_setting var="nav_heading" MIN="0" STEP="1" MAX="360" module="navigation" unit="1/2^12r" alt_unit="deg" alt_unit_coef="0.0139882"/>
       <dl_setting var="nav_radius" MIN="-150" STEP="0.1" MAX="150" module="navigation" unit="m"/>
+      <dl_setting var="wind_low_pass" MIN="500" STEP="100" MAX="20000" module="guidance/guidance_h"/>
+      <dl_setting var="max_airspeed" MIN="4" STEP="1" MAX="15" module="guidance/guidance_h"/>
+      <dl_setting var="horizontal_speed_gain" MIN="1" STEP="1" MAX="15" module="guidance/guidance_h" shortname="hor_speed_div"/>
     </dl_settings>
 
   </dl_settings>
