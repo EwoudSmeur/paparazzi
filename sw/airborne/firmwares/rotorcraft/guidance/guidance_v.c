@@ -313,7 +313,7 @@ void guidance_v_run(bool_t in_flight) {
       }
       else if(norm_ref_airspeed > (8<<8)) { //if airspeed ref > 8 only pitch, 
         //at 15 m/s the thrust has to be 33%
-        stabilization_cmd[COMMAND_THRUST] = MAX_PPRZ/5 + (((norm_ref_airspeed - (8<<8)) / 7 * (MAX_PPRZ/3 - MAX_PPRZ/5))>>8);
+        stabilization_cmd[COMMAND_THRUST] = MAX_PPRZ/5 + (((norm_ref_airspeed - (8<<8)) / 7 * (MAX_PPRZ/3 - MAX_PPRZ/5))>>8) + (guidance_v_delta_t - MAX_PPRZ/2)/10;
         //stabilization_cmd[COMMAND_THRUST] = MAX_PPRZ/5;
 //         stabilization_cmd[COMMAND_THRUST] = ((norm_ref_airspeed - (8<<8)) / 7 * (MAX_PPRZ/3 - MAX_PPRZ/5))>>8 + 9600/5;
         //Control altitude with pitch, now only proportional control
@@ -321,9 +321,10 @@ void guidance_v_run(bool_t in_flight) {
         v_control_pitch = ANGLE_BFP_OF_REAL(alt_control_pitch/MAX_PPRZ);
       }
       else {//if airspeed ref > 4 && < 8 both
-        int32_t airspeed_transition = (norm_ref_airspeed - (4<<8))/4;
-        stabilization_cmd[COMMAND_THRUST] = (MAX_PPRZ/5 * airspeed_transition + guidance_v_delta_t * ( (1<<8) - airspeed_transition))>>8;
-        v_control_pitch = 0;
+        int32_t airspeed_transition = (norm_ref_airspeed - (4<<8))/4; //divide by 4 to scale it to 0-1 (<<8)
+        stabilization_cmd[COMMAND_THRUST] = ( (MAX_PPRZ/5 + (guidance_v_delta_t - MAX_PPRZ/2)/10) * airspeed_transition + guidance_v_delta_t * ( (1<<8) - airspeed_transition))>>8;
+        float alt_control_pitch =  (guidance_v_delta_t - MAX_PPRZ/2)*alt_pitch_gain;
+        v_control_pitch = INT_MULT_RSHIFT((int32_t) ANGLE_BFP_OF_REAL(alt_control_pitch/MAX_PPRZ), airspeed_transition, 8);
       }
 
 #else

@@ -4,12 +4,18 @@ More information on the Quadshot can be found at transition-robotics.com -->
 <airframe name="quadshot aspirin 2.1 spektrum">
 
   <servos driver="Pwm">
-    <servo name="A1" no="0" min="1000" neutral="1050" max="2000"/>
-    <servo name="A2" no="1" min="1000" neutral="1050" max="2000"/>
-    <servo name="B1"  no="2" min="1000" neutral="1050" max="2000"/>
-    <servo name="B2"  no="3" min="1000" neutral="1050" max="2000"/>
-    <servo name="ELEVON_LEFT"  no="4" min="1000" neutral="1500" max="2000"/>
-    <servo name="ELEVON_RIGHT"  no="5" min="1000" neutral="1500" max="2000"/>
+    <servo name="A1" no="0" min="1000" neutral="1100" max="2000"/>
+    <servo name="A2" no="1" min="1000" neutral="1100" max="2000"/>
+    <servo name="B1"  no="2" min="1000" neutral="1100" max="2000"/>
+    <servo name="B2"  no="3" min="1000" neutral="1100" max="2000"/>
+<!--    <servo name="A1" no="0" min="1000" neutral="1000" max="2000"/>
+    <servo name="A2" no="1" min="1000" neutral="1000" max="2000"/>
+    <servo name="B1"  no="2" min="1000" neutral="1000" max="2000"/>
+    <servo name="B2"  no="3" min="1000" neutral="1000" max="2000"/>-->
+<!--    <servo name="ELEVON_LEFT"  no="4" min="1150" neutral="1500" max="1850"/>
+    <servo name="ELEVON_RIGHT"  no="5" min="1150" neutral="1500" max="1850"/>-->
+    <servo name="ELEVON_LEFT"  no="4" min="1300" neutral="1500" max="1700"/>
+    <servo name="ELEVON_RIGHT"  no="5" min="1300" neutral="1500" max="1700"/>
   </servos>
 
   <commands>
@@ -35,15 +41,21 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <let var="elevator_feedback_right" value="+@PITCH"/>
 
  <!-- Here the gains are defined for the two feedback cases, hover and forward-->
-    <let var="hover_left"  value="3*$aileron_feedback_left"/>
-    <let var="hover_right" value="3*$aileron_feedback_right"/>
+    <let var="hover_left"  value="5*$aileron_feedback_left"/>
+    <let var="hover_right" value="5*$aileron_feedback_right"/>
 
-    <let var="forward_left"  value="aileron_gain*$aileron_feedback_left+elevator_gain*$elevator_feedback_left"/>
-    <let var="forward_right" value="aileron_gain*$aileron_feedback_right+elevator_gain*$elevator_feedback_right"/>
+<!--     if using INDI -->
+<!--    <let var="forward_left"  value="aileron_gain*$aileron_feedback_left+elevator_gain*$elevator_feedback_left"/>
+    <let var="forward_right" value="aileron_gain*$aileron_feedback_right+elevator_gain*$elevator_feedback_right"/>-->
+
+<!--     if using PID with gain scheduling -->
+    <let var="forward_left"  value="10*$aileron_feedback_left+7*$elevator_feedback_left"/>
+    <let var="forward_right" value="10*$aileron_feedback_right+7*$elevator_feedback_right"/>
 
  <!-- This statement tells the autopilot to use the hover feedback if in mode attitude direct and to use the forward feedback in all other cases-->
     <set servo="ELEVON_LEFT"    value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? $hover_left  : $forward_left" />
     <set servo="ELEVON_RIGHT"   value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? $hover_right  : $forward_right" />
+<!--     <set servo="ELEVON_RIGHT"   value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? 9000 : -9000" /> -->
   </command_laws>
 
   <section name="MIXING" prefix="MOTOR_MIXING_">
@@ -122,17 +134,17 @@ More information on the Quadshot can be found at transition-robotics.com -->
  <!-- These gains are used when the gain scheduling module is enabled (by loading it in the modules section)-->
   <section name ="GAIN_SETS">
     <define name="NUMBER_OF_GAINSETS" value="2"/>
-    <define name="SCHEDULING_VARIABLE" value="stabilization_cmd[COMMAND_THRUST]"/>
-    <define name="SCHEDULING_POINTS" value="{1000, 2000}"/>
-    <define name="SCHEDULING_VARIABLE_FRAC" value="0"/>
+    <define name="SCHEDULING_VARIABLE" value="norm_ref_airspeed"/>
+    <define name="SCHEDULING_POINTS" value="{4, 10}"/>
+    <define name="SCHEDULING_VARIABLE_FRAC" value="8"/>
 
     <define name="PHI_P" value="{230, 230}"/>
     <define name="PHI_D" value="{170, 170}"/>
     <define name="PHI_I" value="{30, 30}"/>
     <define name="PHI_DD" value="{0, 0}"/>
 
-    <define name="THETA_P" value="{200, 300}"/>
-    <define name="THETA_D" value="{100, 50}"/>
+    <define name="THETA_P" value="{300, 180}"/>
+    <define name="THETA_D" value="{50, 110}"/>
     <define name="THETA_I" value="{40, 40}"/>
     <define name="THETA_DD" value="{0, 0}"/>
 
@@ -275,7 +287,7 @@ More information on the Quadshot can be found at transition-robotics.com -->
     </load>-->
 
   <!-- Load this module to use multiple gain sets, which have to be specified in the gain sets section -->
-<!--     <load name="gain_scheduling.xml"/> -->
+    <load name="gain_scheduling.xml"/>
   </modules>
 
   <firmware name="rotorcraft">
@@ -312,8 +324,8 @@ More information on the Quadshot can be found at transition-robotics.com -->
 <!--    <subsystem name="telemetry"     type="transparent"/>-->
     <subsystem name="imu"           type="aspirin_v2.1"/>
     <subsystem name="gps"           type="ublox"/>
-    <!--<subsystem name="stabilization" type="int_quat"/>-->
-    <subsystem name="stabilization" type="indi"/>
+    <subsystem name="stabilization" type="int_quat"/>
+<!--     <subsystem name="stabilization" type="indi"/> -->
 
     <subsystem name="ahrs"          type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="1"/>

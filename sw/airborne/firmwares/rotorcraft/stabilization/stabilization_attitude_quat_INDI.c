@@ -304,13 +304,14 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
   //Save error for displaying purposes
   att_err_x = QUAT1_FLOAT_OF_BFP(att_err->qx);
 
-//   if(radio_control.values[5] > 0) {
+  if(radio_control.values[5] > 0) {
     /*  INDI feedback */
     fb_commands[COMMAND_ROLL] = u_in.p;
     fb_commands[COMMAND_PITCH] = u_in.q;
     fb_commands[COMMAND_YAW] = u_in.r;
     //if(transition_percentage > (90 << INT32_PERCENTAGE_FRAC)) {
     if( (norm_ref_airspeed > (8<<8)) || (transition_percentage > (90 << INT32_PERCENTAGE_FRAC)) ) {
+      //if in forward flight use ailerons for roll control and adjust gains
       yaw_coef[0]  = 0;
       yaw_coef[1]  = 0;
       yaw_coef[2]  = 0;
@@ -319,7 +320,8 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
       elevator_gain = 1;
       m_c_r = 30;
       BOUND_CONTROLS(u_in.r, -9600, 9600);
-      
+
+      //gradual switch to elevator instead of thrust differential (went unstable last time)
 //       if(radio_control.values[6] > 8000) {
 //         pitch_coef[0]  = 0;
 //         pitch_coef[1]  = 0;
@@ -343,6 +345,7 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
 //       }
     }
     else {
+      // if not in forward flight use hover settings
       yaw_coef[0]  = yaw_coef_orig[0];
       yaw_coef[1]  = yaw_coef_orig[1];
       yaw_coef[2]  = yaw_coef_orig[2];
@@ -357,47 +360,48 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
       m_c_r = 170;
       BOUND_CONTROLS(u_in.r, -half_thrust, half_thrust);
     }
-//   }
-//   else {
-//     pitch_coef[0]  = pitch_coef_orig[0];
-//     pitch_coef[1]  = pitch_coef_orig[1];
-//     pitch_coef[2]  = pitch_coef_orig[2];
-//     pitch_coef[3]  = pitch_coef_orig[3];
-//     yaw_coef[0]  = yaw_coef_orig[0];
-//     yaw_coef[1]  = yaw_coef_orig[1];
-//     yaw_coef[2]  = yaw_coef_orig[2];
-//     yaw_coef[3]  = yaw_coef_orig[3];
-//     elevator_gain = 4;
-//     aileron_gain = 6;
-//     m_c_r = 170;
-//     /*  PID feedback */
-//     fb_commands[COMMAND_ROLL] = 
-//         GAIN_PRESCALER_P * gains->p.x  * QUAT1_FLOAT_OF_BFP(att_err->qx) / 4 +
-//         GAIN_PRESCALER_D * gains->d.x  * RATE_FLOAT_OF_BFP(rate_err->p) / 16 +
-//         GAIN_PRESCALER_I * gains->i.x  * QUAT1_FLOAT_OF_BFP(sum_err->qx) / 2;
-//     
-//     fb_commands[COMMAND_PITCH] = 
-//         GAIN_PRESCALER_P * gains->p.y  * QUAT1_FLOAT_OF_BFP(att_err->qy) / 4 +
-//         GAIN_PRESCALER_D * gains->d.y  * RATE_FLOAT_OF_BFP(rate_err->q)  / 16 +
-//         GAIN_PRESCALER_I * gains->i.y  * QUAT1_FLOAT_OF_BFP(sum_err->qy) / 2;
-//     
-//     fb_commands[COMMAND_YAW] = 
-//         GAIN_PRESCALER_P * gains->p.z  * QUAT1_FLOAT_OF_BFP(att_err->qz) / 4 +
-//         GAIN_PRESCALER_D * gains->d.z  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16 +
-//         GAIN_PRESCALER_I * gains->i.z  * QUAT1_FLOAT_OF_BFP(sum_err->qz) / 2;
-// 
-//     FLOAT_RATES_ZERO(indi_u);
-//     FLOAT_RATES_ZERO(indi_du);
-//     FLOAT_RATES_ZERO(u_act_dyn);
-//     FLOAT_RATES_ZERO(u_in);
-//     FLOAT_RATES_ZERO(udot);
-//     FLOAT_RATES_ZERO(udotdot);
-//   }
+  }
+  else {
+    //iff using PID, set INDI to default values and run PID
+    pitch_coef[0]  = pitch_coef_orig[0];
+    pitch_coef[1]  = pitch_coef_orig[1];
+    pitch_coef[2]  = pitch_coef_orig[2];
+    pitch_coef[3]  = pitch_coef_orig[3];
+    yaw_coef[0]  = yaw_coef_orig[0];
+    yaw_coef[1]  = yaw_coef_orig[1];
+    yaw_coef[2]  = yaw_coef_orig[2];
+    yaw_coef[3]  = yaw_coef_orig[3];
+    elevator_gain = 4;
+    aileron_gain = 6;
+    m_c_r = 170;
+    /*  PID feedback */
+    fb_commands[COMMAND_ROLL] =
+        GAIN_PRESCALER_P * gains->p.x  * QUAT1_FLOAT_OF_BFP(att_err->qx) / 4 +
+        GAIN_PRESCALER_D * gains->d.x  * RATE_FLOAT_OF_BFP(rate_err->p) / 16 +
+        GAIN_PRESCALER_I * gains->i.x  * QUAT1_FLOAT_OF_BFP(sum_err->qx) / 2;
+
+    fb_commands[COMMAND_PITCH] =
+        GAIN_PRESCALER_P * gains->p.y  * QUAT1_FLOAT_OF_BFP(att_err->qy) / 4 +
+        GAIN_PRESCALER_D * gains->d.y  * RATE_FLOAT_OF_BFP(rate_err->q)  / 16 +
+        GAIN_PRESCALER_I * gains->i.y  * QUAT1_FLOAT_OF_BFP(sum_err->qy) / 2;
+
+    fb_commands[COMMAND_YAW] =
+        GAIN_PRESCALER_P * gains->p.z  * QUAT1_FLOAT_OF_BFP(att_err->qz) / 4 +
+        GAIN_PRESCALER_D * gains->d.z  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16 +
+        GAIN_PRESCALER_I * gains->i.z  * QUAT1_FLOAT_OF_BFP(sum_err->qz) / 2;
+
+    FLOAT_RATES_ZERO(indi_u);
+    FLOAT_RATES_ZERO(indi_du);
+    FLOAT_RATES_ZERO(u_act_dyn);
+    FLOAT_RATES_ZERO(u_in);
+    FLOAT_RATES_ZERO(udot);
+    FLOAT_RATES_ZERO(udotdot);
+  }
 
   //Propagate input filters
   stabilization_indi_filter_inputs();
 
-  //Don't increment if thrust is off
+  //Don't increment if thrust is off, to avoid windup on ground
   if(stabilization_cmd[COMMAND_THRUST]<300) {
     FLOAT_RATES_ZERO(indi_u);
     FLOAT_RATES_ZERO(indi_du);

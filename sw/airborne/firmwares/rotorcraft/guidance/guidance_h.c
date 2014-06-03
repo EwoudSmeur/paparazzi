@@ -223,7 +223,7 @@ void guidance_h_init(void) {
   high_res_psi = 0;
   guidance_hovering = true;
   horizontal_speed_gain = 4;
-  wind_low_pass = 1000;
+  wind_low_pass = 2000;
   norm_ref_airspeed = 0;
   INT_VECT2_ZERO(wind_estimate);
   INT_VECT2_ZERO(guidance_h_ref_airspeed);
@@ -661,9 +661,9 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
 
     // change heading to direction of airspeed, faster if the airspeed is higher
     if(heading_diff > 0.0)
-      omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/5;
+      omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/8;
     else if(heading_diff < 0.0)
-      omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/-5;
+      omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/-8;
 
     // 2) calculate roll/pitch commands
     struct Int32Vect2 hover_sp;
