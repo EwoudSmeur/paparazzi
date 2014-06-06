@@ -218,9 +218,9 @@ More information on the Quadshot can be found at transition-robotics.com -->
 
   <section name="AHRS" prefix="AHRS_">
     <!--     Delft magnetic field -->
-    <define name="H_X" value="0.39103582"/>
-    <define name="H_Y" value="0.00239644"/>
-    <define name="H_Z" value="0.92037234"/>
+    <define name="H_X" value="0.39049610"/>
+    <define name="H_Y" value="0.00278894"/>
+    <define name="H_Z" value="0.92060036"/>
   </section>
 
  <!-- Gains for horizontal navigation-->

@@ -113,7 +113,7 @@ int32_t guidance_v_z_sum_err;
 
 int32_t guidance_v_thrust_coeff;
 int32_t v_control_pitch;
-float alt_pitch_gain = 1.0;
+float alt_pitch_gain = 0.4;
 
 
 #define GuidanceVSetRef(_pos, _speed, _accel) { \

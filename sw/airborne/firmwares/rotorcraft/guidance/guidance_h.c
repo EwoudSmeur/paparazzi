@@ -114,6 +114,8 @@ int32_t horizontal_speed_gain;
 int32_t norm_ref_airspeed;
 int32_t wind_low_pass;
 int32_t max_airspeed = MAX_AIRSPEED;
+float max_turn_bank;
+float turn_bank_gain;
 
 static void guidance_h_update_reference(void);
 static void guidance_h_traj_run(bool_t in_flight);
@@ -222,9 +224,11 @@ void guidance_h_init(void) {
   transition_theta_offset = 0;
   high_res_psi = 0;
   guidance_hovering = true;
-  horizontal_speed_gain = 4;
+  horizontal_speed_gain = 6;
   wind_low_pass = 2000;
   norm_ref_airspeed = 0;
+  max_turn_bank = 30;
+  turn_bank_gain = 0.5;
   INT_VECT2_ZERO(wind_estimate);
   INT_VECT2_ZERO(guidance_h_ref_airspeed);
   FLOAT_VECT2_ZERO(wind_estimate_f);
@@ -642,8 +646,8 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
 
   //reference goes with a steady pace towards the setpoint airspeed
   //hold ref norm below 4 m/s until heading is aligned
-  if( !((norm_sp_airspeed > (4<<8)) && (norm_ref_airspeed < (4<<8)) && (norm_ref_airspeed > ((4<<8)-10)) && (fabs(heading_diff) > (15.0/180.0*3.14))) )
-    norm_ref_airspeed = norm_ref_airspeed +  2*( (int32_t) (norm_sp_airspeed > norm_ref_airspeed) * 2 - 1);
+  if( !((norm_sp_airspeed > (4<<8)) && (norm_ref_airspeed < (4<<8)) && (norm_ref_airspeed > ((4<<8)-10)) && (fabs(heading_diff) > (5.0/180.0*3.14))) )
+    norm_ref_airspeed = norm_ref_airspeed +  ( (int32_t) (norm_sp_airspeed > norm_ref_airspeed) * 2 - 1)*3/2;
 
   norm_sp_airspeed_disp = norm_sp_airspeed;
 
@@ -664,6 +668,9 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
       omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/8;
     else if(heading_diff < 0.0)
       omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/-8;
+
+    if(omega > ANGLE_BFP_OF_REAL(0.5)) omega = ANGLE_BFP_OF_REAL(0.5);
+    if(omega < ANGLE_BFP_OF_REAL(-0.5)) omega = ANGLE_BFP_OF_REAL(-0.5);
 
     // 2) calculate roll/pitch commands
     struct Int32Vect2 hover_sp;
@@ -699,15 +706,15 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
       ypr_sp->phi = 0;
     }
     else { // coordinated turn
-      if(heading_diff > RadOfDeg(60.0))
-        ypr_sp->phi = ANGLE_BFP_OF_REAL(RadOfDeg(30.0));
-      else if(heading_diff < RadOfDeg(-60.0))
-        ypr_sp->phi = ANGLE_BFP_OF_REAL(RadOfDeg(-30.0));
-      else
-        ypr_sp->phi = ANGLE_BFP_OF_REAL(heading_diff/2.0);
+      ypr_sp->phi = ANGLE_BFP_OF_REAL(heading_diff*turn_bank_gain);
+      if(ypr_sp->phi > ANGLE_BFP_OF_REAL(max_turn_bank/180.0*M_PI)) ypr_sp->phi = ANGLE_BFP_OF_REAL(max_turn_bank/180.0*M_PI);
+      if(ypr_sp->phi < ANGLE_BFP_OF_REAL(-max_turn_bank/180.0*M_PI)) ypr_sp->phi = ANGLE_BFP_OF_REAL(-max_turn_bank/180.0*M_PI);
 
       //feedforward estimate angular rotation omega = g*tan(phi)/v
       omega = ANGLE_BFP_OF_REAL(9.81/POS_FLOAT_OF_BFP(norm_ref_airspeed)*tanf(ANGLE_FLOAT_OF_BFP(ypr_sp->phi)));
+
+      if(omega > ANGLE_BFP_OF_REAL(0.7)) omega = ANGLE_BFP_OF_REAL(0.7);
+      if(omega < ANGLE_BFP_OF_REAL(-0.7)) omega = ANGLE_BFP_OF_REAL(-0.7);
     }
   }
 

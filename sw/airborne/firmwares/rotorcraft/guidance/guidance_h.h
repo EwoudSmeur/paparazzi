@@ -100,6 +100,8 @@ extern int32_t horizontal_speed_gain;
 extern int32_t norm_ref_airspeed;
 extern int32_t wind_low_pass;
 extern int32_t max_airspeed;
+extern float max_turn_bank;
+extern float turn_bank_gain;
 
 extern void guidance_h_init(void);
 extern void guidance_h_mode_changed(uint8_t new_mode);
