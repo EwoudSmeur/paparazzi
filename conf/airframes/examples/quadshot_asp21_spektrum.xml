@@ -90,12 +90,20 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="ACCEL_Y_SENS" value="4.89957269597" integer="16"/>
     <define name="ACCEL_Z_SENS" value="4.82616398266" integer="16"/>
 
-    <define name="MAG_X_NEUTRAL" value="0"/>
+<!--    <define name="MAG_X_NEUTRAL" value="0"/>
     <define name="MAG_Y_NEUTRAL" value="0"/>
     <define name="MAG_Z_NEUTRAL" value="0"/>
     <define name="MAG_X_SENS" value="4.19385009207" integer="16"/>
     <define name="MAG_Y_SENS" value="4.32306399648" integer="16"/>
-    <define name="MAG_Z_SENS" value="4.63243801309" integer="16"/>
+    <define name="MAG_Z_SENS" value="4.63243801309" integer="16"/> -->
+
+<define name="MAG_X_NEUTRAL" value="104"/>
+<define name="MAG_Y_NEUTRAL" value="9"/>
+<define name="MAG_Z_NEUTRAL" value="15"/>
+<define name="MAG_X_SENS" value="3.57880347067" integer="16"/>
+<define name="MAG_Y_SENS" value="3.54049742843" integer="16"/>
+<define name="MAG_Z_SENS" value="4.0620533034" integer="16"/>
+
   </section>
 
   <section name="IMU" prefix="IMU_">

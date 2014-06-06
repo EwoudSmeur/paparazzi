@@ -665,12 +665,12 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp) {
 
     // change heading to direction of airspeed, faster if the airspeed is higher
     if(heading_diff > 0.0)
-      omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/8;
+      omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/6;
     else if(heading_diff < 0.0)
-      omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/-8;
+      omega = (norm_sp_airspeed << (INT32_ANGLE_FRAC - INT32_POS_FRAC))/-6;
 
-    if(omega > ANGLE_BFP_OF_REAL(0.5)) omega = ANGLE_BFP_OF_REAL(0.5);
-    if(omega < ANGLE_BFP_OF_REAL(-0.5)) omega = ANGLE_BFP_OF_REAL(-0.5);
+    if(omega > ANGLE_BFP_OF_REAL(0.8)) omega = ANGLE_BFP_OF_REAL(0.8);
+    if(omega < ANGLE_BFP_OF_REAL(-0.8)) omega = ANGLE_BFP_OF_REAL(-0.8);
 
     // 2) calculate roll/pitch commands
     struct Int32Vect2 hover_sp;
