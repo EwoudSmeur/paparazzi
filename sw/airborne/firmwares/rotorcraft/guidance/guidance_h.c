@@ -92,7 +92,7 @@ struct Int32Eulers guidance_h_ypr_sp;
 struct Int32Vect2 guidance_h_airspeed_sp;
 struct Int32Vect2 guidance_h_airspeed_ref;
 struct Int32Vect2 wind_estimate;
-struct FloatVect2 wind_estimate_f;
+struct Int32Vect2 wind_estimate_high_res;
 struct Int32Vect2 guidance_h_ref_airspeed;
 
 int32_t guidance_h_pgain;
@@ -112,7 +112,6 @@ int32_t airspeed_sp_heading_disp;
 bool_t guidance_hovering;
 int32_t horizontal_speed_gain;
 int32_t norm_ref_airspeed;
-int32_t wind_low_pass;
 int32_t max_airspeed = MAX_AIRSPEED;
 float max_turn_bank;
 float turn_bank_gain;
@@ -225,13 +224,12 @@ void guidance_h_init(void) {
   high_res_psi = 0;
   guidance_hovering = true;
   horizontal_speed_gain = 6;
-  wind_low_pass = 2000;
   norm_ref_airspeed = 0;
-  max_turn_bank = 30;
-  turn_bank_gain = 0.5;
+  max_turn_bank = 40.0;
+  turn_bank_gain = 0.8;
   INT_VECT2_ZERO(wind_estimate);
   INT_VECT2_ZERO(guidance_h_ref_airspeed);
-  FLOAT_VECT2_ZERO(wind_estimate_f);
+  INT_VECT2_ZERO(wind_estimate_high_res);
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, "GUIDANCE_H_INT", send_gh);
@@ -736,13 +734,41 @@ void guidance_h_position_to_airspeed(void) {
   VECT2_DIFF(guidance_h_pos_err, guidance_h_pos_sp, *stateGetPositionNed_i());
 
   // Compute ground speed setpoint
-  VECT2_SDIV(guidance_h_airspeed_sp, guidance_h_pos_err, horizontal_speed_gain);
+  struct Int32Vect2 guidance_h_groundspeed_sp;
+  VECT2_SDIV(guidance_h_groundspeed_sp, guidance_h_pos_err, horizontal_speed_gain);
 
-  // Add the wind to get the airspeed setpoint
-  VECT2_ADD(guidance_h_airspeed_sp, wind_estimate);
+  struct Int32Vect2 airspeed_sp;
+  INT_VECT2_ZERO(airspeed_sp);
+  VECT2_ADD(airspeed_sp, guidance_h_groundspeed_sp);
+  VECT2_ADD(airspeed_sp, wind_estimate);
+
+  int32_t norm_groundspeed_sp;
+  INT32_VECT2_NORM(norm_groundspeed_sp, guidance_h_groundspeed_sp);
+
+  int32_t norm_airspeed_sp;
+  INT32_VECT2_NORM(norm_airspeed_sp, airspeed_sp);
+
+  if( norm_airspeed_sp > (max_airspeed<<8) && norm_groundspeed_sp > 0) {
+    int32_t av = INT_MULT_RSHIFT(guidance_h_groundspeed_sp.x, guidance_h_groundspeed_sp.x,8) + INT_MULT_RSHIFT(guidance_h_groundspeed_sp.y, guidance_h_groundspeed_sp.y, 8);
+    int32_t bv = 2*( INT_MULT_RSHIFT(wind_estimate.x, guidance_h_groundspeed_sp.x, 8) + INT_MULT_RSHIFT(wind_estimate.y, guidance_h_groundspeed_sp.y, 8));
+    int32_t cv = INT_MULT_RSHIFT(wind_estimate.x, wind_estimate.x, 8) + INT_MULT_RSHIFT(wind_estimate.y, wind_estimate.y, 8) - (max_airspeed<<8)*max_airspeed;
+
+    float dv = POS_FLOAT_OF_BFP(bv) * POS_FLOAT_OF_BFP(bv) - 4.0* POS_FLOAT_OF_BFP(av) * POS_FLOAT_OF_BFP(cv);
+    float d_sqrt_f = sqrtf(dv);
+    int32_t d_sqrt = POS_BFP_OF_REAL(d_sqrt_f);
+
+    int32_t result = ((-bv + d_sqrt)<<8)/(2*av);
+
+    guidance_h_airspeed_sp.x = wind_estimate.x + INT_MULT_RSHIFT(guidance_h_groundspeed_sp.x, result, 8);
+    guidance_h_airspeed_sp.y = wind_estimate.y + INT_MULT_RSHIFT(guidance_h_groundspeed_sp.y, result, 8);
+  }
+  else {
+    // Add the wind to get the airspeed setpoint
+    guidance_h_airspeed_sp = guidance_h_groundspeed_sp;
+    VECT2_ADD(guidance_h_airspeed_sp, wind_estimate);
+  }
 
 //   limit the airspeed setpoint to 15 m/s, because else saturation+windup will occur
-  int32_t norm_airspeed_sp;
   INT32_VECT2_NORM(norm_airspeed_sp, guidance_h_airspeed_sp);
   if(norm_airspeed_sp > (max_airspeed<<8)) {
     guidance_h_airspeed_sp.x = guidance_h_airspeed_sp.x*(max_airspeed<<8)/norm_airspeed_sp;
@@ -751,27 +777,20 @@ void guidance_h_position_to_airspeed(void) {
 }
 
 void guidance_h_determine_wind_estimate(void) {
-  
+
   /* compute speed error    */
   struct Int32Vect2 wind_estimate_measured;
   struct Int32Vect2 measured_ground_speed;
   INT32_VECT2_RSHIFT(measured_ground_speed, *stateGetSpeedNed_i(), 11);
   VECT2_DIFF(wind_estimate_measured, guidance_h_ref_airspeed, measured_ground_speed );
 
-  //use float values for the filter
-  struct FloatVect2 wind_estimate_measured_f;
-  wind_estimate_measured_f.x = POS_FLOAT_OF_BFP(wind_estimate_measured.x);
-  wind_estimate_measured_f.y = POS_FLOAT_OF_BFP(wind_estimate_measured.y);
-
   //Low pass wind_estimate, because we know the wind usually only changes slowly
   //But not too slow, because the wind_estimate is also an adaptive element for the airspeed model inaccuracies
-  VECT2_SMUL(wind_estimate_f, wind_estimate_f,wind_low_pass);
-  VECT2_ADD(wind_estimate_f, wind_estimate_measured_f);
-  VECT2_SDIV(wind_estimate_f, wind_estimate_f, wind_low_pass+1);
+  wind_estimate_high_res.x += (( (wind_estimate_measured.x - wind_estimate.x) > 0)*2-1)<<6;
+  wind_estimate_high_res.y += (( (wind_estimate_measured.y - wind_estimate.y) > 0)*2-1)<<6;
 
-  // go back to integers
-  wind_estimate.x = POS_BFP_OF_REAL(wind_estimate_f.x);
-  wind_estimate.y = POS_BFP_OF_REAL(wind_estimate_f.y);
+  wind_estimate.x = ((wind_estimate_high_res.x) >> 8);
+  wind_estimate.y = ((wind_estimate_high_res.y) >> 8);
 }
 
 void stabilization_attitude_set_cmd_i(struct Int32Eulers *sp_cmd) {
@@ -787,14 +806,14 @@ void stabilization_attitude_set_cmd_i(struct Int32Eulers *sp_cmd) {
   FLOAT_QUAT_OF_ORIENTATION_VECT(q_rp, ov);
   struct Int32Quat q_rp_i;
   QUAT_BFP_OF_REAL(q_rp_i, q_rp);
-  
+
   //   get the vertical vector to rotate the roll pitch setpoint around
   const struct Int32Vect3 zaxis = {0, 0, 1};
-  
+
   /* get current heading setpoint */
   struct Int32Quat q_yaw_sp;
   INT32_QUAT_OF_AXIS_ANGLE(q_yaw_sp, zaxis, sp_cmd->psi);
-  
+
   //   first apply the roll/pitch setpoint and then the yaw
   INT32_QUAT_COMP(stab_att_sp_quat, q_yaw_sp, q_rp_i);
 }

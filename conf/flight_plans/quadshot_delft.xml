@@ -51,32 +51,6 @@
       <exception cond="radio_control.status > RC_OK" deroute="land"/>
       <stay wp="p1"/>
     </block>
-    <block name="Measure 100">
-      <exception cond="radio_control.status > RC_OK" deroute="land"/>
-      <go wp="p2"/>
-      <go wp="p1"/>
-    </block>
-    <block name="Measure 80">
-      <exception cond="radio_control.status > RC_OK" deroute="land"/>
-      <go wp="p2"/>
-      <go wp="p1"/>
-    </block>
-    <block name="Measure 60">
-      <exception cond="radio_control.status > RC_OK" deroute="land"/>
-      <go wp="p2"/>
-      <go wp="p1"/>
-    </block>
-    <block name="Measure 40">
-      <exception cond="radio_control.status > RC_OK" deroute="land"/>
-      <go wp="p2"/>
-      <go wp="p1"/>
-    </block>
-    <block name="Measure 30">
-      <exception cond="radio_control.status > RC_OK" deroute="land"/>
-      <go wp="p2"/>
-      <go wp="p1"/>
-      <deroute block="stay_p1"/>
-    </block>
     <block name="go_p2_p1">
       <exception cond="radio_control.status > RC_OK" deroute="land"/>
       <go wp="p2"/>

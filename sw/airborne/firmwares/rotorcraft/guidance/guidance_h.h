@@ -98,7 +98,6 @@ extern int32_t transition_percentage;
 extern int32_t transition_theta_offset;
 extern int32_t horizontal_speed_gain;
 extern int32_t norm_ref_airspeed;
-extern int32_t wind_low_pass;
 extern int32_t max_airspeed;
 extern float max_turn_bank;
 extern float turn_bank_gain;
