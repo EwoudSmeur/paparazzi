@@ -95,8 +95,8 @@
 #include <libopencm3/stm32/timer.h>
 #include <string.h>
 #include "mcu_periph/gpio.h"
+#include "mcu_arch.h"
 #include "std.h"
-#include "led.h"
 #include BOARD_CONFIG
 
 
@@ -151,12 +151,17 @@ PRINT_CONFIG_MSG("Analog to Digital Coverter 3 active")
 #warning ALL ADC CONVERTERS INACTIVE
 #endif
 
-#ifndef ADC_TIMER_PRESCALER
-#if defined(STM32F1)
-#define ADC_TIMER_PRESCALER 0x8
-#elif defined(STM32F4)
-#define ADC_TIMER_PRESCALER 0x53
+#ifndef ADC_TIMER_PERIOD
+#define ADC_TIMER_PERIOD 10000
 #endif
+
+/** Timer frequency for ADC
+ * Timer will trigger an update event after reaching the period reload value.
+ * New conversion is triggered on update event.
+ * ADC measuerement frequency is hence ADC_TIMER_FREQUENCY / ADC_TIMER_PERIOD.
+ */
+#ifndef ADC_TIMER_FREQUENCY
+#define ADC_TIMER_FREQUENCY 2000000
 #endif
 
 /***************************************/
@@ -183,8 +188,6 @@ static inline void adc_init_irq( void );
  * There are 3 separate buffer lists, each holds the addresses of the actual adc buffers
  * for the particular adc converter.
  */
-
-volatile uint8_t adc_new_data_trigger;
 
 static uint8_t nb_adc1_channels = 0;
 static uint8_t nb_adc2_channels = 0;
@@ -344,8 +347,6 @@ void adc_init( void ) {
   adc_init_single(ADC3, nb_adc3_channels, adc_channel_map);
 #endif // USE_AD3
 
-  adc_new_data_trigger = FALSE;
-
 #if USE_ADC_WATCHDOG
   adc_watchdog.cb = NULL;
   adc_watchdog.timeStamp=0;
@@ -430,14 +431,12 @@ static inline void adc_init_rcc( void )
   timer_reset(TIM_ADC);
   timer_set_mode(TIM_ADC, TIM_CR1_CKD_CK_INT,
                  TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
-#if defined(STM32F1)
-  timer_set_period(TIM_ADC, 0xFF);
-#elif defined(STM32F4)
-  timer_set_period(TIM_ADC, 0xFFFF);
-#endif
-  timer_set_prescaler(TIM_ADC, ADC_TIMER_PRESCALER);
-  //timer_set_clock_division(TIM_ADC, 0x0);
-  /* Generate TRGO on every update. */
+  /* timer counts with ADC_TIMER_FREQUENCY */
+  uint32_t timer_clk = timer_get_frequency(TIM_ADC);
+  timer_set_prescaler(TIM_ADC, (timer_clk / ADC_TIMER_FREQUENCY) - 1);
+
+  timer_set_period(TIM_ADC, ADC_TIMER_PERIOD);
+  /* Generate TRGO on every update (when counter reaches period reload value) */
   timer_set_master_mode(TIM_ADC, TIM_CR2_MMS_UPDATE);
   timer_enable_counter(TIM_ADC);
 
@@ -567,7 +566,7 @@ static inline void adc_push_sample(struct adc_buf * buf, uint16_t value) {
 #if defined(STM32F1)
 void adc1_2_isr(void)
 #elif defined(STM32F4)
-  void adc_isr(void)
+void adc_isr(void)
 #endif
 {
   uint8_t channel = 0;
@@ -578,12 +577,12 @@ void adc1_2_isr(void)
   /*
     We need adc sampling fast enough to detect battery plug out, but we did not
     need to get actual actual value so fast. So timer fire adc conversion fast,
-    at least 500 hz, but we inject adc value in sampling buffer only at 10hz
+    at least 500 hz, but we inject adc value in sampling buffer only at 50hz
    */
-  const uint32_t timeStampDiff = get_sys_time_usec() - adc_watchdog.timeStamp;
-  const bool_t shouldAccumulateValue = timeStampDiff > 100;
+  const uint32_t timeStampDiff = get_sys_time_msec() - adc_watchdog.timeStamp;
+  const bool_t shouldAccumulateValue = timeStampDiff > 20;
   if (shouldAccumulateValue)
-    adc_watchdog.timeStamp = get_sys_time_usec();
+    adc_watchdog.timeStamp = get_sys_time_msec();
 
   if (adc_watchdog.cb != NULL) {
     if (adc_awd(adc_watchdog.adc)) {
@@ -610,12 +609,9 @@ void adc1_2_isr(void)
 #if USE_ADC_WATCHDOG
   }
 #endif
-
-#if !USE_AD2 && !USE_AD3
-    adc_new_data_trigger = TRUE;
-#endif
   }
-#endif
+#endif // USE_AD1
+
 #if USE_AD2
   if (adc_eoc_injected(ADC2)){
     ADC_SR(ADC2) &= ~ADC_SR_JEOC;
@@ -632,11 +628,9 @@ void adc1_2_isr(void)
 #if USE_ADC_WATCHDOG
   }
 #endif
-#if !USE_AD3
-    adc_new_data_trigger = TRUE;
-#endif
   }
-#endif
+#endif // USE_AD2
+
 #if USE_AD3
   if (adc_eoc_injected(ADC3)){
     ADC_SR(ADC3) &= ~ADC_SR_JEOC;
@@ -653,10 +647,8 @@ void adc1_2_isr(void)
 #if USE_ADC_WATCHDOG
   }
 #endif
-    adc_new_data_trigger = TRUE;
   }
-#endif
-
+#endif // USE_AD3
 
   return;
 }

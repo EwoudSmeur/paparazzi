@@ -1,13 +1,14 @@
 <!DOCTYPE airframe SYSTEM "../airframe.dtd">
 
 <!-- Delfly (http://www.delfly.nl/home.html)
-     Lisa/S v1.0 board (http://wiki.paparazziuav.org/wiki/Lisa/S)
+     Lisa/S v0.1 board (http://wiki.paparazziuav.org/wiki/Lisa/S)
+     Using Lisa/S V1.0 board file as it is software compatible.
 -->
 
 <airframe name="Delfly Lisa/S 0.1">
 
   <firmware name="fixedwing">
-    <target name="ap"   board="lisa_s_0.1">
+    <target name="ap"   board="lisa_s_1.0">
       <subsystem name="radio_control" type="spektrum">
         <define name="RADIO_MODE" value="RADIO_FLAP"/>
         <define name="RADIO_KILL_SWITCH" value="RADIO_GEAR"/>
@@ -21,8 +22,6 @@
     <define name="LOITER_TRIM"/>
     <define name="STRONG_WIND"/>
 
-    <define name="USE_BAROMETER" value="TRUE"/>
-
     <!-- Communication -->
     <subsystem name="telemetry" 	type="transparent">
       <!--<configure name="MODEM_BAUD" value="B57600"/>
@@ -30,7 +29,7 @@
     </subsystem>
 
     <!-- Sensors -->
-    <subsystem name="imu"           type="lisa_s_v0.1"/>
+    <subsystem name="imu"           type="lisa_s_v1.0"/>
     <subsystem name="gps"           type="ublox"/>
 
     <subsystem name="actuators" type="pwm">
@@ -45,7 +44,9 @@
     <!--<subsystem name="ahrs"          type="int_cmpl_quat"/>-->
     <subsystem name="control"/>
     <subsystem name="navigation"/>
-    <subsystem name="ins" type="alt_float"/>
+    <subsystem name="ins" type="alt_float">
+      <define name="USE_BAROMETER" value="TRUE"/>
+    </subsystem>
 
     <!--<configure name="SYS_TIME_LED" value="none"/>-->
   </firmware>

@@ -1,4 +1,5 @@
 <!-- this is a quadrocopter frame equiped with Lisa/S 0.1 and generic china pwm motor controllers -->
+<!-- Using Lisa/S 1.0 board file as it is software compatible. -->
 
 <!--
      Applicable configuration:
@@ -150,11 +151,6 @@
   </section>
 
  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
-   <define name="MIN_ERR_Z" value="POS_BFP_OF_REAL(-10.)"/>
-   <define name="MAX_ERR_Z" value="POS_BFP_OF_REAL( 10.)"/>
-   <define name="MIN_ERR_ZD" value="SPEED_BFP_OF_REAL(-10.)"/>
-   <define name="MAX_ERR_ZD" value="SPEED_BFP_OF_REAL( 10.)"/>
-   <define name="MAX_SUM_ERR" value="2000000"/>
    <define name="HOVER_KP" value="400"/>
    <define name="HOVER_KD" value="350"/>
    <define name="HOVER_KI" value="144"/>
@@ -173,14 +169,10 @@
    <define name="IGAIN" value="0"/>
  </section>
 
- <section name="MISC">
-   <define name="FACE_REINJ_1" value="1024"/>
- </section>
-
  <section name="SIMULATOR" prefix="NPS_">
    <define name="ACTUATOR_NAMES" value="{&quot;front_motor&quot;, &quot;back_motor&quot;, &quot;right_motor&quot;, &quot;left_motor&quot;}"/>
    <define name="JSBSIM_INIT" value="&quot;reset00&quot;"/>
-   <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_booz2_a1.h&quot;"/>
+   <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_default.h&quot;"/>
  </section>
 
  <modules main_freq="512">
@@ -189,7 +181,7 @@
  </modules>
 
   <firmware name="rotorcraft">
-    <target name="ap" board="lisa_s_0.1">
+    <target name="ap" board="lisa_s_1.0">
       <subsystem name="radio_control" type="superbitrf_rc">
         <define name="RADIO_TRANSMITTER_ID" value="2008496626"/>  <!-- 425044546 -->
         <define name="RADIO_TRANSMITTER_CHAN" value="6"/> <!-- 9 -->
@@ -198,7 +190,6 @@
       </subsystem>
 
       <configure name="AHRS_PROPAGATE_FREQUENCY" value="500"/>
-      <configure name="LISA_S_BARO" value="BARO_MS5611_SPI"/>
     </target>
 
     <target name="nps" board="pc">
@@ -213,7 +204,7 @@
     </subsystem>
 
     <subsystem name="telemetry" type="superbitrf"/>
-    <subsystem name="imu" type="lisa_s_v0.1"/>
+    <subsystem name="imu" type="lisa_s_v1.0"/>
     <subsystem name="gps" type="ublox"/>
     <subsystem name="stabilization" type="int_quat"/>
     <subsystem name="ahrs" type="int_cmpl_quat"/>
@@ -221,16 +212,12 @@
   </firmware>
 
 
-  <firmware name="lisa_test_progs">
-    <target name="test_led" board="lisa_s_0.1">
+  <firmware name="test_progs">
+    <target name="test_sys_time_timer" board="lisa_s_1.0">
         <configure name="SYS_TIME_LED" value="none"/>
     </target>
-    <target name="test_uart" board="lisa_s_0.1"/>
-    <target name="test_telemetry" board="lisa_s_0.1"/>
-    <target name="test_imu_aspirin" board="lisa_s_0.1"/>
-    <target name="test_rc_spektrum" board="lisa_s_0.1"/>
-    <target name="test_baro" board="lisa_s_0.1"/>
-    <target name="test_imu_b2" board="lisa_s_0.1"/>
-    <target name="test_can" board="lisa_s_0.1"/>
+    <target name="test_telemetry" board="lisa_s_1.0"/>
+    <target name="test_baro_board" board="lisa_s_1.0"/>
+    <target name="test_can" board="lisa_s_1.0"/>
   </firmware>
 </airframe>

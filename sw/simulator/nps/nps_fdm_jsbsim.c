@@ -30,7 +30,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// ignore stupid warnings in JSBSim
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <FGFDMExec.h>
+#pragma GCC diagnostic pop
+
 #include <FGJSBBase.h>
 #include <models/FGPropulsion.h>
 #include <models/FGGroundReactions.h>
@@ -43,6 +47,8 @@
 #include "math/pprz_geodetic_float.h"
 #include "math/pprz_algebra.h"
 #include "math/pprz_algebra_float.h"
+
+#include "math/pprz_geodetic_wmm2010.h"
 
 #include "generated/airframe.h"
 #include "generated/flight_plan.h"
@@ -64,8 +70,8 @@
 #endif
 
 /** Minimum JSBSim timestep
-  * Around 1/10000 seems to be good for ground impacts
-  */
+ * Around 1/10000 seems to be good for ground impacts
+ */
 #define MIN_DT (1.0/10240.0)
 
 using namespace JSBSim;
@@ -129,48 +135,60 @@ void nps_fdm_init(double dt) {
 
 }
 
-void nps_fdm_run_step(double* commands, int commands_nb) {
+void nps_fdm_run_step(bool_t launch, double* commands, int commands_nb) {
+  static bool_t run_model = FALSE;
 
-  feed_jsbsim(commands, commands_nb);
+  if (launch && !run_model) {
+    run_model = TRUE;
+#ifdef NPS_JSBSIM_LAUNCHSPEED
+    printf("Launching with speed of %.1f m/s!\n", (float)NPS_JSBSIM_LAUNCHSPEED);
+    FDMExec->GetIC()->SetUBodyFpsIC(FeetOfMeters(NPS_JSBSIM_LAUNCHSPEED));
+#endif
+    FDMExec->RunIC();
+  }
 
-  /* To deal with ground interaction issues, we decrease the time
-     step as the vehicle is close to the ground. This is done predictively
-     to ensure no weird accelerations or oscillations. From tests with a bouncing
-     ball model in JSBSim, it seems that 10k steps per second is reasonable to capture
-     all the dynamics. Higher might be a bit more stable, but really starting to push
-     the simulation CPU requirements, especially for more complex models.
-      - at init: get the largest radius from CG to any contact point (landing gear)
-      - if descending...
-        - find current number of timesteps to impact
-        - if impact imminent, calculate a new timestep to use (with limit)
-      - if ascending...
-        - change timestep back to init value
-      - run sim for as many steps as needed to reach init_dt amount of time
+  if (run_model) {
+    feed_jsbsim(commands, commands_nb);
 
-     Of course, could probably be improved...
-  */
-  // If the vehicle has a downwards velocity
-  if (fdm.ltp_ecef_vel.z > 0) {
-    // Get the current number of timesteps until impact at current velocity
-    double numDT_to_impact = (fdm.agl - vehicle_radius_max) / (fdm.curr_dt * fdm.ltp_ecef_vel.z);
-    // If impact imminent within next timestep, use high sim rate
-    if (numDT_to_impact <= 1.0) {
-      fdm.curr_dt = min_dt;
+    /* To deal with ground interaction issues, we decrease the time
+       step as the vehicle is close to the ground. This is done predictively
+       to ensure no weird accelerations or oscillations. From tests with a bouncing
+       ball model in JSBSim, it seems that 10k steps per second is reasonable to capture
+       all the dynamics. Higher might be a bit more stable, but really starting to push
+       the simulation CPU requirements, especially for more complex models.
+       - at init: get the largest radius from CG to any contact point (landing gear)
+       - if descending...
+       - find current number of timesteps to impact
+       - if impact imminent, calculate a new timestep to use (with limit)
+       - if ascending...
+       - change timestep back to init value
+       - run sim for as many steps as needed to reach init_dt amount of time
+
+       Of course, could probably be improved...
+    */
+    // If the vehicle has a downwards velocity
+    if (fdm.ltp_ecef_vel.z > 0) {
+      // Get the current number of timesteps until impact at current velocity
+      double numDT_to_impact = (fdm.agl - vehicle_radius_max) / (fdm.curr_dt * fdm.ltp_ecef_vel.z);
+      // If impact imminent within next timestep, use high sim rate
+      if (numDT_to_impact <= 1.0) {
+        fdm.curr_dt = min_dt;
+      }
     }
-  }
-  // If the vehicle is moving upwards and out of the ground, reset timestep
-  else if ((fdm.ltp_ecef_vel.z <= 0) && ((fdm.agl + vehicle_radius_max) > 0)) {
-    fdm.curr_dt = fdm.init_dt;
-  }
+    // If the vehicle is moving upwards and out of the ground, reset timestep
+    else if ((fdm.ltp_ecef_vel.z <= 0) && ((fdm.agl + vehicle_radius_max) > 0)) {
+      fdm.curr_dt = fdm.init_dt;
+    }
 
-  // Calculate the number of sim steps for correct amount of time elapsed
-  int num_steps = int(fdm.init_dt / fdm.curr_dt);
+    // Calculate the number of sim steps for correct amount of time elapsed
+    int num_steps = int(fdm.init_dt / fdm.curr_dt);
 
-  // Set the timestep then run sim
-  FDMExec->Setdt(fdm.curr_dt);
-  int i;
-  for (i = 0; i < num_steps; i++) {
-    FDMExec->Run();
+    // Set the timestep then run sim
+    FDMExec->Setdt(fdm.curr_dt);
+    int i;
+    for (i = 0; i < num_steps; i++) {
+      FDMExec->Run();
+    }
   }
 
   fetch_state();
@@ -373,6 +391,9 @@ static void init_jsbsim(double dt) {
   //initRunning for all engines
   FDMExec->GetPropulsion()->InitRunning(-1);
 
+  // LLA initial coordinates (geodetic lat, geoid alt)
+  struct LlaCoor_d lla0;
+
   JSBSim::FGInitialCondition *IC = FDMExec->GetIC();
   if(!jsbsim_ic_name.empty()) {
     if ( ! IC->Load(jsbsim_ic_name)) {
@@ -382,6 +403,8 @@ static void init_jsbsim(double dt) {
       delete FDMExec;
       exit(-1);
     }
+
+    llh_from_jsbsim(&lla0, FDMExec->GetPropagate());
   }
   else {
     // FGInitialCondition::SetAltitudeASLFtIC
@@ -409,16 +432,19 @@ static void init_jsbsim(double dt) {
       exit(-1);
     }
 
-    // compute offset between geocentric and geodetic ecef
-    struct LlaCoor_d lla0 = { RadOfDeg(NAV_LON0 / 1e7), gd_lat, (double)(NAV_ALT0+NAV_MSL0)/1000. };
-    ecef_of_lla_d(&offset, &lla0);
-    struct EcefCoor_d ecef0 = {
-      MetersOfFeet(FDMExec->GetPropagate()->GetLocation().Entry(1)),
-      MetersOfFeet(FDMExec->GetPropagate()->GetLocation().Entry(2)),
-      MetersOfFeet(FDMExec->GetPropagate()->GetLocation().Entry(3))
-    };
-    VECT3_DIFF(offset, offset, ecef0);
+    lla0.lon = RadOfDeg(NAV_LON0 / 1e7);
+    lla0.lat = gd_lat;
+    lla0.alt = (double)(NAV_ALT0+NAV_MSL0)/1000.0;
   }
+
+  // compute offset between geocentric and geodetic ecef
+  ecef_of_lla_d(&offset, &lla0);
+  struct EcefCoor_d ecef0 = {
+    MetersOfFeet(FDMExec->GetPropagate()->GetLocation().Entry(1)),
+    MetersOfFeet(FDMExec->GetPropagate()->GetLocation().Entry(2)),
+    MetersOfFeet(FDMExec->GetPropagate()->GetLocation().Entry(3))
+  };
+  VECT3_DIFF(offset, offset, ecef0);
 
   // calculate vehicle max radius in m
   vehicle_radius_max = 0.01; // specify not 0.0 in case no gear
@@ -435,34 +461,52 @@ static void init_jsbsim(double dt) {
 /**
  * Initialize the ltp from the JSBSim location.
  *
- * @todo The magnetic field is hardcoded, make location dependent
- * (might be able to use JSBSim sensors)
  */
 static void init_ltp(void) {
 
   FGPropagate* propagate = FDMExec->GetPropagate();
 
-  jsbsimloc_to_loc(&fdm.ecef_pos,&propagate->GetLocation());
-  ltp_def_from_ecef_d(&ltpdef,&fdm.ecef_pos);
+  jsbsimloc_to_loc(&fdm.ecef_pos, &propagate->GetLocation());
+  ltp_def_from_ecef_d(&ltpdef, &fdm.ecef_pos);
 
   fdm.ltp_g.x = 0.;
   fdm.ltp_g.y = 0.;
   fdm.ltp_g.z = 9.81;
 
-#ifdef AHRS_H_X
+
+#if !NPS_CALC_GEO_MAG && defined(AHRS_H_X)
 #pragma message "Using magnetic field as defined in airframe file (AHRS section)."
   fdm.ltp_h.x = AHRS_H_X;
   fdm.ltp_h.y = AHRS_H_Y;
   fdm.ltp_h.z = AHRS_H_Z;
-#elif defined INS_H_X
+#elif !NPS_CALC_GEO_MAG && defined(INS_H_X)
 #pragma message "Using magnetic field as defined in airframe file (INS section)."
   fdm.ltp_h.x = INS_H_X;
   fdm.ltp_h.y = INS_H_Y;
   fdm.ltp_h.z = INS_H_Z;
 #else
-  fdm.ltp_h.x = 0.4912;
-  fdm.ltp_h.y = 0.1225;
-  fdm.ltp_h.z = 0.8624;
+#pragma message "Using WMM2010 model to calculate magnetic field at simulated location."
+  /* calculation of magnetic field according to WMM2010 model */
+  double gha[MAXCOEFF];
+
+  /* Current date in decimal year, for example 2012.68 */
+  /** @FIXME properly get current time */
+  double sdate = 2014.5;
+
+  llh_from_jsbsim(&fdm.lla_pos, propagate);
+  /* LLA Position in decimal degrees and altitude in km */
+  double latitude = DegOfRad(fdm.lla_pos.lat);
+  double longitude = DegOfRad(fdm.lla_pos.lon);
+  double alt = fdm.lla_pos.alt / 1e3;
+
+  // Calculates additional coeffs
+  int32_t nmax = extrapsh(sdate, GEO_EPOCH, NMAX_1, NMAX_2, gha);
+  // Calculates absolute magnetic field
+  mag_calc(1, latitude, longitude, alt, nmax, gha,
+           &fdm.ltp_h.x, &fdm.ltp_h.y, &fdm.ltp_h.z,
+           IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3);
+  FLOAT_VECT3_NORMALIZE(fdm.ltp_h);
+  printf("normalized magnetic field: %.4f %.4f %.4f\n", fdm.ltp_h.x, fdm.ltp_h.y, fdm.ltp_h.z);
 #endif
 
 }

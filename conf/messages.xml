@@ -83,6 +83,7 @@
      <field name="utm_east"  type="int32" unit="m"/>
      <field name="utm_north" type="int32" unit="m"/>
      <field name="utm_zone" type="uint8"/>
+     <field name="ground_alt" type="float" unit="m"/>
    </message>
 
    <message name="NAVIGATION" id="10">
@@ -214,7 +215,7 @@
     <field name="msg" type="uint8[]"/>
   </message>
 
-  <message name="SURVEY" ID="27">
+  <message name="SURVEY" id="27">
     <field name="east" type="float" unit="m"/>
     <field name="north" type="float" unit="m"/>
     <field name="west" type="float" unit="m"/>
@@ -482,9 +483,15 @@
 
   <message name="H_CTL_A" id="60">
     <field name="roll_sum_err" type="float"/>
-    <field name="ref_roll_angle" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
+    <field name="roll_sp" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
+    <field name="roll_ref" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
+    <field name="phi" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
+    <field name="aileron_sp"  type="int16" unit="pprz"/>
     <field name="pitch_sum_err" type="float"/>
-    <field name="ref_pitch_angle" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
+    <field name="pitch_sp" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
+    <field name="pitch_ref" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
+    <field name="theta" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
+    <field name="elevator_sp"  type="int16" unit="pprz"/>
   </message>
 
   <message name="TURB_PRESSURE_RAW" id="61">
@@ -909,7 +916,7 @@
     <field name="itow"  type="uint32" unit="ms"/>
   </message>
 
-  <message name="TEST_BOARD_RESULTS" ID="111">
+  <message name="TEST_BOARD_RESULTS" id="111">
     <field name="uart" type="uint8"/>
     <field name="ppm" type="uint8"/>
     <field name="servo" type="uint16[]"/>
@@ -989,7 +996,7 @@
     <field name="dn_t9" type="uint16"/>
   </message>
 
-  <message name="TCAS_TA" ID="120">
+  <message name="TCAS_TA" id="120">
     <field name="ac_id" type="uint8"/>
   </message>
 
@@ -998,7 +1005,7 @@
     <field name="resolve" type="uint8" values="NONE|LEVEL|CLIMB|DESCEND"/>
   </message>
 
-  <message name="TCAS_RESOLVED" ID="122">
+  <message name="TCAS_RESOLVED" id="122">
     <field name="ac_id" type="uint8"/>
   </message>
 
@@ -1312,9 +1319,7 @@
     <field name="flight_time"   type="uint16" unit="s"/>
   </message>
 
-  <message name="BOOZ2_FMS_INFO" id="148">
-    <field name="tbd"      type="float"/>
-  </message>
+  <!-- 148 is free -->
 
   <message name="GUIDANCE_H_REF_INT" id="149">
     <field name="sp_x"    type="int32" alt_unit="m"     alt_unit_coef="0.0039063"/>
@@ -1382,8 +1387,8 @@
     <field name="ecef_xd" type="int32" unit="cm/s" alt_unit="m/s"/>
     <field name="ecef_yd" type="int32" unit="cm/s" alt_unit="m/s"/>
     <field name="ecef_zd" type="int32" unit="cm/s" alt_unit="m/s"/>
-    <field name="pacc"    type="int32" unit="cm"   alt_unit="m"/>
-    <field name="sacc"    type="int32" unit="cm/s" alt_unit="m/s"/>
+    <field name="pacc"    type="uint32" unit="cm"   alt_unit="m"/>
+    <field name="sacc"    type="uint32" unit="cm/s" alt_unit="m/s"/>
     <field name="tow"     type="uint32"/>
     <field name="pdop"    type="uint16"/>
     <field name="numsv"   type="uint8"/>
@@ -1450,7 +1455,6 @@
      <field name="status"   type="uint8" values="OK|LOST|REALLY_LOST"/>
   </message>
 
-  <!-- 161 is free -->
   <message name="VFF_EXTENDED" id="161">
       <field name="measure1"        type="float"/>
       <field name="measure2"        type="float"/>
@@ -1460,7 +1464,6 @@
       <field name="bias"           type="float"/>
       <field name="offset"           type="float"/>
   </message>
-
 
   <message name="VFF" id="162">
       <field name="measure"        type="float"/>
@@ -1472,10 +1475,10 @@
       <field name="Pbb"            type="float"/>
   </message>
 
-  <message name="BOOZ2_TUNE_FF" id="163">
-      <field name="fb_rms"         type="float"/>
-      <field name="dg"             type="float"/>
-      <field name="g"              type="float"/>
+  <message name="GEO_MAG" id="163">
+      <field name="Hx"             type="float"/>
+      <field name="Hy"             type="float"/>
+      <field name="Hz"             type="float"/>
   </message>
 
   <message name="HFF" id="164">
@@ -1993,7 +1996,7 @@
     <field name="rc_status"    type="uint8" values="OK|LOST|REALLY_LOST"/>
     <field name="frame_rate"   type="uint8" unit="Hz"/>
     <field name="gps_status"   type="uint8" values="NO_FIX|NA|NA|3Dfix"/>
-    <field name="ap_mode"      type="uint8" values="KILL|FAILSAFE|HOME|RATE_DIRECT|ATTITUDE_DIRECT|RATE_RC_CLIMB|ATTITUDE_RC_CLIMB|ATTITUDE_CLIMB|RATE_Z_HOLD|ATTITUDE_Z_HOLD|HOVER_DIRECT|HOVER_CLIMB|HOVER_Z_HOLD|NAV|RC_DIRECT|CARE_FREE"/>
+    <field name="ap_mode"      type="uint8" values="KILL|FAILSAFE|HOME|RATE_DIRECT|ATTITUDE_DIRECT|RATE_RC_CLIMB|ATTITUDE_RC_CLIMB|ATTITUDE_CLIMB|RATE_Z_HOLD|ATTITUDE_Z_HOLD|HOVER_DIRECT|HOVER_CLIMB|HOVER_Z_HOLD|NAV|RC_DIRECT|CARE_FREE|FORWARD"/>
     <field name="ap_in_flight" type="uint8" values="ON_GROUND|IN_FLIGHT"/>
     <field name="ap_motors_on" type="uint8" values="MOTORS_OFF|MOTORS_ON"/>
     <field name="ap_h_mode"    type="uint8" values="KILL|RATE|ATTITUDE|HOVER|NAV|CF"/>
@@ -2095,13 +2098,8 @@
     <field name="vz"   type="float" unit="m/s"/>
   </message>
 
-  <message name="BOOZ_DEBUG_FOO" id="245">
-    <field name="ami_stat"   type="uint8"/>
-  </message>
-
-  <message name="BOOZ_MAX1167_ERR" id="246">
-    <field name="erno"   type="uint8"/>
-  </message>
+  <!-- 245 is free -->
+  <!-- 246 is free -->
 
   <message name="PPRZ_DEBUG" id="247">
     <field name="module"   type="uint8"/>
@@ -2160,20 +2158,8 @@
       <field name="yaw_c"  type="float"/>
   </message>
 
-  <message name="BOOZ_ATT_REF_MODEL" id="251">
-    <field name="omega_p" type="float" />
-    <field name="zeta_p" type="float" />
-    <field name="omega_q" type="float" />
-    <field name="zeta_q" type="float" />
-    <field name="omega_r" type="float" />
-    <field name="zeta_r" type="float" />
-  </message>
-
-  <message name="BOOZ2_FF_ADAP" id="252">
-     <field name="roll" type="float"/>
-     <field name="pitch" type="float"/>
-     <field name="yaw" type="float"/>
-  </message>
+  <!-- 251 is free -->
+  <!-- 252 is free -->
 
   <message name="I2C_ERRORS" id="253">
     <field name="queue_full_cnt"              type="uint16"/>
@@ -2760,6 +2746,7 @@
     <field name="lat"  type="float" unit="deg"></field>
     <field name="long"  type="float" unit="deg"></field>
     <field name="alt" type="float" unit="m"></field>
+    <field name="ground_alt" type="float" unit="m"/>
  </message>
 
   <message name="SURVEY_STATUS" id="31">

@@ -36,15 +36,8 @@
         <define name="PRINT_CONFIG"/>
     </firmware>
 
-    <firmware name="lisa_test_progs">
-        <target name="test_led"           board="lisa_l_1.1"/>
-        <target name="test_uart"          board="lisa_l_1.1"/>
-        <target name="test_baro"          board="lisa_l_1.1"/>
-        <target name="test_imu_b2_nomag"  board="lisa_l_1.1"/>
-        <target name="test_imu_b2"        board="lisa_l_1.1"/>
-        <target name="test_imu_b2_2"      board="lisa_l_1.1"/>
-        <target name="test_rc_spektrum"   board="lisa_l_1.1"/>
-        <target name="test_rc_ppm"        board="lisa_l_1.1"/>
+    <firmware name="test_progs">
+        <target name="test_baro_board"    board="lisa_l_1.1"/>
         <target name="test_adc"           board="lisa_l_1.1"/>
     </firmware>
 
@@ -81,10 +74,10 @@
 
     <command_laws>
       <call fun="motor_mixing_run(autopilot_motors_on,FALSE,values)"/>
-      <set servo="FRONT"  value="motor_mixing.commands[SERVO_FRONT]"/>
-      <set servo="BACK"   value="motor_mixing.commands[SERVO_BACK]"/>
-      <set servo="RIGHT"  value="motor_mixing.commands[SERVO_RIGHT]"/>
-      <set servo="LEFT"   value="motor_mixing.commands[SERVO_LEFT]"/>
+      <set servo="FRONT"  value="motor_mixing.commands[0]"/>
+      <set servo="BACK"   value="motor_mixing.commands[1]"/>
+      <set servo="RIGHT"  value="motor_mixing.commands[2]"/>
+      <set servo="LEFT"   value="motor_mixing.commands[3]"/>
     </command_laws>
 
     <section name="IMU" prefix="IMU_">
@@ -219,11 +212,6 @@
     </section>
 
     <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
-        <define name="MIN_ERR_Z"   value="POS_BFP_OF_REAL(-10.)"/>
-        <define name="MAX_ERR_Z"   value="POS_BFP_OF_REAL( 10.)"/>
-        <define name="MIN_ERR_ZD"  value="SPEED_BFP_OF_REAL(-10.)"/>
-        <define name="MAX_ERR_ZD"  value="SPEED_BFP_OF_REAL( 10.)"/>
-        <define name="MAX_SUM_ERR" value="2000000"/>
         <define name="HOVER_KP"    value="150"/>
         <define name="HOVER_KD"    value="80"/>
         <define name="HOVER_KI"    value="0"/>
@@ -245,7 +233,7 @@
         <define name="ACTUATOR_NAMES"  value="{&quot;front_motor&quot;, &quot;back_motor&quot;, &quot;right_motor&quot;, &quot;left_motor&quot;}"/>
         <define name="JSBSIM_INIT" value="&quot;reset00&quot;"/>
         <define name="JSBSIM_MODEL" value="&quot;simple_quad&quot;"/>
-        <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_booz2_a1.h&quot;"/>
+        <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_default.h&quot;"/>
     </section>
 
 </airframe>

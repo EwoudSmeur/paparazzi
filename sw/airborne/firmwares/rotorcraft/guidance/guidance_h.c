@@ -24,18 +24,18 @@
  *
  */
 
-#include "firmwares/rotorcraft/guidance/guidance_h.h"
+#include "generated/airframe.h"
 
+#include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/navigation.h"
+#include "subsystems/radio_control.h"
 
 /* for guidance_v_thrust_coeff */
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
 
 #include "state.h"
-
-#include "generated/airframe.h"
 
 #ifndef GUIDANCE_H_AGAIN
 #define GUIDANCE_H_AGAIN 0
@@ -468,7 +468,7 @@ static void guidance_h_update_reference(void) {
   }
 
 #if GUIDANCE_H_USE_SPEED_REF
-  if(guidance_h_mode == GUIDANCE_H_MODE_HOVER) {
+  if (guidance_h_mode == GUIDANCE_H_MODE_HOVER) {
     VECT2_COPY(guidance_h_pos_sp, guidance_h_pos_ref); // for display only
   }
 #endif
@@ -515,7 +515,7 @@ static void guidance_h_traj_run(bool_t in_flight) {
     ((guidance_h_again * guidance_h_accel_ref.x) >> 8);   /* acceleration feedforward gain */
   guidance_h_cmd_earth.y =
     pd_y +
-    ((guidance_h_vgain * guidance_h_speed_ref.x) >> 17) + /* speed feedforward gain */
+    ((guidance_h_vgain * guidance_h_speed_ref.y) >> 17) + /* speed feedforward gain */
     ((guidance_h_again * guidance_h_accel_ref.y) >> 8);   /* acceleration feedforward gain */
 
   /* trim max bank angle from PD */
@@ -582,7 +582,7 @@ static inline void transition_run(void) {
 
 /// read speed setpoint from RC
 static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool_t in_flight) {
-  if(in_flight) {
+  if (in_flight) {
     // negative pitch is forward
     int64_t rc_x = -radio_control.values[RADIO_PITCH];
     int64_t rc_y = radio_control.values[RADIO_ROLL];

@@ -66,7 +66,7 @@ PRINT_CONFIG_MSG_VALUE("USE_BARO_BOARD is TRUE, reading onboard baro: ", BARO_BO
 #include "firmwares/fixedwing/autopilot.h"
 #include "firmwares/fixedwing/stabilization/stabilization_attitude.h"
 #include CTRL_TYPE_H
-#include "subsystems/nav.h"
+#include "firmwares/fixedwing/nav.h"
 #include "generated/flight_plan.h"
 #ifdef TRAFFIC_INFO
 #include "subsystems/navigation/traffic_info.h"
@@ -423,11 +423,14 @@ static inline void telecommand_task( void ) {
   energy = fbw_state->energy;
 
 #ifdef RADIO_CONTROL
+  /* the SITL check is a hack to prevent "automatic" launch in NPS */
+#ifndef SITL
   if (!autopilot_flight_time) {
     if (pprz_mode == PPRZ_MODE_AUTO2 && fbw_state->channels[RADIO_THROTTLE] > THROTTLE_THRESHOLD_TAKEOFF) {
       launch = TRUE;
     }
   }
+#endif
 #endif
 }
 
@@ -652,7 +655,7 @@ void monitor_task( void ) {
 void event_task_ap( void ) {
 
 #ifndef SINGLE_MCU
-#if defined USE_I2C0  || defined USE_I2C1  || defined USE_I2C2
+#if USE_I2C0  || USE_I2C1  || USE_I2C2
   i2c_event();
 #endif
 #endif

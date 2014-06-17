@@ -13,7 +13,6 @@
 
   <firmware name="rotorcraft">
     <define name="USE_INS_NAV_INIT"/>
-    <!--define name="GUIDANCE_H_USE_REF"/-->
 
     <target name="ap" board="navgo_1.0">
       <define name="FAILSAFE_GROUND_DETECT"/>
@@ -74,10 +73,10 @@
 
   <command_laws>
     <call fun="motor_mixing_run(autopilot_motors_on,FALSE,values)"/>
-    <set servo="FRONT"  value="motor_mixing.commands[SERVO_FRONT]"/>
-    <set servo="BACK"   value="motor_mixing.commands[SERVO_BACK]"/>
-    <set servo="RIGHT"  value="motor_mixing.commands[SERVO_RIGHT]"/>
-    <set servo="LEFT"   value="motor_mixing.commands[SERVO_LEFT]"/>
+    <set servo="FRONT" value="motor_mixing.commands[0]"/>
+    <set servo="BACK"  value="motor_mixing.commands[1]"/>
+    <set servo="RIGHT" value="motor_mixing.commands[2]"/>
+    <set servo="LEFT"  value="motor_mixing.commands[3]"/>
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
@@ -137,17 +136,6 @@
     <define name="H_Y" value="0.0141005"/>
     <define name="H_Z" value="0.9251199"/>
   </section>
-
-  <section name="INS" prefix="INS_">
-    <!-- datasheet 1.4 mm/LSB : 0.0014*2^8 = 0.3584 -->
-    <!-- calibration SENS = 1.156 :( -->
-    <define name="SONAR_SENS" value="0.0128633" integer="16"/>
-    <define name="SONAR_OFFSET" value="7"/>
-    <define name="SONAR_MAX_RANGE" value="4.0"/>
-    <define name="SONAR_THROTTLE_THRESHOLD" value="6000"/>
-    <define name="SONAR_BARO_THRESHOLD" value="20."/>
-  </section>
-
 
   <section name="STABILIZATION_RATE" prefix="STABILIZATION_RATE_">
 
@@ -210,11 +198,6 @@
 
   <section name="GUIDANCE_V"   prefix="GUIDANCE_V_">
 
-   <define name="MIN_ERR_Z"    value="POS_BFP_OF_REAL(-10.)"/>
-   <define name="MAX_ERR_Z"    value="POS_BFP_OF_REAL( 10.)"/>
-   <define name="MIN_ERR_ZD"   value="SPEED_BFP_OF_REAL(-10.)"/>
-   <define name="MAX_ERR_ZD"   value="SPEED_BFP_OF_REAL( 10.)"/>
-   <define name="MAX_SUM_ERR"  value="2000000"/>
    <define name="REF_MIN_ZDD"  value="-0.5*9.81"/>
    <define name="REF_MAX_ZDD"  value=" 0.5*9.81"/>
    <define name="REF_MIN_ZD"   value="-1.5"/>

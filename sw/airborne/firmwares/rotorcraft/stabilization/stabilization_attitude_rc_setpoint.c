@@ -24,15 +24,37 @@
  */
 
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
+#include "generated/airframe.h"
 
 #include "subsystems/radio_control.h"
 #include "state.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
+#include "firmwares/rotorcraft/autopilot_rc_helpers.h"
 
 #ifndef RC_UPDATE_FREQ
 #define RC_UPDATE_FREQ 40
 #endif
+
+#ifdef STABILIZATION_ATTITUDE_DEADBAND_A
+#define ROLL_DEADBAND_EXCEEDED()                                        \
+  (radio_control.values[RADIO_ROLL] >  STABILIZATION_ATTITUDE_DEADBAND_A || \
+   radio_control.values[RADIO_ROLL] < -STABILIZATION_ATTITUDE_DEADBAND_A)
+#else
+#define ROLL_DEADBAND_EXCEEDED() (TRUE)
+#endif /* STABILIZATION_ATTITUDE_DEADBAND_A */
+
+#ifdef STABILIZATION_ATTITUDE_DEADBAND_E
+#define PITCH_DEADBAND_EXCEEDED()                                       \
+  (radio_control.values[RADIO_PITCH] >  STABILIZATION_ATTITUDE_DEADBAND_E || \
+   radio_control.values[RADIO_PITCH] < -STABILIZATION_ATTITUDE_DEADBAND_E)
+#else
+#define PITCH_DEADBAND_EXCEEDED() (TRUE)
+#endif /* STABILIZATION_ATTITUDE_DEADBAND_E */
+
+#define YAW_DEADBAND_EXCEEDED()                                         \
+  (radio_control.values[RADIO_YAW] >  STABILIZATION_ATTITUDE_DEADBAND_R || \
+   radio_control.values[RADIO_YAW] < -STABILIZATION_ATTITUDE_DEADBAND_R)
 
 float care_free_heading = 0;
 
@@ -94,7 +116,8 @@ void stabilization_attitude_read_rc_setpoint_eulers(struct Int32Eulers *sp, bool
   sp->theta = (int32_t) ((radio_control.values[RADIO_PITCH] * max_rc_theta) /  MAX_PPRZ);
 
   if (in_flight) {
-    if (YAW_DEADBAND_EXCEEDED()) {
+    /* do not advance yaw setpoint if within a small deadband around stick center or if throttle is zero */
+    if (YAW_DEADBAND_EXCEEDED() && !THROTTLE_STICK_DOWN()) {
       sp->psi += (int32_t) ((radio_control.values[RADIO_YAW] * max_rc_r) /  MAX_PPRZ / RC_UPDATE_FREQ);
       INT32_ANGLE_NORMALIZE(sp->psi);
     }
@@ -160,7 +183,8 @@ void stabilization_attitude_read_rc_setpoint_eulers_f(struct FloatEulers *sp, bo
   sp->theta = (radio_control.values[RADIO_PITCH] * STABILIZATION_ATTITUDE_SP_MAX_THETA / MAX_PPRZ);
 
   if (in_flight) {
-    if (YAW_DEADBAND_EXCEEDED()) {
+    /* do not advance yaw setpoint if within a small deadband around stick center or if throttle is zero */
+    if (YAW_DEADBAND_EXCEEDED() && !THROTTLE_STICK_DOWN()) {
       sp->psi += (radio_control.values[RADIO_YAW] * STABILIZATION_ATTITUDE_SP_MAX_R / MAX_PPRZ / RC_UPDATE_FREQ);
       FLOAT_ANGLE_NORMALIZE(sp->psi);
     }

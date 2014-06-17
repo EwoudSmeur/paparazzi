@@ -83,11 +83,11 @@ struct FloatEulers {
 
 /**
  * @brief angular rates
- * @details Units: rad/s^2 */
+ * @details Units: rad/s */
 struct FloatRates {
-  float p; ///< in rad/s^2
-  float q; ///< in rad/s^2
-  float r; ///< in rad/s^2
+  float p; ///< in rad/s
+  float q; ///< in rad/s
+  float r; ///< in rad/s
 };
 
 #define FLOAT_ANGLE_NORMALIZE(_a) {             \
@@ -129,12 +129,14 @@ struct FloatRates {
 /* _vo = _vi * _s */
 #define FLOAT_VECT2_SMUL(_vo, _vi, _s) VECT2_SMUL(_vo, _vi, _s)
 
-#define FLOAT_VECT2_NORM(n, v) {               \
-    n = sqrtf((v).x*(v).x + (v).y*(v).y);      \
+#define FLOAT_VECT2_NORM2(_v) ((_v).x*(_v).x + (_v).y*(_v).y)
+
+#define FLOAT_VECT2_NORM(_n, _v) {               \
+    _n = sqrtf(FLOAT_VECT2_NORM2(_v));           \
   }
 
 #define FLOAT_VECT2_NORMALIZE(_v) {             \
-    const float n = sqrtf((_v).x*(_v).x + (_v).y*(_v).y);   \
+    const float n = sqrtf(FLOAT_VECT2_NORM2(_v)); \
     FLOAT_VECT2_SMUL(_v, _v, 1./n);             \
   }
 

@@ -322,7 +322,7 @@ let mark = fun (geomap:G.widget) ac_id track plugin_frame ->
 
 (** Light display of attributes in the flight plan. *)
 let attributes_pretty_printer = fun attribs ->
-  (* Remove the optional attributes *)
+  (* Remove the optional attributesÂ *)
   let valid = fun a ->
     let a = String.lowercase a in
     a <> "no" && a <> "strip_icon" && a <> "strip_button" && a <> "pre_call"
@@ -1252,7 +1252,7 @@ let listen_flight_params = fun geomap auto_center_new_ac alert alt_graph ->
         match ap_mode with
             "AUTO2" | "NAV" -> ok_color
           | "AUTO1" | "R_RCC" | "A_RCC" | "ATT_C" | "R_ZH" | "A_ZH" | "HOVER" | "HOV_C" | "H_ZH" -> "#10F0E0"
-          | "MANUAL" | "RATE" | "ATT" | "RC_D" -> warning_color
+          | "MANUAL" | "RATE" | "ATT" | "RC_D" | "CF" | "FWD" -> warning_color
           | _ -> alert_color in
       ac.strip#set_color "AP" color;
     end;
@@ -1288,10 +1288,12 @@ let listen_waypoint_moved = fun () ->
     let wp_id = Pprz.int_assoc "wp_id" vs in
     let a = fun s -> Pprz.float_assoc s vs in
     let geo = { posn_lat = (Deg>>Rad)(a "lat"); posn_long = (Deg>>Rad)(a "long") }
-    and altitude = a "alt" in
+    and altitude = a "alt"
+    and ground_alt = a "ground_alt" in
 
     try
       let w = ac.fp_group#get_wp wp_id in
+      w#set_ground_alt ground_alt;
       w#set ~altitude ~update:true geo
     with
         Not_found -> () (* Silently ignore unknown waypoints *)

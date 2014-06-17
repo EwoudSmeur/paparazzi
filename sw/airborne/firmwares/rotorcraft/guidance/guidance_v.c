@@ -79,6 +79,26 @@ PRINT_CONFIG_VAR(GUIDANCE_V_ADAPT_THROTTLE_ENABLED)
 #define QUADSHOT_NAVIGATION FALSE
 #endif
 
+#ifndef GUIDANCE_V_MIN_ERR_Z
+#define GUIDANCE_V_MIN_ERR_Z POS_BFP_OF_REAL(-10.)
+#endif
+
+#ifndef GUIDANCE_V_MAX_ERR_Z
+#define GUIDANCE_V_MAX_ERR_Z POS_BFP_OF_REAL(10.)
+#endif
+
+#ifndef GUIDANCE_V_MIN_ERR_ZD
+#define GUIDANCE_V_MIN_ERR_ZD SPEED_BFP_OF_REAL(-10.)
+#endif
+
+#ifndef GUIDANCE_V_MAX_ERR_ZD
+#define GUIDANCE_V_MAX_ERR_ZD SPEED_BFP_OF_REAL(10.)
+#endif
+
+#ifndef GUIDANCE_V_MAX_SUM_ERR
+#define GUIDANCE_V_MAX_SUM_ERR 2000000
+#endif
+
 uint8_t guidance_v_mode;
 int32_t guidance_v_ff_cmd;
 int32_t guidance_v_fb_cmd;

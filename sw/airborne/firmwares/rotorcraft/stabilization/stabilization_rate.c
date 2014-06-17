@@ -26,25 +26,21 @@
  *  Control loops for angular velocity.
  */
 
+#include "generated/airframe.h"
+
 #include "firmwares/rotorcraft/stabilization.h"
 
 #include "state.h"
 
 #include "subsystems/imu.h"
 #include "subsystems/radio_control.h"
-#include "generated/airframe.h"
+#include "firmwares/rotorcraft/autopilot_rc_helpers.h"
 
 #define F_UPDATE_RES 9
 #define REF_DOT_FRAC 11
 #define REF_FRAC  16
 
 #define MAX_SUM_ERR 4000000
-
-#if (STABILIZATION_RATE_GAIN_P < 0) || \
-  (STABILIZATION_RATE_GAIN_Q < 0)   || \
-  (STABILIZATION_RATE_GAIN_R < 0)
-#warning "ALL control gains are now positive!!!"
-#endif
 
 #ifndef STABILIZATION_RATE_DDGAIN_P
 #define STABILIZATION_RATE_DDGAIN_P 0
@@ -58,24 +54,23 @@
 
 #ifndef STABILIZATION_RATE_IGAIN_P
 #define STABILIZATION_RATE_IGAIN_P 0
-#else
-#if (STABILIZATION_RATE_IGAIN_P < 0)
-#warning "ALL control gains are now positive!!!"
 #endif
-#endif
+
 #ifndef STABILIZATION_RATE_IGAIN_Q
 #define STABILIZATION_RATE_IGAIN_Q 0
-#else
-#if (STABILIZATION_RATE_IGAIN_Q < 0)
-#warning "ALL control gains are now positive!!!"
 #endif
-#endif
+
 #ifndef STABILIZATION_RATE_IGAIN_R
 #define STABILIZATION_RATE_IGAIN_R 0
-#else
-#if (STABILIZATION_RATE_IGAIN_R < 0)
-#warning "ALL control gains are now positive!!!"
 #endif
+
+#if (STABILIZATION_RATE_GAIN_P < 0) || \
+  (STABILIZATION_RATE_GAIN_Q < 0)   || \
+  (STABILIZATION_RATE_GAIN_R < 0)   || \
+  (STABILIZATION_RATE_IGAIN_P < 0)  || \
+  (STABILIZATION_RATE_IGAIN_Q < 0)  || \
+  (STABILIZATION_RATE_IGAIN_R < 0)
+#error "ALL control gains have to be positive!!!"
 #endif
 
 #ifndef STABILIZATION_RATE_REF_TAU
@@ -175,17 +170,17 @@ void stabilization_rate_init(void) {
 
 void stabilization_rate_read_rc( void ) {
 
-  if(ROLL_RATE_DEADBAND_EXCEEDED())
+  if (ROLL_RATE_DEADBAND_EXCEEDED())
     stabilization_rate_sp.p = (int32_t)radio_control.values[RADIO_ROLL] * STABILIZATION_RATE_SP_MAX_P / MAX_PPRZ;
   else
     stabilization_rate_sp.p = 0;
 
-  if(PITCH_RATE_DEADBAND_EXCEEDED())
+  if (PITCH_RATE_DEADBAND_EXCEEDED())
     stabilization_rate_sp.q = (int32_t)radio_control.values[RADIO_PITCH] * STABILIZATION_RATE_SP_MAX_Q / MAX_PPRZ;
   else
     stabilization_rate_sp.q = 0;
 
-  if(YAW_RATE_DEADBAND_EXCEEDED())
+  if (YAW_RATE_DEADBAND_EXCEEDED() && !THROTTLE_STICK_DOWN())
     stabilization_rate_sp.r = (int32_t)radio_control.values[RADIO_YAW] * STABILIZATION_RATE_SP_MAX_R / MAX_PPRZ;
   else
     stabilization_rate_sp.r = 0;
@@ -197,17 +192,17 @@ void stabilization_rate_read_rc( void ) {
 //Read rc with roll and yaw sitcks switched if the default orientation is vertical but airplane sticks are desired
 void stabilization_rate_read_rc_switched_sticks( void ) {
 
-  if(ROLL_RATE_DEADBAND_EXCEEDED())
+  if (ROLL_RATE_DEADBAND_EXCEEDED())
     stabilization_rate_sp.r = (int32_t) -radio_control.values[RADIO_ROLL] * STABILIZATION_RATE_SP_MAX_P / MAX_PPRZ;
   else
     stabilization_rate_sp.r = 0;
 
-  if(PITCH_RATE_DEADBAND_EXCEEDED())
+  if (PITCH_RATE_DEADBAND_EXCEEDED())
     stabilization_rate_sp.q = (int32_t)radio_control.values[RADIO_PITCH] * STABILIZATION_RATE_SP_MAX_Q / MAX_PPRZ;
   else
     stabilization_rate_sp.q = 0;
 
-  if(YAW_RATE_DEADBAND_EXCEEDED())
+  if (YAW_RATE_DEADBAND_EXCEEDED() && !THROTTLE_STICK_DOWN())
     stabilization_rate_sp.p = (int32_t)radio_control.values[RADIO_YAW] * STABILIZATION_RATE_SP_MAX_R / MAX_PPRZ;
   else
     stabilization_rate_sp.p = 0;

@@ -86,6 +86,9 @@ ifeq ($(BOARD_VERSION), 2.0)
 LED_DEFINES = -DLED_BLUE=3 -DLED_RED=4 -DLED_GREEN=5
 endif
 endif
+ifeq ($(BOARD), navstik)
+LED_DEFINES = -DLED_RED=1 -DLED_GREEN=2
+endif
 LED_DEFINES ?= -DLED_RED=2 -DLED_GREEN=3
 
 test_sys_time_timer.ARCHDIR = $(ARCH)
@@ -97,6 +100,33 @@ test_sys_time_usleep.ARCHDIR = $(ARCH)
 test_sys_time_usleep.CFLAGS += $(COMMON_TEST_CFLAGS) $(LED_DEFINES)
 test_sys_time_usleep.srcs   += $(COMMON_TEST_SRCS)
 test_sys_time_usleep.srcs   += test/mcu_periph/test_sys_time_usleep.c
+
+
+test_gpio.ARCHDIR = $(ARCH)
+test_gpio.CFLAGS += $(COMMON_TEST_CFLAGS)
+test_gpio.srcs   += $(COMMON_TEST_SRCS)
+test_gpio.srcs   += test/mcu_periph/test_gpio.c
+
+
+#
+# test uart
+#
+# required configuration:
+#   -DUSE_UARTx
+#   -DUARTx_BAUD=B57600
+#
+test_uart.ARCHDIR = $(ARCH)
+test_uart.CFLAGS += $(COMMON_TEST_CFLAGS)
+test_uart.srcs   += $(COMMON_TEST_SRCS)
+
+test_uart.CFLAGS += -I$(SRC_LISA) -DUSE_UART
+#test_uart.CFLAGS += -DUSE_UART1 -DUART1_BAUD=B57600
+#test_uart.CFLAGS += -DUSE_UART2 -DUART2_BAUD=B57600
+#test_uart.CFLAGS += -DUSE_UART3 -DUART3_BAUD=B57600
+#test_uart.CFLAGS += -DUSE_UART5 -DUART5_BAUD=B57600
+test_uart.srcs += mcu_periph/uart.c
+test_uart.srcs += $(SRC_ARCH)/mcu_periph/uart_arch.c
+test_uart.srcs += test/mcu_periph/test_uart.c
 
 
 #
@@ -159,6 +189,18 @@ test_lis302dl.CFLAGS += -DUSE_SPI1
 test_lis302dl.CFLAGS += -DUSE_SPI_SLAVE2
 test_lis302dl.CFLAGS += -DLIS302DL_SLAVE_IDX=2
 test_lis302dl.CFLAGS += -DLIS302DL_SPI_DEV=spi1
+
+
+##
+## test can interface
+##
+test_can.ARCHDIR = $(ARCH)
+test_can.CFLAGS += $(COMMON_TEST_CFLAGS)
+test_can.srcs   += $(COMMON_TEST_SRCS)
+test_can.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
+test_can.srcs   += $(COMMON_TELEMETRY_SRCS)
+test_can.srcs   += test/test_can.c
+test_can.srcs   += mcu_periph/can.c $(SRC_ARCH)/mcu_periph/can_arch.c
 
 
 #
@@ -229,3 +271,76 @@ ifeq ($(TARGET), test_manual)
     include $(CFG_SHARED)/$(ACTUATORS).makefile
   endif
 endif
+
+
+#
+# test_baro_board : reads barometers and sends values over telemetry
+#
+# configuration
+#   SYS_TIME_LED
+#   MODEM_PORT
+#   MODEM_BAUD
+#
+test_baro_board.ARCHDIR = $(ARCH)
+test_baro_board.CFLAGS += $(COMMON_TEST_CFLAGS)
+test_baro_board.srcs   += $(COMMON_TEST_SRCS)
+test_baro_board.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
+test_baro_board.srcs   += $(COMMON_TELEMETRY_SRCS)
+test_baro_board.srcs += subsystems/air_data.c
+test_baro_board.srcs += test/test_baro_board.c
+test_baro_board.srcs += mcu_periph/i2c.c $(SRC_ARCH)/mcu_periph/i2c_arch.c
+ifeq ($(TARGET),test_baro_board)
+include $(CFG_SHARED)/baro_board.makefile
+endif
+test_baro_board.CFLAGS += $(BARO_BOARD_CFLAGS)
+test_baro_board.srcs += $(BARO_BOARD_SRCS)
+
+
+#
+# test_adc
+#
+# configuration
+#   SYS_TIME_LED
+#   MODEM_PORT
+#   MODEM_BAUD
+#
+test_adc.ARCHDIR = $(ARCH)
+test_adc.CFLAGS += $(COMMON_TEST_CFLAGS)
+test_adc.srcs   += $(COMMON_TEST_SRCS)
+test_adc.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
+test_adc.srcs   += $(COMMON_TELEMETRY_SRCS)
+test_adc.srcs   += $(SRC_ARCH)/mcu_periph/adc_arch.c
+test_adc.srcs   += test/mcu_periph/test_adc.c
+
+
+#
+# test_imu
+#
+# add imu subsystem to test_imu target!
+#
+# configuration
+#   SYS_TIME_LED
+#   MODEM_PORT
+#   MODEM_BAUD
+#
+test_imu.ARCHDIR = $(ARCH)
+test_imu.CFLAGS += $(COMMON_TEST_CFLAGS)
+test_imu.srcs   += $(COMMON_TEST_SRCS)
+test_imu.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
+test_imu.srcs   += $(COMMON_TELEMETRY_SRCS)
+test_imu.srcs   += mcu_periph/i2c.c $(SRC_ARCH)/mcu_periph/i2c_arch.c
+test_imu.srcs   += test/subsystems/test_imu.c
+test_imu.srcs   += math/pprz_trig_int.c
+
+
+#
+# test_radio_control
+#
+# add appropriate radio_control subsystem to target!
+#
+test_radio_control.ARCHDIR = $(ARCH)
+test_radio_control.CFLAGS += $(COMMON_TEST_CFLAGS)
+test_radio_control.srcs   += $(COMMON_TEST_SRCS)
+test_radio_control.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
+test_radio_control.srcs   += $(COMMON_TELEMETRY_SRCS)
+test_radio_control.srcs   += test/subsystems/test_radio_control.c

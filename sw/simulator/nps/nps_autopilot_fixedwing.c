@@ -43,12 +43,14 @@
 
 #include "subsystems/radio_control.h"
 #include "subsystems/imu.h"
-#include "subsystems/sensors/baro.h"
-#include "baro_board.h"
 #include "mcu_periph/sys_time.h"
 #include "state.h"
 #include "subsystems/commands.h"
 
+#include "subsystems/abi.h"
+
+// for launch
+#include "firmwares/fixedwing/autopilot.h"
 
 struct NpsAutopilot autopilot;
 bool_t nps_bypass_ahrs;
@@ -68,6 +70,8 @@ bool_t nps_bypass_ins;
 #endif
 
 void nps_autopilot_init(enum NpsRadioControlType type_rc, int num_rc_script, char* rc_dev) {
+
+  autopilot.launch = FALSE;
 
   nps_radio_control_init(type_rc, num_rc_script, rc_dev);
   nps_electrical_init();
@@ -111,7 +115,8 @@ void nps_autopilot_run_step(double time) {
  }
 
   if (nps_sensors_baro_available()) {
-    baro_feed_value(sensors.baro.value);
+    float pressure = (float) sensors.baro.value;
+    AbiSendMsgBARO_ABS(BARO_SIM_SENDER_ID, &pressure);
     Fbw(event_task);
     Ap(event_task);
   }
@@ -136,6 +141,13 @@ void nps_autopilot_run_step(double time) {
   /* scale final motor commands to 0-1 for feeding the fdm */
   for (uint8_t i=0; i < NPS_COMMANDS_NB; i++)
     autopilot.commands[i] = (double)commands[i]/MAX_PPRZ;
+  // hack: invert pitch to fit most JSBSim models
+  autopilot.commands[COMMAND_PITCH] = -(double)commands[COMMAND_PITCH]/MAX_PPRZ;
+
+  // do the launch when clicking launch in GCS
+  autopilot.launch = launch && !kill_throttle;
+  if (!launch)
+    autopilot.commands[COMMAND_THROTTLE] = 0;
 
 }
 

@@ -32,7 +32,7 @@
   <aircraft
    name="DualBoard_AP_FBW"
    ac_id="31"
-   airframe="airframes/CDW/DualBoardApFbw.xml"
+   airframe="airframes/examples/separate_fbw_ap.xml"
    radio="radios/R6107SP_7ch.xml"
    telemetry="telemetry/default_fixedwing_imu.xml"
    flight_plan="flight_plans/versatile.xml"
@@ -86,7 +86,7 @@
    radio="radios/cockpitSX.xml"
    telemetry="telemetry/default_fixedwing.xml"
    flight_plan="flight_plans/dummy.xml"
-   settings="settings/fixedwing_basic.xml"
+   settings=" settings/fixedwing_basic.xml"
    gui_color="blue"
   />
   <aircraft
@@ -96,7 +96,7 @@
    radio="radios/cockpitSX.xml"
    telemetry="telemetry/default_rotorcraft.xml"
    flight_plan="flight_plans/dummy.xml"
-   settings="settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_att_int.xml"
+   settings=" settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_att_int.xml"
    gui_color="white"
   />
   <aircraft
@@ -125,7 +125,7 @@
    airframe="airframes/examples/microjet_lisa_m.xml"
    radio="radios/cockpitSX.xml"
    telemetry="telemetry/default_fixedwing_imu.xml"
-   flight_plan="flight_plans/basic.xml"
+   flight_plan="flight_plans/nav_modules.xml"
    settings=" settings/fixedwing_basic.xml settings/control/ctl_basic.xml settings/estimation/ins_neutrals.xml settings/control/ctl_dash_loiter_trim.xml"
    gui_color="blue"
   />
@@ -160,6 +160,16 @@
    gui_color="blue"
   />
   <aircraft
+   name="Quad_LisaMX"
+   ac_id="30"
+   airframe="airframes/examples/quadrotor_lisa_mx.xml"
+   radio="radios/spektrum.xml"
+   telemetry="telemetry/default_rotorcraft.xml"
+   flight_plan="flight_plans/rotorcraft_basic.xml"
+   settings=" settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_att_int.xml settings/estimation/ahrs_float_mlkf.xml"
+   gui_color="blue"
+  />
+  <aircraft
    name="Quad_LisaM_2"
    ac_id="162"
    airframe="airframes/examples/quadrotor_lisa_m_2_pwm_spektrum.xml"
@@ -167,6 +177,16 @@
    telemetry="telemetry/default_rotorcraft.xml"
    flight_plan="flight_plans/rotorcraft_basic.xml"
    settings=" settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_att_int.xml settings/control/stabilization_rate.xml settings/estimation/ahrs_int_cmpl_quat.xml"
+   gui_color="white"
+  />
+  <aircraft
+   name="Quad_LisaS"
+   ac_id="163"
+   airframe="airframes/examples/quadrotor_lisa_s.xml"
+   radio="radios/cockpitSX.xml"
+   telemetry="telemetry/default_rotorcraft.xml"
+   flight_plan="flight_plans/rotorcraft_basic.xml"
+   settings="settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_att_int.xml settings/control/stabilization_rate.xml"
    gui_color="white"
   />
   <aircraft
@@ -250,6 +270,16 @@
    gui_color="blue"
   />
   <aircraft
+   name="krooz_quad"
+   ac_id="23"
+   airframe="airframes/examples/krooz_sd/krooz_sd_quad_mkk.xml"
+   radio="radios/cockpitSX.xml"
+   telemetry="telemetry/default_rotorcraft.xml"
+   flight_plan="flight_plans/rotorcraft_basic.xml"
+   settings=" settings/rotorcraft_basic.xml settings/estimation/ahrs_int_cmpl_quat.xml settings/control/stabilization_att_int.xml settings/control/stabilization_rate.xml"
+   gui_color="blue"
+  />
+  <aircraft
    name="lisa_l_chimu"
    ac_id="28"
    airframe="airframes/examples/lisa_l_chimu.xml"
@@ -257,6 +287,16 @@
    telemetry="telemetry/default_fixedwing_imu.xml"
    flight_plan="flight_plans/basic.xml"
    settings=" settings/fixedwing_basic.xml settings/control/ctl_basic.xml settings/control/ctl_dash_loiter_trim.xml settings/estimation/ins_neutrals.xml"
+   gui_color="blue"
+  />
+  <aircraft
+   name="quadshot"
+   ac_id="19"
+   airframe="airframes/examples/quadshot_asp21_spektrum.xml"
+   radio="radios/spektrum.xml"
+   telemetry="telemetry/default_rotorcraft.xml"
+   flight_plan="flight_plans/rotorcraft_basic.xml"
+   settings=" settings/rotorcraft_basic.xml settings/estimation/ahrs_int_cmpl_quat.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_att_int_quat.xml"
    gui_color="blue"
   />
   <aircraft

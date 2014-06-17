@@ -4,7 +4,6 @@
 
   <firmware name="rotorcraft">
     <target name="ap" board="ardrone2_raw">
-      <define name="USE_SONAR"/>
       <define name="AUTOPILOT_DISABLE_AHRS_KILL"/>
       <subsystem name="telemetry" type="udp"/>
       <subsystem name="radio_control" type="datalink"/>
@@ -14,6 +13,8 @@
       <subsystem name="fdm" type="jsbsim"/>
       <subsystem name="radio_control" type="ppm"/>
     </target>
+
+    <define name="USE_SONAR" value="TRUE"/>
 
 	<!-- Subsystem section -->
     <subsystem name="motor_mixing"/>
@@ -105,10 +106,8 @@
   </section>
 
   <section name="INS" prefix="INS_">
-    <define name="SONAR_SENS" value="0.00034"/>
     <define name="SONAR_MAX_RANGE" value="2.2"/>
     <define name="SONAR_UPDATE_ON_AGL" value="TRUE"/>
-    <define name="SONAR_VARIANCE_THRESHOLD" VALUE="2.0"/>
   </section>
 
   <section name="STABILIZATION_RATE" prefix="STABILIZATION_RATE_">
@@ -181,11 +180,6 @@
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
-    <define name="MIN_ERR_Z" value="POS_BFP_OF_REAL(-10.)"/>
-    <define name="MAX_ERR_Z" value="POS_BFP_OF_REAL( 10.)"/>
-    <define name="MIN_ERR_ZD" value="SPEED_BFP_OF_REAL(-10.)"/>
-    <define name="MAX_ERR_ZD" value="SPEED_BFP_OF_REAL( 10.)"/>
-    <define name="MAX_SUM_ERR" value="2000000"/>
     <define name="HOVER_KP" value="283"/>
     <define name="HOVER_KD" value="82"/>
     <define name="HOVER_KI" value="13"/>

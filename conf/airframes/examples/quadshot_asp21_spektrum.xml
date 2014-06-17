@@ -1,5 +1,5 @@
 <!-- this is a quadshot vehicle equiped with Lisa/m2.0 and an aspirin 2.1
-More information on the Quadshot can be found at transition-robotics.com -->
+     More information on the Quadshot can be found at transition-robotics.com -->
 
 <airframe name="quadshot aspirin 2.1 spektrum">
 
@@ -27,10 +27,10 @@ More information on the Quadshot can be found at transition-robotics.com -->
 
   <command_laws>
     <call fun="motor_mixing_run(autopilot_motors_on,FALSE,values)"/>
-    <set servo="A1" value="motor_mixing.commands[SERVO_A1]"/>
-    <set servo="A2"  value="motor_mixing.commands[SERVO_A2]"/>
-    <set servo="B1" value="motor_mixing.commands[SERVO_B1]"/>
-    <set servo="B2"  value="motor_mixing.commands[SERVO_B2]"/>
+    <set servo="A1" value="motor_mixing.commands[0]"/>
+    <set servo="A2"  value="motor_mixing.commands[1]"/>
+    <set servo="B1" value="motor_mixing.commands[2]"/>
+    <set servo="B2"  value="motor_mixing.commands[3]"/>
 
  <!-- Mode dependent actuator laws for the elevons. The elevons act different in rc attitude flight mode-->
  <!-- First the correct feedback is stored in variables -->
@@ -52,7 +52,7 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <let var="forward_left"  value="10*$aileron_feedback_left+7*$elevator_feedback_left"/>
     <let var="forward_right" value="10*$aileron_feedback_right+7*$elevator_feedback_right"/>
 
- <!-- This statement tells the autopilot to use the hover feedback if in mode attitude direct and to use the forward feedback in all other cases-->
+    <!-- This statement tells the autopilot to use the hover feedback if in mode attitude direct and to use the forward feedback in all other cases-->
     <set servo="ELEVON_LEFT"    value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? $hover_left  : $forward_left" />
     <set servo="ELEVON_RIGHT"   value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? $hover_right  : $forward_right" />
 <!--     <set servo="ELEVON_RIGHT"   value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? 9000 : -9000" /> -->
@@ -74,15 +74,15 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="THRUST_COEF" value="{ 0, 0, 0, 0 }"/>-->
   </section>
 
-<!-- If you got a caliberation XML document from your IMU supplier, import this in the IMU section -->
+  <!-- If you got a caliberation XML document from your IMU supplier, import this in the IMU section -->
 
-<!-- Note that is better to have *no* caliberation file at all, than a one with incorrect caliberation values.
-  The default factory values are most of the time perfectly acceptable, so by default we will not use the caliberation file -->
+  <!-- Note that is better to have *no* caliberation file at all, than a one with incorrect caliberation values.
+       The default factory values are most of the time perfectly acceptable, so by default we will not use the caliberation file -->
 
   <section name="IMU" prefix="IMU_">
     <!-- Use default driver values for gyro -->
 
- <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
+    <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
     <define name="ACCEL_X_NEUTRAL" value="0"/>
     <define name="ACCEL_Y_NEUTRAL" value="0"/>
     <define name="ACCEL_Z_NEUTRAL" value="0"/>
@@ -131,7 +131,7 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="IGAIN_R" value="200"/>
   </section>
 
- <!-- These gains are used when the gain scheduling module is enabled (by loading it in the modules section)-->
+  <!-- These gains are used when the gain scheduling module is enabled (by loading it in the modules section)-->
   <section name ="GAIN_SETS">
     <define name="NUMBER_OF_GAINSETS" value="2"/>
     <define name="SCHEDULING_VARIABLE" value="norm_ref_airspeed"/>
@@ -199,8 +199,6 @@ More information on the Quadshot can be found at transition-robotics.com -->
     <define name="PSI_DDGAIN"   value=" 0"/>
   </section>
 
-  <section name="INS" prefix="INS_">
-  </section>
 
  <!-- Gains for vertical navigation -->
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
@@ -305,13 +303,11 @@ More information on the Quadshot can be found at transition-robotics.com -->
  <!-- To use an airspeed sensor on I2C, enable I2C2-->
      <define name="USE_I2C2"/>
 
-    <!-- If using aspirin 2.2, make sure to uncomment the following barometer configuration: -->
-<!--       <configure name="LISA_M_BARO" value="BARO_MS5611_SPI"/> -->
-    </target>
+      <!-- To use an airspeed sensor on I2C, enable I2C2-->
+      <define name="USE_I2C2"/>
 
-    <target name="nps" board="pc">
-      <subsystem name="fdm"           type="jsbsim"/>
-      <subsystem name="radio_control" type="ppm"/>
+      <!-- If using aspirin 2.2, make sure to uncomment the following barometer configuration: -->
+      <!--       <configure name="LISA_M_BARO" value="BARO_MS5611_SPI"/> -->
     </target>
 
     <subsystem name="motor_mixing"/>
