@@ -68,6 +68,8 @@ PRINT_CONFIG_VAR(GUIDANCE_H_USE_SPEED_REF)
 // max airspeed for quadshot guidance
 #define MAX_AIRSPEED 15
 
+#define INT32_ANGLE_HIGH_RES_FRAC 18
+
 
 uint8_t guidance_h_mode;
 bool_t guidance_h_use_ref;
@@ -115,6 +117,7 @@ int32_t norm_ref_airspeed;
 int32_t max_airspeed = MAX_AIRSPEED;
 float max_turn_bank;
 float turn_bank_gain;
+int32_t wind_gain;
 
 static void guidance_h_update_reference(void);
 static void guidance_h_traj_run(bool_t in_flight);
@@ -227,6 +230,7 @@ void guidance_h_init(void) {
   norm_ref_airspeed = 0;
   max_turn_bank = 40.0;
   turn_bank_gain = 0.8;
+  wind_gain = 64;
   INT_VECT2_ZERO(wind_estimate);
   INT_VECT2_ZERO(guidance_h_ref_airspeed);
   INT_VECT2_ZERO(wind_estimate_high_res);
@@ -408,6 +412,9 @@ void guidance_h_run(bool_t  in_flight) {
          * use current euler psi for now, should be real heading
          */
         sp_cmd_i.psi = stateGetNedToBodyEulers_i()->psi;
+        //make sure the heading is right before leaving horizontal_mode attiude
+        guidance_h_ypr_sp.psi = sp_cmd_i.psi;
+        high_res_psi = sp_cmd_i.psi << (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC);
         stabilization_attitude_set_rpy_setpoint_i(&sp_cmd_i);
       }
       else {
@@ -611,7 +618,6 @@ static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool_t in_flig
   }
 }
 
-#define INT32_ANGLE_HIGH_RES_FRAC 18
 #define INT32_ANGLE_HIGH_RES_NORMALIZE(_a) {             \
   while ((_a) > (INT32_ANGLE_PI << (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC)))  (_a) -= (INT32_ANGLE_2_PI << (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC));    \
   while ((_a) < (-INT32_ANGLE_PI << (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC))) (_a) += (INT32_ANGLE_2_PI << (INT32_ANGLE_HIGH_RES_FRAC - INT32_ANGLE_FRAC));    \
@@ -786,8 +792,8 @@ void guidance_h_determine_wind_estimate(void) {
 
   //Low pass wind_estimate, because we know the wind usually only changes slowly
   //But not too slow, because the wind_estimate is also an adaptive element for the airspeed model inaccuracies
-  wind_estimate_high_res.x += (( (wind_estimate_measured.x - wind_estimate.x) > 0)*2-1)<<6;
-  wind_estimate_high_res.y += (( (wind_estimate_measured.y - wind_estimate.y) > 0)*2-1)<<6;
+  wind_estimate_high_res.x += (( (wind_estimate_measured.x - wind_estimate.x) > 0)*2-1) * wind_gain;
+  wind_estimate_high_res.y += (( (wind_estimate_measured.y - wind_estimate.y) > 0)*2-1) * wind_gain;
 
   wind_estimate.x = ((wind_estimate_high_res.x) >> 8);
   wind_estimate.y = ((wind_estimate_high_res.y) >> 8);

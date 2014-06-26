@@ -232,6 +232,10 @@
     <define name="USE_REF" value="FALSE"/>
   </section>
 
+  <section name="NAV">
+    <define name="ARRIVED_AT_WAYPOINT" value="5" unit="m"/>
+  </section>
+
   <section name="MISC">
     <define name="REF_QUAT_INFINITESIMAL_STEP" value="TRUE"/>
     <!--The Quadshot uses a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
@@ -301,10 +305,8 @@
     <configure name="BMP_PORT" value="/dev/ttyACM0" />
 
  <!-- To use an airspeed sensor on I2C, enable I2C2-->
-     <define name="USE_I2C2"/>
+<!--      <define name="USE_I2C2"/> -->
 
-      <!-- To use an airspeed sensor on I2C, enable I2C2-->
-      <define name="USE_I2C2"/>
 
       <!-- If using aspirin 2.2, make sure to uncomment the following barometer configuration: -->
       <!--       <configure name="LISA_M_BARO" value="BARO_MS5611_SPI"/> -->

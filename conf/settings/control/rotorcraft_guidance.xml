@@ -32,6 +32,7 @@
       <dl_setting var="nav_heading" MIN="0" STEP="1" MAX="360" module="navigation" unit="1/2^12r" alt_unit="deg" alt_unit_coef="0.0139882"/>
       <dl_setting var="nav_radius" MIN="-50" STEP="0.1" MAX="50" module="navigation" unit="m"/>
       <dl_setting var="max_airspeed" MIN="4" STEP="1" MAX="15" module="guidance/guidance_h"/>
+      <dl_setting var="wind_gain" MIN="1" STEP="1" MAX="256" module="guidance/guidance_h"/>
       <dl_setting var="horizontal_speed_gain" MIN="1" STEP="1" MAX="15" module="guidance/guidance_h" shortname="hor_speed_div"/>
       <dl_setting var="alt_pitch_gain" MIN="0" STEP="0.01" MAX="5.0" module="guidance/guidance_v" shortname="alt_pitch_gain"/>
       <dl_setting var="max_turn_bank" MIN="10.0" STEP="1.0" MAX="60.0" module="guidance/guidance_h" shortname="max_turn_bank"/>
