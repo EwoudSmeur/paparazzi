@@ -754,6 +754,7 @@ void guidance_h_position_to_airspeed(void) {
   int32_t norm_airspeed_sp;
   INT32_VECT2_NORM(norm_airspeed_sp, airspeed_sp);
 
+  //Check if the airspeed_sp is larger than the max airspeed. If so, give the wind cancellatioin priority.
   if( norm_airspeed_sp > (max_airspeed<<8) && norm_groundspeed_sp > 0) {
     int32_t av = INT_MULT_RSHIFT(guidance_h_groundspeed_sp.x, guidance_h_groundspeed_sp.x,8) + INT_MULT_RSHIFT(guidance_h_groundspeed_sp.y, guidance_h_groundspeed_sp.y, 8);
     int32_t bv = 2*( INT_MULT_RSHIFT(wind_estimate.x, guidance_h_groundspeed_sp.x, 8) + INT_MULT_RSHIFT(wind_estimate.y, guidance_h_groundspeed_sp.y, 8));

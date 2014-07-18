@@ -133,7 +133,7 @@ int32_t guidance_v_z_sum_err;
 
 int32_t guidance_v_thrust_coeff;
 int32_t v_control_pitch;
-float alt_pitch_gain = 0.4;
+float alt_pitch_gain = 0.8;
 
 
 #define GuidanceVSetRef(_pos, _speed, _accel) { \
@@ -330,6 +330,10 @@ void guidance_v_run(bool_t in_flight) {
         //if airspeed ref < 4 only thrust
         stabilization_cmd[COMMAND_THRUST] = guidance_v_delta_t;
         v_control_pitch = 0;
+
+        guidance_v_kp = GUIDANCE_V_HOVER_KP;
+        guidance_v_kd = GUIDANCE_V_HOVER_KD;
+        guidance_v_ki = GUIDANCE_V_HOVER_KI;
       }
       else if(norm_ref_airspeed > (8<<8)) { //if airspeed ref > 8 only pitch, 
         //at 15 m/s the thrust has to be 33%
@@ -339,6 +343,9 @@ void guidance_v_run(bool_t in_flight) {
         //Control altitude with pitch, now only proportional control
         float alt_control_pitch =  (guidance_v_delta_t - MAX_PPRZ/2)*alt_pitch_gain;
         v_control_pitch = ANGLE_BFP_OF_REAL(alt_control_pitch/MAX_PPRZ);
+        guidance_v_kp = GUIDANCE_V_HOVER_KP/2;
+        guidance_v_kd = GUIDANCE_V_HOVER_KD/2;
+        guidance_v_ki = GUIDANCE_V_HOVER_KI/2;
       }
       else {//if airspeed ref > 4 && < 8 both
         int32_t airspeed_transition = (norm_ref_airspeed - (4<<8))/4; //divide by 4 to scale it to 0-1 (<<8)
