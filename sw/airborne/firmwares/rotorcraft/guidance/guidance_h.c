@@ -226,7 +226,7 @@ void guidance_h_init(void) {
   transition_theta_offset = 0;
   high_res_psi = 0;
   guidance_hovering = true;
-  horizontal_speed_gain = 6;
+  horizontal_speed_gain = 8;
   norm_ref_airspeed = 0;
   max_turn_bank = 40.0;
   turn_bank_gain = 0.8;
@@ -823,4 +823,6 @@ void stabilization_attitude_set_cmd_i(struct Int32Eulers *sp_cmd) {
 
   //   first apply the roll/pitch setpoint and then the yaw
   INT32_QUAT_COMP(stab_att_sp_quat, q_yaw_sp, q_rp_i);
+
+  INT32_EULERS_OF_QUAT(stab_att_sp_euler, stab_att_sp_quat);
 }

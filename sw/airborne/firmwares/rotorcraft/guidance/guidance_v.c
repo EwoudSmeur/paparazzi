@@ -341,8 +341,8 @@ void guidance_v_run(bool_t in_flight) {
         //stabilization_cmd[COMMAND_THRUST] = MAX_PPRZ/5;
 //         stabilization_cmd[COMMAND_THRUST] = ((norm_ref_airspeed - (8<<8)) / 7 * (MAX_PPRZ/3 - MAX_PPRZ/5))>>8 + 9600/5;
         //Control altitude with pitch, now only proportional control
-        float alt_control_pitch =  (guidance_v_delta_t - MAX_PPRZ/2)*alt_pitch_gain;
-        v_control_pitch = ANGLE_BFP_OF_REAL(alt_control_pitch/MAX_PPRZ);
+        float alt_control_pitch =  (guidance_v_delta_t - MAX_PPRZ*guidance_v_nominal_throttle)*alt_pitch_gain;
+        v_control_pitch = ANGLE_BFP_OF_REAL(alt_control_pitch/(MAX_PPRZ*guidance_v_nominal_throttle));
         guidance_v_kp = GUIDANCE_V_HOVER_KP/2;
         guidance_v_kd = GUIDANCE_V_HOVER_KD/2;
         guidance_v_ki = GUIDANCE_V_HOVER_KI/2;
@@ -350,8 +350,12 @@ void guidance_v_run(bool_t in_flight) {
       else {//if airspeed ref > 4 && < 8 both
         int32_t airspeed_transition = (norm_ref_airspeed - (4<<8))/4; //divide by 4 to scale it to 0-1 (<<8)
         stabilization_cmd[COMMAND_THRUST] = ( (MAX_PPRZ/5 + (guidance_v_delta_t - MAX_PPRZ/2)/10) * airspeed_transition + guidance_v_delta_t * ( (1<<8) - airspeed_transition))>>8;
-        float alt_control_pitch =  (guidance_v_delta_t - MAX_PPRZ/2)*alt_pitch_gain;
-        v_control_pitch = INT_MULT_RSHIFT((int32_t) ANGLE_BFP_OF_REAL(alt_control_pitch/MAX_PPRZ), airspeed_transition, 8);
+        float alt_control_pitch = (guidance_v_delta_t - MAX_PPRZ*guidance_v_nominal_throttle)*alt_pitch_gain;
+        v_control_pitch = INT_MULT_RSHIFT((int32_t) ANGLE_BFP_OF_REAL(alt_control_pitch/(MAX_PPRZ*guidance_v_nominal_throttle)), airspeed_transition, 8);
+
+        guidance_v_kp = GUIDANCE_V_HOVER_KP;
+        guidance_v_kd = GUIDANCE_V_HOVER_KD;
+        guidance_v_ki = GUIDANCE_V_HOVER_KI;
       }
 
 #else
@@ -437,9 +441,13 @@ static void run_hover_loop(bool_t in_flight) {
   /* feed forward command */
   guidance_v_ff_cmd = (guidance_v_ff_cmd << INT32_TRIG_FRAC) / guidance_v_thrust_coeff;
 
+#if QUADSHOT_NAVIGATION
+  //FIXME: NOT USING FEEDFORWARD COMMAND BECAUSE OF QUADSHOT NAVIGATION
+  guidance_v_ff_cmd = guidance_v_nominal_throttle*MAX_PPRZ;
+#endif
+
   /* bound the nominal command to 0.9*MAX_PPRZ */
   Bound(guidance_v_ff_cmd, 0, 8640);
-
 
   /* our error feed back command                   */
   /* z-axis pointing down -> positive error means we need less thrust */

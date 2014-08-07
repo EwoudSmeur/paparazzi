@@ -209,9 +209,9 @@
     <define name="MAX_SUM_ERR" value="2000000"/>
     <define name="HOVER_KP"    value="200"/>
     <define name="HOVER_KD"    value="175"/>
-    <define name="HOVER_KI"    value="72"/>
-    <define name="NOMINAL_HOVER_THROTTLE" value ="0.4"/>
-    <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
+    <define name="HOVER_KI"    value="100"/>
+    <define name="NOMINAL_HOVER_THROTTLE" value ="0.2"/>
+    <define name="ADAPT_THROTTLE_ENABLED" value="FALSE"/>
   </section>
 
   <section name="AHRS" prefix="AHRS_">
@@ -237,7 +237,6 @@
   </section>
 
   <section name="MISC">
-    <define name="REF_QUAT_INFINITESIMAL_STEP" value="TRUE"/>
     <!--The Quadshot uses a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
     <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
     <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
