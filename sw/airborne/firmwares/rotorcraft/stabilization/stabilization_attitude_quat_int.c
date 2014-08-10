@@ -79,9 +79,9 @@ static void send_att(void) { //FIXME really use this message here ?
       &stab_att_sp_euler.phi,
       &stab_att_sp_euler.theta,
       &stab_att_sp_euler.psi,
-      &stabilization_att_sum_err.phi,
-      &stabilization_att_sum_err.theta,
-      &stabilization_att_sum_err.psi,
+      &stabilization_att_sum_err_quat.qx,
+      &stabilization_att_sum_err_quat.qy,
+      &stabilization_att_sum_err_quat.qz,
       &stabilization_att_fb_cmd[COMMAND_ROLL],
       &stabilization_att_fb_cmd[COMMAND_PITCH],
       &stabilization_att_fb_cmd[COMMAND_YAW],
@@ -244,16 +244,12 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 
   /* integrated error */
   if (enable_integrator) {
-    struct Int32Quat new_sum_err, scaled_att_err;
-    /* update accumulator */
-    scaled_att_err.qi = att_err.qi;
-    scaled_att_err.qx = att_err.qx / IERROR_SCALE;
-    scaled_att_err.qy = att_err.qy / IERROR_SCALE;
-    scaled_att_err.qz = att_err.qz / IERROR_SCALE;
-    INT32_QUAT_COMP(new_sum_err, stabilization_att_sum_err_quat, scaled_att_err);
-    INT32_QUAT_NORMALIZE(new_sum_err);
-    QUAT_COPY(stabilization_att_sum_err_quat, new_sum_err);
-    INT32_EULERS_OF_QUAT(stabilization_att_sum_err, stabilization_att_sum_err_quat);
+    stabilization_att_sum_err_quat.qx += att_err.qx /IERROR_SCALE;
+    stabilization_att_sum_err_quat.qy += att_err.qy /IERROR_SCALE;
+    stabilization_att_sum_err_quat.qz += att_err.qz /IERROR_SCALE;
+    Bound(stabilization_att_sum_err_quat.qx,-100000,100000);
+    Bound(stabilization_att_sum_err_quat.qy,-100000,100000);
+    Bound(stabilization_att_sum_err_quat.qz,-100000,100000);
   } else {
     /* reset accumulator */
     INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
