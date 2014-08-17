@@ -74,6 +74,7 @@ PRINT_CONFIG_VAR(GUIDANCE_H_USE_SPEED_REF)
 uint8_t guidance_h_mode;
 bool_t guidance_h_use_ref;
 bool_t guidance_h_approx_force_by_thrust;
+bool_t force_forward_flight;
 
 struct Int32Vect2 guidance_h_pos_sp;
 struct Int32Vect2 guidance_h_pos_ref;
@@ -231,6 +232,7 @@ void guidance_h_init(void) {
   max_turn_bank = 40.0;
   turn_bank_gain = 0.8;
   wind_gain = 64;
+  force_forward_flight = 0;
   INT_VECT2_ZERO(wind_estimate);
   INT_VECT2_ZERO(guidance_h_ref_airspeed);
   INT_VECT2_ZERO(wind_estimate_high_res);
@@ -743,13 +745,30 @@ void guidance_h_position_to_airspeed(void) {
   struct Int32Vect2 guidance_h_groundspeed_sp;
   VECT2_SDIV(guidance_h_groundspeed_sp, guidance_h_pos_err, horizontal_speed_gain);
 
+  int32_t norm_groundspeed_sp;
+  INT32_VECT2_NORM(norm_groundspeed_sp, guidance_h_groundspeed_sp);
+
+  //create setpoint groundspeed with a norm of 15 m/s
+  if(force_forward_flight) {
+    //scale the groundspeed_sp to 15 m/s if large enough to begin with
+    if(norm_groundspeed_sp > 1<<8) {
+      guidance_h_groundspeed_sp.x = guidance_h_groundspeed_sp.x*(max_airspeed<<8)/norm_groundspeed_sp;
+      guidance_h_groundspeed_sp.y = guidance_h_groundspeed_sp.y*(max_airspeed<<8)/norm_groundspeed_sp;
+    }
+    else { //groundspeed_sp is very small, so continue with the current heading
+      int32_t psi = guidance_h_ypr_sp.psi;
+      int32_t s_psi, c_psi;
+      PPRZ_ITRIG_SIN(s_psi, psi);
+      PPRZ_ITRIG_COS(c_psi, psi);
+      guidance_h_groundspeed_sp.x = (15*c_psi)>>(INT32_TRIG_FRAC - 8);
+      guidance_h_groundspeed_sp.y = (15*s_psi)>>(INT32_TRIG_FRAC - 8);
+    }
+  }
+
   struct Int32Vect2 airspeed_sp;
   INT_VECT2_ZERO(airspeed_sp);
   VECT2_ADD(airspeed_sp, guidance_h_groundspeed_sp);
   VECT2_ADD(airspeed_sp, wind_estimate);
-
-  int32_t norm_groundspeed_sp;
-  INT32_VECT2_NORM(norm_groundspeed_sp, guidance_h_groundspeed_sp);
 
   int32_t norm_airspeed_sp;
   INT32_VECT2_NORM(norm_airspeed_sp, airspeed_sp);
