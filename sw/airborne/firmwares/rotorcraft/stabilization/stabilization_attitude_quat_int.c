@@ -56,7 +56,6 @@ struct Int32AttitudeGains stabilization_gains = {
 #endif
 
 struct Int32Quat stabilization_att_sum_err_quat;
-struct Int32Eulers stabilization_att_sum_err;
 
 int32_t stabilization_att_fb_cmd[COMMANDS_NB];
 int32_t stabilization_att_ff_cmd[COMMANDS_NB];
@@ -128,7 +127,6 @@ void stabilization_attitude_init(void) {
   stabilization_attitude_ref_init();
 
   INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
-  INT_EULERS_ZERO( stabilization_att_sum_err );
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, "STAB_ATTITUDE", send_att);
@@ -145,8 +143,6 @@ void stabilization_attitude_enter(void) {
   stabilization_attitude_ref_enter();
 
   INT32_QUAT_ZERO(stabilization_att_sum_err_quat);
-  INT_EULERS_ZERO(stabilization_att_sum_err);
-
 }
 
 void stabilization_attitude_set_failsafe_setpoint(void) {
@@ -253,7 +249,6 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   } else {
     /* reset accumulator */
     INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
-    INT_EULERS_ZERO( stabilization_att_sum_err );
   }
 
   /* compute the feed forward command */

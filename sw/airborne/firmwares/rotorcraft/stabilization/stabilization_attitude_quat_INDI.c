@@ -35,6 +35,7 @@
 #include "subsystems/imu.h"
 #include "subsystems/actuators/motor_mixing.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
+#include "subsystems/radio_control.h"
 
 struct Int32AttitudeGains stabilization_gains = {
   {STABILIZATION_ATTITUDE_PHI_PGAIN, STABILIZATION_ATTITUDE_THETA_PGAIN, STABILIZATION_ATTITUDE_PSI_PGAIN },
@@ -56,8 +57,9 @@ struct Int32AttitudeGains stabilization_gains = {
 #warning "ALL control gains are now positive!!!"
 #endif
 
+void stabililzation_attitude_change_motor_mixing(int32_t (*coef)[MOTOR_MIXING_NB_MOTOR], int32_t (*orig_coef)[MOTOR_MIXING_NB_MOTOR], int32_t denominator);
+
 struct Int32Quat stabilization_att_sum_err_quat;
-struct Int32Eulers stabilization_att_sum_err;
 
 int32_t stabilization_att_fb_cmd[COMMANDS_NB];
 int32_t stabilization_att_ff_cmd[COMMANDS_NB];
@@ -83,6 +85,10 @@ struct FloatRates u_in = {0., 0., 0.};
 struct FloatRates udot = {0., 0., 0.};
 struct FloatRates udotdot = {0., 0., 0.};
 struct FloatRates filt_rate = {0., 0., 0.};
+
+float m_c_p_library[5] = {40,40,40,40,40};
+float m_c_q_library[5] = {9,9,9,9,9};
+float m_c_r_library[5] = {170,170,130,100,80};
 
 int32_t pitch_coef_orig[MOTOR_MIXING_NB_MOTOR] = MOTOR_MIXING_PITCH_COEF;
 int32_t yaw_coef_orig[MOTOR_MIXING_NB_MOTOR] = MOTOR_MIXING_YAW_COEF;
@@ -120,14 +126,14 @@ static void send_att(void) { //FIXME really use this message here ?
   struct Int32Rates* body_rate = stateGetBodyRates_i();
   struct Int32Eulers* att = stateGetNedToBodyEulers_i();
   DOWNLINK_SEND_STAB_ATTITUDE_INT(DefaultChannel, DefaultDevice,
-      &pitch_coef[0], &pitch_coef[1], &pitch_coef[2],
+      &yaw_coef[0], &pitch_coef[1], &pitch_coef[2],
       &pitch_coef[3], &(att->theta), &(att->psi),
       &stab_att_sp_euler.phi,
       &stab_att_sp_euler.theta,
       &stab_att_sp_euler.psi,
       &att_err_x,
-      &stabilization_att_sum_err.theta,
-      &stabilization_att_sum_err.psi,
+      &stabilization_att_sum_err_quat.qx,
+      &stabilization_att_sum_err_quat.qy,
       &yaw_coef[0],
       &yaw_coef[1],
       &yaw_coef[2],
@@ -184,7 +190,6 @@ void stabilization_attitude_init(void) {
   stabilization_attitude_ref_init();
 
   INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
-  INT_EULERS_ZERO( stabilization_att_sum_err );
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, "STAB_ATTITUDE", send_att);
@@ -202,7 +207,6 @@ void stabilization_attitude_enter(void) {
   stabilization_attitude_ref_enter();
 
   INT32_QUAT_ZERO(stabilization_att_sum_err_quat);
-  INT_EULERS_ZERO(stabilization_att_sum_err);
 
   FLOAT_RATES_ZERO(filtered_rate);
   FLOAT_RATES_ZERO(filtered_rate_deriv);
@@ -273,20 +277,13 @@ _v = _v < _min ? _min : _v > _max ? _max : _v;  \
 static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *gains, struct Int32Quat *att_err,
     struct Int32Rates *rate_err, struct Int32Quat *sum_err)
 {
-
-//   filt_rate.p = filt_rate.p + 0.2*(stateGetBodyRates_f()->p - filt_rate.p);
-//   filt_rate.q = filt_rate.q + 0.2*(stateGetBodyRates_f()->q - filt_rate.q);
-//   filt_rate.r = filt_rate.r + 0.2*(stateGetBodyRates_f()->r - filt_rate.r);
-  
   angular_accel_ref.p = kp_p * QUAT1_FLOAT_OF_BFP(att_err->qx) - kd_p * filtered_rate.p;
   angular_accel_ref.q = kp_q * QUAT1_FLOAT_OF_BFP(att_err->qy) - kd_q * filtered_rate.q;
   angular_accel_ref.r = kp_r * QUAT1_FLOAT_OF_BFP(att_err->qz) - kd_r * filtered_rate.r;
-// angular_accel_ref = - kd_p * stateGetBodyRates_f()->p;
 
   indi_du.p = m_c_p * (angular_accel_ref.p - filtered_rate_deriv.p);
   indi_du.q = m_c_q * (angular_accel_ref.q - filtered_rate_deriv.q);
   indi_du.r = m_c_r * (angular_accel_ref.r - filtered_rate_deriv.r);
-//   indi_du = m_c_p * (-filtered_rate_deriv);
 
   u_in.p = indi_u.p + indi_du.p;
   u_in.q = indi_u.q + indi_du.q;
@@ -296,11 +293,6 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
   BOUND_CONTROLS(u_in.q, -4500, 4500);
   float half_thrust = ((float) stabilization_cmd[COMMAND_THRUST]/2);
 
-//   if(u_in.r > ((float) stabilization_cmd[COMMAND_THRUST]/2))
-//     u_in.r = ((float) stabilization_cmd[COMMAND_THRUST]/2);
-//   else if(u_in.r < -((float) stabilization_cmd[COMMAND_THRUST]/2))
-//     u_in.r = -((float) stabilization_cmd[COMMAND_THRUST]/2);
-
   //Save error for displaying purposes
   att_err_x = QUAT1_FLOAT_OF_BFP(att_err->qx);
 
@@ -309,52 +301,47 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
     fb_commands[COMMAND_ROLL] = u_in.p;
     fb_commands[COMMAND_PITCH] = u_in.q;
     fb_commands[COMMAND_YAW] = u_in.r;
-    //if(transition_percentage > (90 << INT32_PERCENTAGE_FRAC)) {
-    if( (norm_ref_airspeed > (8<<8)) || (transition_percentage > (90 << INT32_PERCENTAGE_FRAC)) ) {
+    if( (norm_ref_airspeed > (13<<8)) || (transition_percentage > (90 << INT32_PERCENTAGE_FRAC)) ) {
       //if in forward flight use ailerons for roll control and adjust gains
-      yaw_coef[0]  = 0;
-      yaw_coef[1]  = 0;
-      yaw_coef[2]  = 0;
-      yaw_coef[3]  = 0;
+      stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
+      stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,512); //don't use motors for yaw (fixedwing roll)
       aileron_gain = 1;
-      elevator_gain = 1;
+      elevator_gain = 0;
       m_c_r = 30;
       BOUND_CONTROLS(u_in.r, -9600, 9600);
-
-      //gradual switch to elevator instead of thrust differential (went unstable last time)
-//       if(radio_control.values[6] > 8000) {
-//         pitch_coef[0]  = 0;
-//         pitch_coef[1]  = 0;
-//         pitch_coef[2]  = 0;
-//         pitch_coef[3]  = 0;
-//         elevator_gain = elevator_gain_goal;
-//       }
-//       else if(radio_control.values[6] < -8000) {
-//         pitch_coef[0]  = pitch_coef_orig[0];
-//         pitch_coef[1]  = pitch_coef_orig[1];
-//         pitch_coef[2]  = pitch_coef_orig[2];
-//         pitch_coef[3]  = pitch_coef_orig[3];
-//         elevator_gain = 0;
-//       }
-//       else {
-//         pitch_coef[0]  = (pitch_coef_orig[0] *(8000 - radio_control.values[6]))/16000;
-//         pitch_coef[1]  = (pitch_coef_orig[1] *(8000 - radio_control.values[6]))/16000;
-//         pitch_coef[2]  = (pitch_coef_orig[2] *(8000 - radio_control.values[6]))/16000;
-//         pitch_coef[3]  = (pitch_coef_orig[3] *(8000 - radio_control.values[6]))/16000;
-//         elevator_gain = (elevator_gain_goal *(8000 + radio_control.values[6]))/16000;
-//       }
+    }
+    else if(norm_ref_airspeed > (10<<8)) {
+      //if in forward flight use ailerons for roll control and adjust gains
+      stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
+      stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,512); //don't use motors for yaw (fixedwing roll)
+      aileron_gain = 1;
+      elevator_gain = 0;
+      m_c_r = 30;
+      BOUND_CONTROLS(u_in.r, -9600, 9600);
+    }
+    else if(norm_ref_airspeed > (7<<8)) {
+      //if in forward flight use ailerons for roll control and adjust gains
+      stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
+      stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,512); //don't use motors for yaw (fixedwing roll)
+      aileron_gain = 1;
+      elevator_gain = 0;
+      m_c_r = 30;
+      BOUND_CONTROLS(u_in.r, -9600, 9600);
+    }
+    else if(norm_ref_airspeed > (4<<8)) {
+      //if in forward flight use ailerons for roll control and adjust gains
+      stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
+      stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,2); //don't use motors for yaw (fixedwing roll)
+      aileron_gain = 1;
+      elevator_gain = 0;
+      m_c_r = 30;
+      BOUND_CONTROLS(u_in.r, -half_thrust, half_thrust);
     }
     else {
       // if not in forward flight use hover settings
-      yaw_coef[0]  = yaw_coef_orig[0];
-      yaw_coef[1]  = yaw_coef_orig[1];
-      yaw_coef[2]  = yaw_coef_orig[2];
-      yaw_coef[3]  = yaw_coef_orig[3];
-      
-      pitch_coef[0]  = pitch_coef_orig[0];
-      pitch_coef[1]  = pitch_coef_orig[1];
-      pitch_coef[2]  = pitch_coef_orig[2];
-      pitch_coef[3]  = pitch_coef_orig[3];
+      stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,1);
+      stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
+
       elevator_gain = 0;
       aileron_gain = 3;
       m_c_r = 170;
@@ -362,15 +349,9 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
     }
   }
   else {
-    //iff using PID, set INDI to default values and run PID
-    pitch_coef[0]  = pitch_coef_orig[0];
-    pitch_coef[1]  = pitch_coef_orig[1];
-    pitch_coef[2]  = pitch_coef_orig[2];
-    pitch_coef[3]  = pitch_coef_orig[3];
-    yaw_coef[0]  = yaw_coef_orig[0];
-    yaw_coef[1]  = yaw_coef_orig[1];
-    yaw_coef[2]  = yaw_coef_orig[2];
-    yaw_coef[3]  = yaw_coef_orig[3];
+    //if using PID, set INDI to default values and run PID
+    stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
+    stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,1);
     elevator_gain = 4;
     aileron_gain = 6;
     m_c_r = 170;
@@ -415,6 +396,12 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
 //   m_c_q = 1.0/invact_eff;
 }
 
+void stabililzation_attitude_change_motor_mixing(int32_t (*coef)[MOTOR_MIXING_NB_MOTOR], int32_t (*orig_coef)[MOTOR_MIXING_NB_MOTOR], int32_t denominator) {
+  for(uint8_t i = 0; i<MOTOR_MIXING_NB_MOTOR; i++){
+    (*coef)[i] = (*orig_coef)[i]/denominator;
+  }
+}
+
 void stabilization_attitude_run(bool_t enable_integrator) {
 
   /*
@@ -447,20 +434,15 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   if(radio_control.values[5] < 0) {
     /* integrated error */
     if (enable_integrator) {
-      struct Int32Quat new_sum_err, scaled_att_err;
-      /* update accumulator */
-      scaled_att_err.qi = att_err.qi;
-      scaled_att_err.qx = att_err.qx / IERROR_SCALE;
-      scaled_att_err.qy = att_err.qy / IERROR_SCALE;
-      scaled_att_err.qz = att_err.qz / IERROR_SCALE;
-      INT32_QUAT_COMP(new_sum_err, stabilization_att_sum_err_quat, scaled_att_err);
-      INT32_QUAT_NORMALIZE(new_sum_err);
-      QUAT_COPY(stabilization_att_sum_err_quat, new_sum_err);
-      INT32_EULERS_OF_QUAT(stabilization_att_sum_err, stabilization_att_sum_err_quat);
+      stabilization_att_sum_err_quat.qx += att_err.qx /IERROR_SCALE;
+      stabilization_att_sum_err_quat.qy += att_err.qy /IERROR_SCALE;
+      stabilization_att_sum_err_quat.qz += att_err.qz /IERROR_SCALE;
+      Bound(stabilization_att_sum_err_quat.qx,-100000,100000);
+      Bound(stabilization_att_sum_err_quat.qy,-100000,100000);
+      Bound(stabilization_att_sum_err_quat.qz,-100000,100000);
     } else {
       /* reset accumulator */
       INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
-      INT_EULERS_ZERO( stabilization_att_sum_err );
     }
   }
 
