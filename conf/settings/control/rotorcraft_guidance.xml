@@ -37,6 +37,10 @@
       <dl_setting var="alt_pitch_gain" MIN="0" STEP="0.01" MAX="5.0" module="guidance/guidance_v" shortname="alt_pitch_gain"/>
       <dl_setting var="max_turn_bank" MIN="10.0" STEP="1.0" MAX="60.0" module="guidance/guidance_h" shortname="max_turn_bank"/>
       <dl_setting var="turn_bank_gain" MIN="0.1" STEP="0.01" MAX="3.0" module="guidance/guidance_h" shortname="turn_bank_gain"/>
+      <dl_setting var="max_offset" MIN="-90" STEP="1" MAX="0" module="guidance/guidance_h" shortname="max_offset_forward" unit="1/2^12r" alt_unit="deg" alt_unit_coef="0.0139882"/>
+      <dl_setting var="m_c_p" MIN="0.0" STEP="10.0" MAX="300.0" module="stabilization/stabilization_attitude_quat_INDI" shortname="m_c_p"/>
+      <dl_setting var="m_c_q" MIN="0.0" STEP="10.0" MAX="300.0" module="stabilization/stabilization_attitude_quat_INDI" shortname="m_c_q"/>
+      <dl_setting var="m_c_r2" MIN="0.0" STEP="10.0" MAX="300.0" module="stabilization/stabilization_attitude_quat_INDI" shortname="m_c_r2"/>
     </dl_settings>
 
   </dl_settings>

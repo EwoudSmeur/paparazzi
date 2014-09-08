@@ -80,35 +80,35 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_ready = FALSE;
     high_speed_logger_spi_link_data.id = high_speed_logger_spi_link_data.id + 2;
     high_speed_logger_spi_link_data.thrust     = stabilization_cmd[COMMAND_THRUST];
-    high_speed_logger_spi_link_data.airspeed   = stabilization_cmd[COMMAND_THRUST];
-    high_speed_logger_spi_link_data.alt        = stateGetPositionNed_i()->z;
-    high_speed_logger_spi_link_data.alpha      = stabilization_cmd[COMMAND_THRUST];
-    high_speed_logger_spi_link_data.gps_x      = stateGetPositionNed_i()->x;
-    high_speed_logger_spi_link_data.ref_qi     = stab_att_ref_quat.qi;
-    high_speed_logger_spi_link_data.ref_qx     = stab_att_ref_quat.qx;
-    high_speed_logger_spi_link_data.ref_qy     = stab_att_ref_quat.qy;
-    high_speed_logger_spi_link_data.ref_qz     = stab_att_ref_quat.qz;
-    high_speed_logger_spi_link_data.att_qi     = att_quaternion->qi;
-    high_speed_logger_spi_link_data.att_qx     = att_quaternion->qx;
-    high_speed_logger_spi_link_data.att_qy     = att_quaternion->qy;
-    high_speed_logger_spi_link_data.att_qz     = att_quaternion->qz;
-    high_speed_logger_spi_link_data.gps_speedx = stateGetSpeedNed_i()->x;
-    high_speed_logger_spi_link_data.gps_speedy = stateGetSpeedNed_i()->y;
+//     high_speed_logger_spi_link_data.airspeed   = stabilization_cmd[COMMAND_THRUST];
+//     high_speed_logger_spi_link_data.alt        = stateGetPositionNed_i()->z;
+//     high_speed_logger_spi_link_data.alpha      = stabilization_cmd[COMMAND_THRUST];
+//     high_speed_logger_spi_link_data.gps_x      = stateGetPositionNed_i()->x;
+//     high_speed_logger_spi_link_data.ref_qi     = stab_att_ref_quat.qi;
+//     high_speed_logger_spi_link_data.ref_qx     = stab_att_ref_quat.qx;
+//     high_speed_logger_spi_link_data.ref_qy     = stab_att_ref_quat.qy;
+//     high_speed_logger_spi_link_data.ref_qz     = stab_att_ref_quat.qz;
+//     high_speed_logger_spi_link_data.att_qi     = att_quaternion->qi;
+//     high_speed_logger_spi_link_data.att_qx     = att_quaternion->qx;
+//     high_speed_logger_spi_link_data.att_qy     = att_quaternion->qy;
+//     high_speed_logger_spi_link_data.att_qz     = att_quaternion->qz;
+//     high_speed_logger_spi_link_data.gps_speedx = stateGetSpeedNed_i()->x;
+//     high_speed_logger_spi_link_data.gps_speedy = stateGetSpeedNed_i()->y;
 
-//     high_speed_logger_spi_link_data.airspeed   = RATE_BFP_OF_REAL(filtered_rate.r);
-//     high_speed_logger_spi_link_data.alt        = RATE_BFP_OF_REAL(filtered_rate_deriv.r);
-//     high_speed_logger_spi_link_data.alpha      = RATE_BFP_OF_REAL(angular_accel_ref.r);
-//     high_speed_logger_spi_link_data.gps_x      = RATE_BFP_OF_REAL(indi_u.r);
-//     high_speed_logger_spi_link_data.ref_qi     = RATE_BFP_OF_REAL(indi_du.r);
-//     high_speed_logger_spi_link_data.ref_qx     = RATE_BFP_OF_REAL(filtered_rate.p);
-//     high_speed_logger_spi_link_data.ref_qy     = RATE_BFP_OF_REAL(filtered_rate_deriv.p);
-//     high_speed_logger_spi_link_data.ref_qz     = RATE_BFP_OF_REAL(angular_accel_ref.p);
-//     high_speed_logger_spi_link_data.att_qi     = RATE_BFP_OF_REAL(indi_u.p);
-//     high_speed_logger_spi_link_data.att_qx     = RATE_BFP_OF_REAL(indi_du.p);
-//     high_speed_logger_spi_link_data.att_qy     = RATE_BFP_OF_REAL(filtered_rate.q);
-//     high_speed_logger_spi_link_data.att_qz     = RATE_BFP_OF_REAL(filtered_rate_deriv.q);
-//     high_speed_logger_spi_link_data.gps_speedx = RATE_BFP_OF_REAL(angular_accel_ref.q);
-//     high_speed_logger_spi_link_data.gps_speedy = RATE_BFP_OF_REAL(indi_u.q);
+    high_speed_logger_spi_link_data.airspeed   = RATE_BFP_OF_REAL(filtered_rate.r);
+    high_speed_logger_spi_link_data.alt        = RATE_BFP_OF_REAL(filtered_rate_deriv.r);
+    high_speed_logger_spi_link_data.alpha      = RATE_BFP_OF_REAL(angular_accel_ref.r);
+    high_speed_logger_spi_link_data.gps_x      = RATE_BFP_OF_REAL(indi_u.r);
+    high_speed_logger_spi_link_data.ref_qi     = RATE_BFP_OF_REAL(indi_du.r);
+    high_speed_logger_spi_link_data.ref_qx     = RATE_BFP_OF_REAL(filtered_rate.p);
+    high_speed_logger_spi_link_data.ref_qy     = RATE_BFP_OF_REAL(filtered_rate_deriv.p);
+    high_speed_logger_spi_link_data.ref_qz     = RATE_BFP_OF_REAL(angular_accel_ref.p);
+    high_speed_logger_spi_link_data.att_qi     = RATE_BFP_OF_REAL(indi_u.p);
+    high_speed_logger_spi_link_data.att_qx     = RATE_BFP_OF_REAL(indi_du.p);
+    high_speed_logger_spi_link_data.att_qy     = RATE_BFP_OF_REAL(filtered_rate.q);
+    high_speed_logger_spi_link_data.att_qz     = RATE_BFP_OF_REAL(filtered_rate_deriv.q);
+    high_speed_logger_spi_link_data.gps_speedx = RATE_BFP_OF_REAL(angular_accel_ref.q);
+    high_speed_logger_spi_link_data.gps_speedy = RATE_BFP_OF_REAL(indi_u.q);
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction);
 
@@ -127,7 +127,7 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data2.cmd_pitch  = stabilization_cmd[COMMAND_PITCH];
     high_speed_logger_spi_link_data2.cmd_yaw    = stabilization_cmd[COMMAND_YAW];
     high_speed_logger_spi_link_data2.gps_speedx = stateGetSpeedNed_i()->x;
-    high_speed_logger_spi_link_data2.gps_speedy = stateGetSpeedNed_i()->y;
+    high_speed_logger_spi_link_data2.gps_speedy = RATE_BFP_OF_REAL(indi_du.q);
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction2);
   }

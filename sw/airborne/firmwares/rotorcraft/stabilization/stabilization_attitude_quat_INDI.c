@@ -70,15 +70,16 @@ struct FloatRates filtered_rate_2deriv = {0., 0., 0.};
 struct FloatRates angular_accel_ref = {0., 0., 0.};
 struct FloatRates indi_u = {0., 0., 0.};
 struct FloatRates indi_du = {0., 0., 0.};
-float kp_p = 95;
-float kd_p = 10;
+float kp_p = 50;
+float kd_p = 12;
 float m_c_p = 40;
-float kp_q = 95;
-float kd_q = 9;
+float kp_q = 50;
+float kd_q = 12;
 float m_c_q = 9;
-float kp_r = 20;
-float kd_r = 5;
+float kp_r = 50;
+float kd_r = 12;
 float m_c_r = 170;
+float m_c_r2 = 100;
 float att_err_x = 0;
 struct FloatRates u_act_dyn = {0., 0., 0.};
 struct FloatRates u_in = {0., 0., 0.};
@@ -88,7 +89,7 @@ struct FloatRates filt_rate = {0., 0., 0.};
 
 float m_c_p_library[5] = {40,40,40,40,40};
 float m_c_q_library[5] = {9,9,9,9,9};
-float m_c_r_library[5] = {170,170,130,100,80};
+float m_c_r_library[5] = {170,140,100,50,30};
 
 int32_t pitch_coef_orig[MOTOR_MIXING_NB_MOTOR] = MOTOR_MIXING_PITCH_COEF;
 int32_t yaw_coef_orig[MOTOR_MIXING_NB_MOTOR] = MOTOR_MIXING_YAW_COEF;
@@ -126,23 +127,23 @@ static void send_att(void) { //FIXME really use this message here ?
   struct Int32Rates* body_rate = stateGetBodyRates_i();
   struct Int32Eulers* att = stateGetNedToBodyEulers_i();
   DOWNLINK_SEND_STAB_ATTITUDE_INT(DefaultChannel, DefaultDevice,
-      &yaw_coef[0], &pitch_coef[1], &pitch_coef[2],
-      &pitch_coef[3], &(att->theta), &(att->psi),
-      &stab_att_sp_euler.phi,
-      &stab_att_sp_euler.theta,
-      &stab_att_sp_euler.psi,
-      &att_err_x,
-      &stabilization_att_sum_err_quat.qx,
-      &stabilization_att_sum_err_quat.qy,
-      &yaw_coef[0],
-      &yaw_coef[1],
-      &yaw_coef[2],
-      &yaw_coef[3],
-      &stabilization_att_ff_cmd[COMMAND_PITCH],
-      &stabilization_att_ff_cmd[COMMAND_YAW],
-      &stabilization_cmd[COMMAND_ROLL],
-      &stabilization_cmd[COMMAND_PITCH],
-      &stabilization_cmd[COMMAND_YAW]);
+                                      &(body_rate->p), &(body_rate->q), &(body_rate->r),
+                                      &(att->phi), &(att->theta), &(att->psi),
+                                      &stab_att_sp_euler.phi,
+                                      &stab_att_sp_euler.theta,
+                                      &stab_att_sp_euler.psi,
+                                      &stabilization_att_sum_err_quat.qx,
+                                      &stabilization_att_sum_err_quat.qy,
+                                      &stabilization_att_sum_err_quat.qz,
+                                      &stabilization_att_fb_cmd[COMMAND_ROLL],
+                                      &stabilization_att_fb_cmd[COMMAND_PITCH],
+                                      &stabilization_att_fb_cmd[COMMAND_YAW],
+                                      &stabilization_att_ff_cmd[COMMAND_ROLL],
+                                      &stabilization_att_ff_cmd[COMMAND_PITCH],
+                                      &stabilization_att_ff_cmd[COMMAND_YAW],
+                                      &stabilization_cmd[COMMAND_ROLL],
+                                      &stabilization_cmd[COMMAND_PITCH],
+                                      &stabilization_cmd[COMMAND_YAW]);
 }
 
 static void send_att_ref(void) {
@@ -175,13 +176,33 @@ static void send_ahrs_ref_quat(void) {
 }
 
 static void send_att_indi(void) {
+  float act_eff = 1.0/invact_eff;
   DOWNLINK_SEND_STAB_ATTITUDE_INDI(DefaultChannel, DefaultDevice,
-                                   &filtered_rate.r,
+                                   &act_eff,
                                    &filtered_rate_deriv.r,
                                    &filtered_rate_2deriv.r,
                                    &u_in.p,
                                    &u_in.q,
                                    &u_in.r);
+}
+
+static void send_indi_gain_scheduling(void) {
+  DOWNLINK_SEND_INDI_GAIN_SCHEDULING(DefaultChannel, DefaultDevice,
+                                   &m_c_p_library[0],
+                                   &m_c_p_library[1],
+                                   &m_c_p_library[2],
+                                   &m_c_p_library[3],
+                                   &m_c_p_library[4],
+                                   &m_c_q_library[0],
+                                   &m_c_q_library[1],
+                                   &m_c_q_library[2],
+                                   &m_c_q_library[3],
+                                   &m_c_q_library[4],
+                                   &m_c_r_library[0],
+                                   &m_c_r_library[1],
+                                   &m_c_r_library[2],
+                                   &m_c_r_library[3],
+                                   &m_c_r_library[4]);
 }
 #endif
 
@@ -196,6 +217,7 @@ void stabilization_attitude_init(void) {
   register_periodic_telemetry(DefaultPeriodic, "STAB_ATTITUDE_REF", send_att_ref);
   register_periodic_telemetry(DefaultPeriodic, "AHRS_REF_QUAT", send_ahrs_ref_quat);
   register_periodic_telemetry(DefaultPeriodic, "STAB_ATTITUDE_INDI", send_att_indi);
+  register_periodic_telemetry(DefaultPeriodic, "INDI_GAIN_SCHEDULING", send_indi_gain_scheduling);
 #endif
 }
 
@@ -305,9 +327,10 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
       //if in forward flight use ailerons for roll control and adjust gains
       stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
       stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,512); //don't use motors for yaw (fixedwing roll)
-      aileron_gain = 1;
+      aileron_gain = 4;
       elevator_gain = 0;
-      m_c_r = 30;
+      m_c_p = m_c_p_library[4];
+      m_c_r = m_c_r2;
       BOUND_CONTROLS(u_in.r, -9600, 9600);
     }
     else if(norm_ref_airspeed > (10<<8)) {
@@ -316,7 +339,8 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
       stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,512); //don't use motors for yaw (fixedwing roll)
       aileron_gain = 1;
       elevator_gain = 0;
-      m_c_r = 30;
+      m_c_p = m_c_p_library[3];
+      m_c_r = 170;
       BOUND_CONTROLS(u_in.r, -9600, 9600);
     }
     else if(norm_ref_airspeed > (7<<8)) {
@@ -325,7 +349,8 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
       stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,512); //don't use motors for yaw (fixedwing roll)
       aileron_gain = 1;
       elevator_gain = 0;
-      m_c_r = 30;
+      m_c_p = m_c_p_library[2];
+      m_c_r = 170;
       BOUND_CONTROLS(u_in.r, -9600, 9600);
     }
     else if(norm_ref_airspeed > (4<<8)) {
@@ -334,16 +359,17 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
       stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,2); //don't use motors for yaw (fixedwing roll)
       aileron_gain = 1;
       elevator_gain = 0;
-      m_c_r = 30;
+      m_c_p = m_c_p_library[1];
+      m_c_r = 170;
       BOUND_CONTROLS(u_in.r, -half_thrust, half_thrust);
     }
     else {
       // if not in forward flight use hover settings
       stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,1);
       stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
-
-      elevator_gain = 0;
       aileron_gain = 3;
+      elevator_gain = 0;
+      m_c_p = m_c_p_library[0];
       m_c_r = 170;
       BOUND_CONTROLS(u_in.r, -half_thrust, half_thrust);
     }
@@ -495,11 +521,11 @@ void stabilization_indi_filter_inputs(void) {
   indi_u.p = indi_u.p + udot.p/512.0;
   indi_u.q = indi_u.q + udot.q/512.0;
   indi_u.r = indi_u.r + udot.r/512.0;
-  
+
   udot.p = udot.p + udotdot.p/512.0;
   udot.q = udot.q + udotdot.q/512.0;
   udot.r = udot.r + udotdot.r/512.0;
-  
+
   udotdot.p = -udot.p * 2*ZETA*OMEGA + (u_act_dyn.p - indi_u.p)*OMEGA2;
   udotdot.q = -udot.q * 2*ZETA*OMEGA + (u_act_dyn.q - indi_u.q)*OMEGA2;
   udotdot.r = -udot.r * 2*ZETA_R*OMEGA_R + (u_act_dyn.r - indi_u.r)*OMEGA2_R;
@@ -511,13 +537,13 @@ void stabilization_indi_adaptive_gains(void) {
 
   u_prev = indi_u.q;
   filtered_rate_deriv_prev = filtered_rate_deriv.q;
-  
-  if( (filt_du != 0) && (drate != 0) && (fabs(filt_du) > 1)) {
-    d_eff = 0.0001*((drate/filt_du) - invact_eff);
-    if(d_eff > 0.001)
-      d_eff = 0.001;
-    else if(d_eff < -0.001)
-      d_eff = -0.001;
+
+  if( (fabs(drate) > 0.1) && (fabs(filt_du) > 3.0)) {
+    d_eff = 0.01*((drate/filt_du) - invact_eff);
+    if(d_eff > 0.01)
+      d_eff = 0.01;
+    else if(d_eff < -0.01)
+      d_eff = -0.01;
     invact_eff = invact_eff + d_eff;
     }
   else

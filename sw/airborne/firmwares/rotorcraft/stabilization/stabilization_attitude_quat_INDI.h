@@ -36,6 +36,7 @@ extern float m_c_q;
 extern float kp_r;
 extern float kd_r;
 extern float m_c_r;
+extern float m_c_r2;
 
 extern struct FloatRates filtered_rate;
 extern struct FloatRates filtered_rate_deriv;

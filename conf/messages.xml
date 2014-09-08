@@ -1919,7 +1919,24 @@
     <field name="wn"          type="float"/>
   </message>
 
- <!--215 is free -->
+  <message name="INDI_GAIN_SCHEDULING" id="215">
+    <field name="m_c_p_lib0"       type="float"/>
+    <field name="m_c_p_lib1"       type="float"/>
+    <field name="m_c_p_lib2"       type="float"/>
+    <field name="m_c_p_lib3"       type="float"/>
+    <field name="m_c_p_lib4"       type="float"/>
+    <field name="m_c_q_lib0"       type="float"/>
+    <field name="m_c_q_lib1"       type="float"/>
+    <field name="m_c_q_lib2"       type="float"/>
+    <field name="m_c_q_lib3"       type="float"/>
+    <field name="m_c_q_lib4"       type="float"/>
+    <field name="m_c_r_lib0"       type="float"/>
+    <field name="m_c_r_lib1"       type="float"/>
+    <field name="m_c_r_lib2"       type="float"/>
+    <field name="m_c_r_lib3"       type="float"/>
+    <field name="m_c_r_lib4"       type="float"/>
+  </message>
+
  <!--216 is free -->
  <!--217 is free -->
  <!--218 is free -->

@@ -94,6 +94,8 @@ extern int32_t guidance_h_igain;
 extern int32_t guidance_h_vgain;
 extern int32_t guidance_h_again;
 
+extern int32_t max_offset;
+
 extern int32_t transition_percentage;
 extern int32_t transition_theta_offset;
 extern int32_t horizontal_speed_gain;

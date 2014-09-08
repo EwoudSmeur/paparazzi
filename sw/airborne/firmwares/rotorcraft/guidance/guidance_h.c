@@ -131,6 +131,8 @@ void guidance_h_airspeed_to_attitude(struct Int32Eulers *ypr_sp);
 void guidance_h_position_to_airspeed(void);
 void guidance_h_determine_wind_estimate(void);
 
+int32_t max_offset = ANGLE_BFP_OF_REAL(TRANSITION_MAX_OFFSET);
+
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
 
@@ -584,7 +586,6 @@ static inline void transition_run(void) {
   transition_percentage += 1<<(INT32_PERCENTAGE_FRAC-4);
 
 #ifdef TRANSITION_MAX_OFFSET
-  const int32_t max_offset = ANGLE_BFP_OF_REAL(TRANSITION_MAX_OFFSET);
   transition_theta_offset = INT_MULT_RSHIFT((transition_percentage<<(INT32_ANGLE_FRAC-INT32_PERCENTAGE_FRAC))/100, max_offset, INT32_ANGLE_FRAC);
 #endif
 }
