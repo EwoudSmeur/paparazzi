@@ -117,8 +117,8 @@ float invact_eff = 1.0/15.0;
 #define OMEGA2 2500
 
 #define ZETA_R 0.5
-#define OMEGA_R 20
-#define OMEGA2_R 400
+#define OMEGA_R 40
+#define OMEGA2_R 1600
 
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
