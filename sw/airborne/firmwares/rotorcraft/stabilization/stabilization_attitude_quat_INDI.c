@@ -89,7 +89,7 @@ struct FloatRates filt_rate = {0., 0., 0.};
 
 float m_c_p_library[5] = {40,40,40,40,40};
 float m_c_q_library[5] = {9,9,9,9,9};
-float m_c_r_library[5] = {170,140,100,50,30};
+float m_c_r_library[5] = {170,140,100,70,50};
 
 int32_t pitch_coef_orig[MOTOR_MIXING_NB_MOTOR] = MOTOR_MIXING_PITCH_COEF;
 int32_t yaw_coef_orig[MOTOR_MIXING_NB_MOTOR] = MOTOR_MIXING_YAW_COEF;
@@ -337,7 +337,7 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
       //if in forward flight use ailerons for roll control and adjust gains
       stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
       stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,512); //don't use motors for yaw (fixedwing roll)
-      aileron_gain = 1;
+      aileron_gain = 4;
       elevator_gain = 0;
       m_c_p = m_c_p_library[3];
       m_c_r = 170;
@@ -347,7 +347,7 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
       //if in forward flight use ailerons for roll control and adjust gains
       stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
       stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,512); //don't use motors for yaw (fixedwing roll)
-      aileron_gain = 1;
+      aileron_gain = 4;
       elevator_gain = 0;
       m_c_p = m_c_p_library[2];
       m_c_r = 170;
@@ -357,7 +357,7 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
       //if in forward flight use ailerons for roll control and adjust gains
       stabililzation_attitude_change_motor_mixing(&pitch_coef,&pitch_coef_orig,1);
       stabililzation_attitude_change_motor_mixing(&yaw_coef,&yaw_coef_orig,2); //don't use motors for yaw (fixedwing roll)
-      aileron_gain = 1;
+      aileron_gain = 4;
       elevator_gain = 0;
       m_c_p = m_c_p_library[1];
       m_c_r = 170;
