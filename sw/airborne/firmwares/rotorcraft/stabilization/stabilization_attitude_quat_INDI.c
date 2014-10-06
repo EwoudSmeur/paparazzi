@@ -36,6 +36,7 @@
 #include "subsystems/actuators/motor_mixing.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "subsystems/radio_control.h"
+#include "firmwares/rotorcraft/navigation.h"
 
 struct Int32AttitudeGains stabilization_gains = {
   {STABILIZATION_ATTITUDE_PHI_PGAIN, STABILIZATION_ATTITUDE_THETA_PGAIN, STABILIZATION_ATTITUDE_PSI_PGAIN },
@@ -105,6 +106,8 @@ float drate = 0;
 float filt_du = 0;
 float d_eff = 0;
 float invact_eff = 1.0/15.0;
+int32_t yaw_input;
+int32_t pitch_input;
 
 #define IERROR_SCALE 1024
 #define GAIN_PRESCALER_FF 48
@@ -479,6 +482,10 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   stabilization_cmd[COMMAND_ROLL] = stabilization_att_fb_cmd[COMMAND_ROLL];
   stabilization_cmd[COMMAND_PITCH] = stabilization_att_fb_cmd[COMMAND_PITCH];
   stabilization_cmd[COMMAND_YAW] = stabilization_att_fb_cmd[COMMAND_YAW];
+
+  stabilization_cmd[COMMAND_ROLL] = 0;
+  stabilization_cmd[COMMAND_PITCH] = pitch_input;
+  stabilization_cmd[COMMAND_YAW] = yaw_input;
 
   /* bound the result */
   BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);

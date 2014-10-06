@@ -1,0 +1,81 @@
+<!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
+
+<flight_plan alt="40" ground_alt="0" lat0="51.979438" lon0="4.390148" max_dist_from_home="1000" name="Transitioning test" security_height="2">
+  <header>
+    #include "autopilot.h"
+    #include "subsystems/radio_control.h"
+    #include "subsystems/electrical.h"
+    #include "subsystems/actuators.h"
+    #include "firmwares/rotorcraft/guidance/guidance_h.h"
+</header>
+  <waypoints>
+    <waypoint name="HOME" x="0.0" y="0.0"/>
+    <waypoint name="STDBY" x="-2.0" y="-5.0"/>
+  </waypoints>
+  <blocks>
+    <block name="Kill throttle">
+      <call fun="NavKillThrottle()"/>
+    </block>
+    <block name="Holding point">
+      <call fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Start Engine">
+      <call fun="NavResurrect()"/>
+    </block>
+    <block name="servo 0">
+      <call fun="SETELEVONLEFT(1500)"/>
+      <call fun="SETELEVONRIGHT(1500)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="pitch 1">
+      <call fun="SETELEVONLEFT(1400)"/>
+      <call fun="SETELEVONRIGHT(1400)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="pitch 2">
+      <call fun="SETELEVONLEFT(1600)"/>
+      <call fun="SETELEVONRIGHT(1600)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="pitch 3">
+      <call fun="SETELEVONLEFT(1300)"/>
+      <call fun="SETELEVONRIGHT(1300)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="pitch 4">
+      <call fun="SETELEVONLEFT(1700)"/>
+      <call fun="SETELEVONRIGHT(1700)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="roll 1">
+      <call fun="SETELEVONLEFT(1400)"/>
+      <call fun="SETELEVONRIGHT(1600)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="roll 2">
+      <call fun="SETELEVONLEFT(1600)"/>
+      <call fun="SETELEVONRIGHT(1400)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="roll 3">
+      <call fun="SETELEVONLEFT(1300)"/>
+      <call fun="SETELEVONRIGHT(1700)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="roll 4">
+      <call fun="SETELEVONLEFT(1700)"/>
+      <call fun="SETELEVONRIGHT(1300)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="servo 0 again">
+      <call fun="SETELEVONLEFT(1500)"/>
+      <call fun="SETELEVONRIGHT(1500)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="landed">
+      <call fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+  </blocks>
+</flight_plan>

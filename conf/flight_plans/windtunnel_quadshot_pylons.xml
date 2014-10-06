@@ -1,0 +1,136 @@
+<!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
+
+<flight_plan alt="40" ground_alt="0" lat0="51.979438" lon0="4.390148" max_dist_from_home="1000" name="Transitioning test" security_height="2">
+  <header>
+    #include "autopilot.h"
+    #include "subsystems/radio_control.h"
+    #include "subsystems/electrical.h"
+    #include "subsystems/actuators.h"
+    #include "firmwares/rotorcraft/guidance/guidance_h.h"
+    #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_INDI.h"
+</header>
+  <waypoints>
+    <waypoint name="HOME" x="0.0" y="0.0"/>
+    <waypoint name="STDBY" x="-2.0" y="-5.0"/>
+  </waypoints>
+  <blocks>
+    <block name="Kill throttle">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <call fun="NavKillThrottle()"/>
+    </block>
+    <block name="Holding point">
+      <call fun="NavKillThrottle()"/>
+      <set var="pitch_input" value="0"/>
+      <set var="yaw_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Start Engine">
+      <call fun="NavResurrect()"/>
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+    </block>
+    <block name="servo 0">
+      <call fun="SETELEVONLEFT(1500)"/>
+      <call fun="SETELEVONRIGHT(1500)"/>
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="roll 75">
+      <set var="pitch_input" value="0"/>
+      <set var="yaw_input" value="1440"/>
+      <attitude pitch="0" roll="0" throttle="0.2" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="roll 50">
+      <set var="pitch_input" value="0"/>
+      <set var="yaw_input" value="960"/>
+      <attitude pitch="0" roll="0" throttle="0.2" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="roll -75">
+      <set var="pitch_input" value="0"/>
+      <set var="yaw_input" value="-1440"/>
+      <attitude pitch="0" roll="0" throttle="0.2" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="roll -50">
+      <set var="pitch_input" value="0"/>
+      <set var="yaw_input" value="-960"/>
+      <attitude pitch="0" roll="0" throttle="0.2" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="servo 0 again">
+      <call fun="SETELEVONLEFT(1500)"/>
+      <call fun="SETELEVONRIGHT(1500)"/>
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="pitch 75">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="1440"/>
+      <attitude pitch="0" roll="0" throttle="0.2" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="pitch 50">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="960"/>
+      <attitude pitch="0" roll="0" throttle="0.2" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="pitch -75">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="-1440"/>
+      <attitude pitch="0" roll="0" throttle="0.2" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="pitch -50">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="-960"/>
+      <attitude pitch="0" roll="0" throttle="0.2" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="servo 0 again2">
+      <call fun="SETELEVONLEFT(1500)"/>
+      <call fun="SETELEVONRIGHT(1500)"/>
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="throttle 40">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0.4" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="throttle 35">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0.35" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="throttle 30">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0.3" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="throttle 25">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0.25" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="throttle 20">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0.2" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="throttle 15">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0.15" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="throttle 10">
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0.1" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="landed">
+      <call fun="NavKillThrottle()"/>
+      <set var="yaw_input" value="0"/>
+      <set var="pitch_input" value="0"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+  </blocks>
+</flight_plan>

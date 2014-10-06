@@ -98,6 +98,8 @@ extern bool_t nav_set_heading_towards_waypoint(uint8_t wp);
 #define NavKillThrottle() ({ if (autopilot_mode == AP_MODE_NAV) { autopilot_set_motors_on(FALSE); } FALSE; })
 #define NavResurrect() ({ if (autopilot_mode == AP_MODE_NAV) { autopilot_set_motors_on(TRUE); } FALSE; })
 
+#define SETELEVONLEFT(_command) ({Set_ELEVON_LEFT_Servo(_command); FALSE; })
+#define SETELEVONRIGHT(_command) ({Set_ELEVON_RIGHT_Servo(_command); FALSE; })
 
 #define NavSetGroundReferenceHere() ({ nav_reset_reference(); FALSE; })
 #define NavSetAltitudeReferenceHere() ({ nav_reset_alt(); FALSE; })

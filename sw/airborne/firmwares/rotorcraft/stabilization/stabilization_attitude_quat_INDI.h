@@ -37,6 +37,8 @@ extern float kp_r;
 extern float kd_r;
 extern float m_c_r;
 extern float m_c_r2;
+extern int32_t yaw_input;
+extern int32_t pitch_input;
 
 extern struct FloatRates filtered_rate;
 extern struct FloatRates filtered_rate_deriv;
