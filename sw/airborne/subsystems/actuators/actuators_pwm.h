@@ -29,6 +29,8 @@
  */
 extern void actuators_pwm_arch_init(void);
 
+extern bool_t start_sequence;
+
 #define ActuatorsPwmInit() actuators_pwm_arch_init()
 
 #endif /* ACTUATORS_PWM_H */

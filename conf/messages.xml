@@ -1312,7 +1312,9 @@
     <field name="flight_time"   type="uint16" unit="s"/>
   </message>
 
-  <!-- 148 is free -->
+  <message name="RPM" id="148">
+    <field name="rpm" type="uint32" unit="none"/>
+  </message>
 
   <message name="GUIDANCE_H_REF_INT" id="149">
     <field name="sp_x"    type="int32" alt_unit="m"     alt_unit_coef="0.0039063"/>

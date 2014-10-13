@@ -13,6 +13,7 @@
       <dl_setting VAR="actuators_pwm_values[5]" MIN="900" STEP="1" MAX="2100" shortname="chan5"/>
       <dl_setting VAR="actuators_pwm_values[6]" MIN="900" STEP="1" MAX="2100" shortname="chan6"/>
       <dl_setting VAR="actuators_pwm_values[7]" MIN="900" STEP="1" MAX="2100" shortname="chan7"/>
+      <dl_setting var="start_sequence" min="0" step="1" max="1" module="subsystems/actuators/actuators_pwm" values="OFF|ON"/>
     </dl_settings>
   </dl_settings>
 </settings>
