@@ -99,7 +99,7 @@ extern bool_t nav_set_heading_current(void);
 #define CARROT 0
 #endif
 
-#define NavKillThrottle() ({ if (autopilot_mode == AP_MODE_NAV) { autopilot_set_motors_on(FALSE); } FALSE; })
+#define NavKillThrottle() ({ if ((autopilot_mode == AP_MODE_NAV) || (autopilot_mode == AP_MODE_FAILSAFE)) { autopilot_set_motors_on(FALSE); } FALSE; })
 #define NavResurrect() ({ if (autopilot_mode == AP_MODE_NAV) { autopilot_set_motors_on(TRUE); } FALSE; })
 
 

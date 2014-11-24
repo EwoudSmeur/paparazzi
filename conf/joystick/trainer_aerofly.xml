@@ -4,12 +4,12 @@
     <axis index="6" name="pitch" />
     <axis index="0" name="yaw" />
     <axis index="5" name="throttle" />
-    <button index="0" name="mode" />
+    <axis index="2" name="mode" />
   </input>
 
   <messages period="0.025">
     <message class="datalink" name="RC_4CH" send_always="true">
-      <field name="mode" value="mode" />
+      <field name="mode" value="Fit(mode,-117,117,0,2)"/>
       <field name="throttle" value="Fit(throttle,-117,117,0,127)" />
       <field name="roll" value="roll" />
       <field name="yaw" value="-yaw" />

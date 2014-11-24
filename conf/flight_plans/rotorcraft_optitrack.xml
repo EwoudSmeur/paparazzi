@@ -3,6 +3,7 @@
 <flight_plan alt="1.5" ground_alt="0" lat0="51.990634" lon0="4.376771" max_dist_from_home="15" name="Vision_drone" security_height="0.1">
   <header>
 #include "autopilot.h"
+#include "subsystems/electrical.h"
 #include "../../../ext/ardrone2_vision/modules/StereoAvoid/avoid_navigation.h"
 </header>
   <waypoints>
@@ -53,16 +54,22 @@
       <stay climb="0.5" vmode="climb" wp="CLIMB"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
+      <exception cond="GpsIsLost() && ((nav_stage>14) || (14> nav_stage) )" deroute="attitude_land"/>
+      <exception cond="electrical.bat_low" deroute="land here"/>
       <call fun="NavSetWaypointHere(WP_STDBY)"/>
       <call fun="NavCopyWaypoint(WP_last_wp,WP_W0)"/>
       <stay wp="STDBY"/>
     </block>
     <block name="heading_to_GOAL">
+      <exception cond="GpsIsLost() && ((nav_stage>14) || (14> nav_stage) )" deroute="attitude_land"/>
+      <exception cond="electrical.bat_low" deroute="land here"/>
       <call fun="nav_set_heading_towards_waypoint(WP_GOAL)"/>
       <call fun="NavSetWaypointHere(WP_route_START)"/>
       <stay until="stage_time > 2" wp="route_START"/>
     </block>
     <block name="route_to_GOAL">
+      <exception cond="GpsIsLost() && ((nav_stage>14) || (14> nav_stage) )" deroute="attitude_land"/>
+      <exception cond="electrical.bat_low" deroute="land here"/>
       <exception cond="obstacle_detected==1" deroute="stay_W0"/>
       <call fun="nav_set_heading_towards_waypoint(WP_GOAL)"/>
       <go from="STDBY" hmode="route" wp="GOAL"/>
@@ -72,12 +79,16 @@
     </block>
     <block name="stay_W0" pre_call="increase_nav_heading(&nav_heading, 45)">
       <exception cond="obstacle_detected==0" deroute="route_to_W1"/>
+      <exception cond="GpsIsLost() && ((nav_stage>14) || (14> nav_stage) )" deroute="attitude_land"/>
+      <exception cond="electrical.bat_low" deroute="land here"/>
       <call fun="NavSetWaypointHere(WP_W0)"/>
       <call fun="send_mission_segment(WP_last_wp,WP_W0)"/>
       <call fun="NavCopyWaypoint(WP_last_wp,WP_W0)"/>
       <stay wp="W0"/>
     </block>
     <block name="route_to_W1">
+      <exception cond="GpsIsLost() && ((nav_stage>14) || (14> nav_stage) )" deroute="attitude_land"/>
+      <exception cond="electrical.bat_low" deroute="land here"/>
       <exception cond="obstacle_detected==1" deroute="stay_W0"/>
       <go from="W0" hmode="route" wp="W1"/>
       <call fun="send_mission_segment(WP_last_wp,WP_W1)"/>
@@ -85,6 +96,8 @@
       <deroute block="heading_to_GOAL"/>
     </block>
     <block name="Mission" strip_button="Mission">
+      <exception cond="GpsIsLost() && ((nav_stage>14) || (14> nav_stage) )" deroute="attitude_land"/>
+      <exception cond="electrical.bat_low" deroute="land here"/>
       <call fun="mission_run()"/>
       <deroute block="Standby"/>
     </block>
@@ -93,6 +106,7 @@
 <!--       <call fun="mission_decrease_lag()"/> -->
     </block>
     <block name="land">
+      <exception cond="GpsIsLost() && ((nav_stage>14) || (14> nav_stage) )" deroute="attitude_land"/>
       <go wp="TD"/>
     </block>
     <block name="flare">
@@ -100,12 +114,17 @@
       <exception cond="!nav_is_in_flight()" deroute="landed"/>
       <call fun="NavStartDetectGround()"/>
 <!--       <call fun="mission_decrease_lag()"/> -->
-      <stay climb="-1.0" until="stage_time > 5" vmode="climb" wp="TD"/>
+      <stay climb="-1.0" until="stage_time > 3" vmode="climb" wp="TD"/>
     </block>
     <block name="landed">
       <call fun="NavKillThrottle()"/>
 <!--       <call fun="mission_decrease_lag()"/> -->
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="attitude_land">
+<!--       <call fun="mission_decrease_lag()"/> -->
+      <attitude pitch="0" roll="0" until="stage_time >3" vmode="climb" climb="-1.0"/>
+      <deroute block="landed"/>
     </block>
   </blocks>
 </flight_plan>

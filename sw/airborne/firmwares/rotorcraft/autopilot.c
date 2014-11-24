@@ -59,6 +59,7 @@ bool_t   autopilot_power_switch;
 
 bool_t   autopilot_ground_detected;
 bool_t   autopilot_detect_ground_once;
+uint32_t time_failsafe_enter = 0;
 
 /** time steps for in_flight detection (at 20Hz, so 20=1second) */
 #ifndef AUTOPILOT_IN_FLIGHT_TIME
@@ -231,6 +232,7 @@ void autopilot_init(void) {
   autopilot_detect_ground_once = FALSE;
   autopilot_flight_time = 0;
   autopilot_rc = TRUE;
+  time_failsafe_enter = 0;
   autopilot_power_switch = FALSE;
 #ifdef POWER_SWITCH_GPIO
   gpio_setup_output(POWER_SWITCH_GPIO);
@@ -287,9 +289,13 @@ void autopilot_periodic(void) {
 
 
   /* If in FAILSAFE mode and either already not in_flight anymore
-   * or just "detected" ground, go to KILL mode.
+   * or just "detected" ground, OR more than 3 seceonds have passed since entering FAILSAFE, go to KILL mode.
    */
   if (autopilot_mode == AP_MODE_FAILSAFE) {
+    if((get_sys_time_usec() - time_failsafe_enter) >= 3000000) {
+      time_failsafe_enter = 0;
+      autopilot_set_mode(AP_MODE_KILL);
+    }
     if (!autopilot_in_flight)
       autopilot_set_mode(AP_MODE_KILL);
 
@@ -333,6 +339,7 @@ void autopilot_set_mode(uint8_t new_autopilot_mode) {
     /* horizontal mode */
     switch (new_autopilot_mode) {
       case AP_MODE_FAILSAFE:
+	time_failsafe_enter = get_sys_time_usec();
 #ifndef KILL_AS_FAILSAFE
         stabilization_attitude_set_failsafe_setpoint();
         guidance_h_mode_changed(GUIDANCE_H_MODE_ATTITUDE);

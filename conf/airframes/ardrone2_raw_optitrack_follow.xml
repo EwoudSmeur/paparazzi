@@ -4,8 +4,9 @@
 
   <firmware name="rotorcraft">
     <target name="ap" board="ardrone2_raw">
-      <configure name="HOST" value="192.168.209.200"/>
-      <define name="LINK_HOST" value="\\\"192.168.209.20\\\""/>
+      <configure name="HOST" value="192.168.209.210"/>
+      <define name="LINK_HOST" value="\\\"192.168.209.14\\\""/>
+      
       <define name="AUTOPILOT_DISABLE_AHRS_KILL"/>
       <define name="FAILSAFE_DESCENT_SPEED" value="0.5"/>
       <configure name="USE_MAGNETOMETER" value="0"/>
