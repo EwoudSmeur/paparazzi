@@ -524,7 +524,7 @@ bool_t mission_decrease_lag(void) {
 }
 
 bool_t send_mission_segment(uint8_t from_wp, uint8_t to_wp) {
-  uint8_t ac_id = 2;
+  uint8_t ac_id = 42;
   uint8_t insert = 0;
   float wp_east_1 = POS_FLOAT_OF_BFP(waypoints[from_wp].x);
   float wp_north_1 = POS_FLOAT_OF_BFP(waypoints[from_wp].y);
