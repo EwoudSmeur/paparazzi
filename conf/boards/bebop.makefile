@@ -16,13 +16,14 @@ ap.MAKEFILE = bebop
 # -----------------------------------------------------------------------
 USER=foobar
 HOST?=192.168.2.1
+HOST_BTLE?=192.168.1.1
 SUB_DIR=/
 FTP_DIR=/data/ftp
 TARGET_DIR=$(FTP_DIR)/$(SUB_DIR)
 # -----------------------------------------------------------------------
 
 # The datalink default uses UDP
-MODEM_HOST         ?= 192.168.2.255
+MODEM_HOST         ?= 192.168.1.255
 
 # The GPS sensor is connected internally
 GPS_PORT           ?= UART1
