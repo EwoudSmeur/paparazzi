@@ -310,10 +310,16 @@ let send = fun ac_id device payload _priority ->
       | _ ->
         match device.transport with
             Pprz | Pprz2 ->
-              let o = Unix.out_channel_of_descr device.fd in
-              let buf = Pprz.Transport.packet payload in
-              Printf.fprintf o "%s" buf; flush o;
-              Debug.call 's' (fun f -> fprintf f "mm sending: %s\n" (Debug.xprint buf));
+              (try
+                let o = Unix.out_channel_of_descr device.fd in
+                let buf = Pprz.Transport.packet payload in
+                Printf.fprintf o "%s" buf; flush o;
+                Debug.call 's' (fun f -> fprintf f "mm sending: %s\n" (Debug.xprint buf));
+              with
+                  Sys_blocked_io ->
+                    fprintf stderr "blockd io\n";
+                | exn ->
+                  fprintf stderr "error\n"; exit 1;)
           | XBee ->
             XB.send ~ac_id device payload
 

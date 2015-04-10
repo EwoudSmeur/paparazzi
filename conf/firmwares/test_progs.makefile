@@ -215,6 +215,9 @@ test_actuators_pwm.srcs   += test/test_actuators_pwm.c
 # only add this so it doesn't fail to build if you also have setup_actuators.xml settings file loaded
 # remove me again when we have auto loading of settings according to subsystem/module/target...
 test_actuators_pwm.srcs   += subsystems/actuators.c
+test_actuators_pwm.srcs   += modules/loggers/high_speed_logger_spi_link.c
+test_actuators_pwm.CFLAGS += -DUSE_SPI -DSPI_MASTER
+test_actuators_pwm.srcs   += mcu_periph/spi.c $(SRC_ARCH)/mcu_periph/spi_arch.c
 test_actuators_pwm.srcs   += $(SRC_ARCH)/subsystems/actuators/actuators_pwm_arch.c $(SRC_ARCH)/subsystems/actuators/actuators_shared_arch.c $(SRC_ARCH)/mcu_periph/adc_arch.c
 
 

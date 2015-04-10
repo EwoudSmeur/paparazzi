@@ -25,6 +25,10 @@
 #include "subsystems/imu.h"
 #include "mcu_periph/spi.h"
 
+#include "subsystems/actuators/actuators_pwm.h"
+
+extern uint32_t rpm_counter;
+
 struct high_speed_logger_spi_link_data high_speed_logger_spi_link_data;
 struct spi_transaction high_speed_logger_spi_link_transaction;
 
@@ -54,16 +58,17 @@ void high_speed_logger_spi_link_periodic(void)
 {
   if (high_speed_logger_spi_link_ready)
   {
+
     high_speed_logger_spi_link_ready = FALSE;
-    high_speed_logger_spi_link_data.gyro_p     = imu.gyro_unscaled.p;
-    high_speed_logger_spi_link_data.gyro_q     = imu.gyro_unscaled.q;
-    high_speed_logger_spi_link_data.gyro_r     = imu.gyro_unscaled.r;
-    high_speed_logger_spi_link_data.acc_x      = imu.accel_unscaled.x;
-    high_speed_logger_spi_link_data.acc_y      = imu.accel_unscaled.y;
-    high_speed_logger_spi_link_data.acc_z      = imu.accel_unscaled.z;
-    high_speed_logger_spi_link_data.mag_x      = imu.mag_unscaled.x;
-    high_speed_logger_spi_link_data.mag_y      = imu.mag_unscaled.y;
-    high_speed_logger_spi_link_data.mag_z      = imu.mag_unscaled.z;
+    high_speed_logger_spi_link_data.gyro_p     = rpm;
+    high_speed_logger_spi_link_data.gyro_q     = actuators_pwm_values[0];
+//     high_speed_logger_spi_link_data.gyro_r     = imu.gyro_unscaled.r;
+//     high_speed_logger_spi_link_data.acc_x      = imu.accel_unscaled.x;
+//     high_speed_logger_spi_link_data.acc_y      = imu.accel_unscaled.y;
+//     high_speed_logger_spi_link_data.acc_z      = imu.accel_unscaled.z;
+//     high_speed_logger_spi_link_data.mag_x      = imu.mag_unscaled.x;
+//     high_speed_logger_spi_link_data.mag_y      = imu.mag_unscaled.y;
+//     high_speed_logger_spi_link_data.mag_z      = imu.mag_unscaled.z;
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction);
   }

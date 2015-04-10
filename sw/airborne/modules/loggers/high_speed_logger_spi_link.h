@@ -25,6 +25,9 @@
 
 #include "std.h"
 
+
+extern uint32_t rpm;
+
 extern void high_speed_logger_spi_link_init(void);
 extern void high_speed_logger_spi_link_periodic(void);
 

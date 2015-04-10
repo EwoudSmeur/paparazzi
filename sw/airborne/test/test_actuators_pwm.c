@@ -48,6 +48,8 @@
 
 #include "subsystems/actuators/actuators_pwm.h"
 
+#include "modules/loggers/high_speed_logger_spi_link.h"
+
 static struct adc_buf adc0_buf;
 static struct adc_buf adc1_buf;
 
@@ -59,6 +61,7 @@ static inline void main_event(void);
 uint32_t rpm_counter = 0;
 uint32_t time = 0;
 bool_t start_sequence = 0;
+uint32_t rpm = 0;
 
 void init_rpm_counter(void) {
 rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPCEN | RCC_APB2ENR_AFIOEN);
@@ -76,6 +79,8 @@ rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPCEN | RCC_APB2ENR_AFIOE
 void exti9_5_isr(void) {
   exti_reset_request(EXTI5);
   rpm_counter++;
+  rpm = (get_sys_time_usec() - time);
+  time = get_sys_time_usec();
 }
 
 
@@ -100,7 +105,9 @@ static inline void main_init( void ) {
 
   init_rpm_counter();
 
+  high_speed_logger_spi_link_init();
   mcu_int_enable();
+
 }
 uint8_t id = 42;
 bool_t time_set = false;
@@ -115,17 +122,35 @@ static inline void main_periodic( void ) {
     }
     timediff = get_sys_time_usec() - timestart;
 
-    if(timediff<2000000){
+    if(timediff<1000000){
       actuators_pwm_values[0] = 1000;
     }
-    else if(timediff<4000000){
+    else if(timediff<2000000){
       actuators_pwm_values[0] = 1100;
     }
-    else if(timediff<6000000){
+    else if(timediff<3000000){
       actuators_pwm_values[0] = 1200;
+    }
+    else if(timediff<4000000){
+      actuators_pwm_values[0] = 1300;
+    }
+    else if(timediff<5000000){
+      actuators_pwm_values[0] = 1400;
+    }
+    else if(timediff<6000000){
+      actuators_pwm_values[0] = 1500;
+    }
+    else if(timediff<7000000){
+      actuators_pwm_values[0] = 1400;
     }
     else if(timediff<8000000){
       actuators_pwm_values[0] = 1300;
+    }
+    else if(timediff<9000000){
+      actuators_pwm_values[0] = 1200;
+    }
+    else if(timediff<10000000){
+      actuators_pwm_values[0] = 1100;
     }
     else {
       actuators_pwm_values[0] = 1000;
@@ -147,11 +172,14 @@ static inline void main_periodic( void ) {
   RunOnceEvery(50, {DOWNLINK_SEND_ADC(DefaultChannel, DefaultDevice, &id, 2, values);});
 
    RunOnceEvery(50, {
-     rpm_counter = rpm_counter *1000000/ 12 *3 / (get_sys_time_usec() - time)/2;
-     time = get_sys_time_usec();
-     DOWNLINK_SEND_RPM(DefaultChannel, DefaultDevice, &rpm_counter);
-     rpm_counter = 0;
+//      rpm_counter = rpm_counter *1000000/ 12 *3 / (get_sys_time_usec() - time)/2;
+//      time = get_sys_time_usec();
+     DOWNLINK_SEND_RPM(DefaultChannel, DefaultDevice, &rpm);
+//      rpm_counter = 0;
   });
+
+    high_speed_logger_spi_link_periodic();
+//     rpm_counter = 0;
 
 }
 

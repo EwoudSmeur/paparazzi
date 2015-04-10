@@ -43,7 +43,13 @@
   </firmware>
 
   <firmware name="test_progs">
+    <define name="SPI_MASTER" value="1" />
+    <define name="USE_SPI1" value="1" />
+    <define name="HIGH_SPEED_LOGGER_SPI_LINK_DEVICE" value="spi1" />
+    <define name="USE_SPI_SLAVE5" value="1" />
+    <define name="HIGH_SPEED_LOGGER_SPI_LINK_SLAVE_NUMBER" value="SPI_SLAVE5" />
     <configure name='MODEM_PORT' value='UART2'/>
+<!--     <configure name='MODEM_BAUD' value='230400'/> -->
      <target name="test_sys_time_timer" board="lisa_m_2.0"/>
       <target name="test_adc" board="lisa_m_2.0">
        <define name="USE_ADC_1" value="1"/>
@@ -54,6 +60,7 @@
     <target name="test_actuators_pwm" board="lisa_m_2.0">
       <define name="USE_ADC_1" value="1"/>
        <define name="USE_ADC_3" value="1"/>
+       <define name="SERVO_HZ" value="400"/>
      </target>
   </firmware>
 
@@ -143,7 +150,6 @@
     <define name="DDGAIN_Q" value="300"/>
     <define name="DDGAIN_R" value="300"/>
   </section>
-
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
     <!-- setpoints -->
