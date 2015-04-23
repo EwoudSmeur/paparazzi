@@ -32,9 +32,9 @@
     <!--load name="geo_mag.xml"/>
     <load name="air_data.xml"/>
     <load name="send_imu_mag_current.xml"/-->
-    <!--load name="logger_file.xml">
+    <load name="logger_file.xml">
       <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
-    </load-->
+    </load>
     <!--load name="video_rtp_stream.xml">
       <define name="VIEWVIDEO_FPS" value="60"/>
       <define name="VIEWVIDEO_QUALITY_FACTOR" value="80"/>
@@ -71,7 +71,7 @@
 
     <!-- Time cross layout (X), with order NW (CW), NE (CCW), SE (CW), SW (CCW) -->
     <define name="ROLL_COEF" value="{   -256, -256, 256,  256 }"/>
-    <define name="PITCH_COEF" value="{  256,  -256, 256, -256 }"/>
+    <define name="PITCH_COEF" value="{  64,  -64, 64, -64 }"/>
     <define name="YAW_COEF" value="{    256,  -256, -256, 256 }"/>
     <define name="THRUST_COEF" value="{ 256,  256,  256,  256 }"/>
   </section>
@@ -223,7 +223,7 @@
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-    <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
+    <define name="MODE_AUTO1" value="AP_MODE_RC_DIRECT"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
   </section>
 

@@ -15,7 +15,7 @@ ap.MAKEFILE = bebop
 
 # -----------------------------------------------------------------------
 USER=foobar
-HOST?=192.168.2.1
+HOST?=192.168.1.1
 HOST_BTLE?=192.168.1.1
 SUB_DIR=/
 FTP_DIR=/data/ftp
