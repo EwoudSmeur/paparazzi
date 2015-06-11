@@ -51,6 +51,11 @@ struct ReferenceSystem reference_acceleration = {
   STABILIZATION_INDI_REF_RATE_R,
 };
 
+float filtered_accelz = 0;
+float filtered_accelz_deriv = 0;
+float filtered_accelz_2deriv = 0;
+float accel_ref = 0;
+
 struct FloatRates filtered_rate = {0., 0., 0.};
 struct FloatRates filtered_rate_deriv = {0., 0., 0.};
 struct FloatRates filtered_rate_2deriv = {0., 0., 0.};
@@ -193,8 +198,8 @@ static void send_att_indi2(struct transport_tx *trans, struct link_device *dev)
                                    &G1G2_pseudo_inv[3][2],
                                    &G2[0],
                                    &G2[1],
-                                   &G2[2],
-                                   &G2[3]);
+                                   &accel_ref,
+                                   &filtered_accelz);
 }
 #endif
 
@@ -355,17 +360,27 @@ static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err
   indi_u_in_actuators[2] = u_actuators[2] + indi_du_in_actuators[2];
   indi_u_in_actuators[3] = u_actuators[3] + indi_du_in_actuators[3];
 
+  //filter the accelerometer ned z axis
+  stabilization_indi_filter_accel();
+
+  float inv_control_eff_accel = -500.0;
+  accel_ref = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*1.0;
+  indi_u_in_actuators[0] = indi_u_in_actuators[0] + inv_control_eff_accel*(accel_ref - filtered_accelz);
+  indi_u_in_actuators[1] = indi_u_in_actuators[1] + inv_control_eff_accel*(accel_ref - filtered_accelz);
+  indi_u_in_actuators[2] = indi_u_in_actuators[2] + inv_control_eff_accel*(accel_ref - filtered_accelz);
+  indi_u_in_actuators[3] = indi_u_in_actuators[3] + inv_control_eff_accel*(accel_ref - filtered_accelz);
+
   float avg_u_in = (indi_u_in_actuators[0] + indi_u_in_actuators[1] + indi_u_in_actuators[2] + indi_u_in_actuators[3])/4.0;
 
 #warning "saturation at 8100 instead of max_pprz because of bebop motors"
   Bound(stabilization_cmd[COMMAND_THRUST],0, 8100);
 
-  if(avg_u_in > 1.0) {
-    indi_u_in_actuators[0] = indi_u_in_actuators[0] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
-    indi_u_in_actuators[1] = indi_u_in_actuators[1] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
-    indi_u_in_actuators[2] = indi_u_in_actuators[2] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
-    indi_u_in_actuators[3] = indi_u_in_actuators[3] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
-  }
+//   if(avg_u_in > 1.0) { //avoid dividing by zero
+//     indi_u_in_actuators[0] = indi_u_in_actuators[0] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+//     indi_u_in_actuators[1] = indi_u_in_actuators[1] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+//     indi_u_in_actuators[2] = indi_u_in_actuators[2] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+//     indi_u_in_actuators[3] = indi_u_in_actuators[3] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+//   }
 
   Bound(indi_u_in_actuators[0],0,8100);
   Bound(indi_u_in_actuators[1],0,8100);
@@ -515,6 +530,16 @@ void stabilization_indi_filter_gyro(void)
   filtered_rate_2deriv.q = -filtered_rate_deriv.q * 2 * STABILIZATION_INDI_FILT_ZETA * STABILIZATION_INDI_FILT_OMEGA + (stateGetBodyRates_f()->q - filtered_rate.q) * STABILIZATION_INDI_FILT_OMEGA2;
   filtered_rate_2deriv.r = -filtered_rate_deriv.r * 2 * STABILIZATION_INDI_FILT_ZETA_R * STABILIZATION_INDI_FILT_OMEGA_R + (stateGetBodyRates_f()->r - filtered_rate.r) * STABILIZATION_INDI_FILT_OMEGA2_R;
 }
+
+void stabilization_indi_filter_accel(void)
+{
+  filtered_accelz = filtered_accelz + filtered_accelz_deriv / 512.0;
+
+  filtered_accelz_deriv = filtered_accelz_deriv + filtered_accelz_2deriv / 512.0;
+
+  filtered_accelz_2deriv = -filtered_accelz_deriv * 2 * STABILIZATION_INDI_FILT_ZETA * STABILIZATION_INDI_FILT_OMEGA + (stateGetAccelNed_f()->z - filtered_accelz) * STABILIZATION_INDI_FILT_OMEGA2;
+}
+
 
 void filter_inputs_actuators(void) {
 #ifdef INDI_RPM_FEEDBACK

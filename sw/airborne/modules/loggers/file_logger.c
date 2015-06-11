@@ -84,7 +84,7 @@ void file_logger_periodic(void)
   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
   struct Int32Quat *quatsp = &stab_att_sp_quat;
 
-  fprintf(file_logger, "%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d\n",
+  fprintf(file_logger, "%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%d,%d,%d\n",
           counter,
           float_rates.p,
           float_rates.q,
@@ -123,7 +123,10 @@ void file_logger_periodic(void)
           quatsp->qi,
           quatsp->qx,
           quatsp->qy,
-          quatsp->qz
+          quatsp->qz,
+          imu.accel.x,
+          imu.accel.y,
+          imu.accel.z
          );
   counter++;
 }

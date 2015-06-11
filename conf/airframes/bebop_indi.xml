@@ -23,11 +23,13 @@
     <subsystem name="stabilization" type="indi">
       <define name="INDI_RPM_FEEDBACK" value="TRUE"/>
       <define name="USE_FULL_INDI" value="TRUE"/>
-      <define name="ATTITUDE_PID" value="TRUE"/>
-      <define name="STEP_INPUT_ON_MODE_AUTO1" value="TRUE"/>
-      <define name="ADAPTIVE_INDI" value="TRUE"/>
+      <define name="ATTITUDE_PID" value="FALSE"/>
+      <define name="STEP_INPUT_ON_MODE_AUTO1" value="FALSE"/>
+      <define name="ADAPTIVE_INDI" value="FALSE"/>
     </subsystem>
-    <subsystem name="ahrs" type="int_cmpl_quat"/>
+    <subsystem name="ahrs" type="int_cmpl_quat">
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+    </subsystem>
     <subsystem name="ins" type="extended"/>
   </firmware>
 

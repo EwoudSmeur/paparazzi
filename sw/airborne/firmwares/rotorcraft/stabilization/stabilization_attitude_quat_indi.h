@@ -66,6 +66,7 @@ void calc_g1_element(float du_norm, float dx_error, int8_t i, int8_t j, float mu
 void calc_g2_element(float dx_error, int8_t j, float mu_extra);
 void filter_estimation_indi(void);
 void calc_g1g2_pseudo_inv(void);
+void stabilization_indi_filter_accel(void);
 
 #endif /* STABILIZATION_ATTITUDE_QUAT_INT_H */
 
