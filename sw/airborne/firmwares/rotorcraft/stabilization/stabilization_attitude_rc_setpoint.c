@@ -50,6 +50,24 @@
 
 float care_free_heading = 0;
 
+float rc_accel_roll = 0;
+float rc_accel_pitch = 0;
+float roll_in = 0;
+float roll_filt = 0;
+float roll_filtd = 0;
+float roll_filtdd = 0;
+float pitch_in = 0;
+float pitch_filt = 0;
+float pitch_filtd = 0;
+float pitch_filtdd = 0;
+float filt_accely = 0;
+float filt_accelyd = 0;
+float filt_accelydd = 0;
+float filt_accelx = 0;
+float filt_accelxd = 0;
+float filt_accelxdd = 0;
+
+void indi_filter_attitude(void);
 
 static int32_t get_rc_roll(void)
 {
@@ -310,6 +328,17 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q)
   ov.y = get_rc_pitch_f();
   ov.z = 0.0;
 
+  indi_filter_attitude();
+  rc_accel_roll = ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*3.0;
+  rc_accel_pitch = ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*3.0;
+  float inv_accel_dyn = 1.0/9.81;
+  roll_in = roll_filt + inv_accel_dyn*(rc_accel_roll - filt_accely);
+  pitch_in = pitch_filt + inv_accel_dyn*(rc_accel_pitch + filt_accelx);
+  Bound(roll_in, -0.4, 0.4);
+  Bound(pitch_in, -0.4, 0.4);
+  ov.x = roll_in;
+  ov.y = pitch_in;
+
   /* quaternion from that orientation vector */
   float_quat_of_orientation_vect(q, &ov);
 }
@@ -338,6 +367,29 @@ void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q)
   q->qz = qx_roll * qy_pitch;
 }
 
+void indi_filter_attitude(void)
+{
+  roll_filt = roll_filt + roll_filtd / 512.0;
+  filt_accely = filt_accely + filt_accelyd / 512.0;
+  pitch_filt = pitch_filt + pitch_filtd / 512.0;
+  filt_accelx = filt_accelx + filt_accelxd / 512.0;
+
+  roll_filtd = roll_filtd + roll_filtdd / 512.0;
+  filt_accelyd = filt_accelyd + filt_accelydd / 512.0;
+  pitch_filtd = pitch_filtd + pitch_filtdd / 512.0;
+  filt_accelxd = filt_accelxd + filt_accelxdd / 512.0;
+
+  float cospsi = cosf(stateGetNedToBodyEulers_f()->psi);
+  float sinpsi = sinf(stateGetNedToBodyEulers_f()->psi);
+  float accelx = cospsi*stateGetAccelNed_f()->x + sinpsi*stateGetAccelNed_f()->y;
+  float accely =-sinpsi*stateGetAccelNed_f()->x + cospsi*stateGetAccelNed_f()->y;
+
+  roll_filtdd = -roll_filtd * 2 * 0.9 * 20.0 + (stateGetNedToBodyEulers_f()->phi - roll_filt) * 400.0;
+  filt_accelydd = -filt_accelyd * 2 * 0.9 * 20.0 + (accely - filt_accely) * 400.0;
+  pitch_filtdd = -pitch_filtd * 2 * 0.9 * 20.0 + (stateGetNedToBodyEulers_f()->theta - pitch_filt) * 400.0;
+  filt_accelxdd = -filt_accelxd * 2 * 0.9 * 20.0 + (accelx - filt_accelx) * 400.0;
+}
+
 /** Read attitude setpoint from RC as quaternion
  * Interprets the stick positions as axes.
  * @param[in]  coordinated_turn  true if in horizontal mode forward
@@ -356,7 +408,9 @@ void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_sp, bool
 #else
   stabilization_attitude_read_rc_setpoint_eulers_f(&stab_att_sp_euler, in_flight, in_carefree, coordinated_turn);
 #endif
+}
 
+void stabilization_attitude_calc_setpoint(struct FloatQuat *q_sp, bool_t in_flight, bool_t in_carefree) {
   struct FloatQuat q_rp_cmd;
   stabilization_attitude_read_rc_roll_pitch_quat_f(&q_rp_cmd);
 

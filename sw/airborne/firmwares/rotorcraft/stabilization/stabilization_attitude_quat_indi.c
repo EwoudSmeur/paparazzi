@@ -184,22 +184,22 @@ static void send_att_indi(struct transport_tx *trans, struct link_device *dev)
 static void send_att_indi2(struct transport_tx *trans, struct link_device *dev)
 {
   pprz_msg_send_STAB_ATTITUDE_INDI2(trans, dev, AC_ID,
-                                   &G1G2_pseudo_inv[0][0],
-                                   &G1G2_pseudo_inv[1][0],
-                                   &G1G2_pseudo_inv[2][0],
-                                   &G1G2_pseudo_inv[3][0],
-                                   &G1G2_pseudo_inv[0][1],
-                                   &G1G2_pseudo_inv[1][1],
+                                   &rc_accel_pitch,
+                                   &pitch_in,
+                                   &pitch_filt,
+                                   &filt_accelx,
+                                   &stateGetAccelNed_f()->x,
+                                   &stateGetAccelNed_f()->y,
                                    &G1G2_pseudo_inv[2][1],
                                    &G1G2_pseudo_inv[3][1],
                                    &G1G2_pseudo_inv[0][2],
                                    &G1G2_pseudo_inv[1][2],
                                    &G1G2_pseudo_inv[2][2],
                                    &G1G2_pseudo_inv[3][2],
-                                   &G2[0],
-                                   &G2[1],
-                                   &accel_ref,
-                                   &filtered_accelz);
+                                   &rc_accel_roll,
+                                   &roll_in,
+                                   &roll_filt,
+                                   &filt_accely);
 }
 #endif
 
@@ -476,8 +476,11 @@ void stabilization_attitude_run(bool_t enable_integrator)
     QUAT_FLOAT_OF_BFP(q_sp, stab_att_sp_quat);
     QUAT_COPY(quat_saved,q_sp);
   }
-
 #endif
+
+  struct FloatQuat q_sp;
+  stabilization_attitude_calc_setpoint(&q_sp, enable_integrator, FALSE);
+  QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
 
   /* attitude error                          */
   struct Int32Quat att_err;
