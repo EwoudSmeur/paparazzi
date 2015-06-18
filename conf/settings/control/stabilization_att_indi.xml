@@ -13,6 +13,7 @@
       <dl_setting var="reference_acceleration.err_r" min="0" step="1" max="1500" module="stabilization/stabilization_attitude_quat_indi" shortname="kp_r"/>
       <dl_setting var="reference_acceleration.rate_r" min="0" step="0.1" max="100" module="stabilization/stabilization_attitude_quat_indi" shortname="kd_r"/>
       <dl_setting var="inv_control_effectiveness.r" min="0" step="1" max="500" module="stabilization/stabilization_attitude_quat_indi" shortname="ctl_eff_r"/>
+      <dl_setting var="vv_gain" min="0" step="0.1" max="20.0" module="stabilization/stabilization_attitude_quat_indi" shortname="vv_gain"/>
     </dl_settings>
 
   </dl_settings>

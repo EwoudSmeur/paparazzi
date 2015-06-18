@@ -56,6 +56,11 @@ float filtered_accelz_deriv = 0;
 float filtered_accelz_2deriv = 0;
 float accel_ref = 0;
 
+float vertical_velocity_rc = 0;
+float vertical_velocity_err = 0;
+float vv_gain = 6.0;
+float z_filt = 0;
+
 struct FloatRates filtered_rate = {0., 0., 0.};
 struct FloatRates filtered_rate_deriv = {0., 0., 0.};
 struct FloatRates filtered_rate_2deriv = {0., 0., 0.};
@@ -184,10 +189,10 @@ static void send_att_indi(struct transport_tx *trans, struct link_device *dev)
 static void send_att_indi2(struct transport_tx *trans, struct link_device *dev)
 {
   pprz_msg_send_STAB_ATTITUDE_INDI2(trans, dev, AC_ID,
-                                   &rc_accel_pitch,
-                                   &pitch_in,
-                                   &pitch_filt,
-                                   &filt_accelx,
+                                   &vertical_velocity_rc,
+                                   &vertical_velocity_err,
+                                   &stateGetPositionNed_f()->z,
+                                   &z_filt,
                                    &stateGetAccelNed_f()->x,
                                    &stateGetAccelNed_f()->y,
                                    &G1G2_pseudo_inv[2][1],
@@ -330,6 +335,10 @@ static void attitude_run_pid(int32_t pid_commands[], struct Int32Quat *att_err) 
   pid_commands[COMMAND_YAW] = pgain[2] * QUAT1_FLOAT_OF_BFP(att_err->qz) - dgain[2] * stateGetBodyRates_f()->r + igain[2] * sum_error[2];
 }
 
+static void stabilization_indi_filter_z(void) {
+  z_filt = z_filt + 0.01*(stateGetPositionNed_f()->z - z_filt);
+}
+
 static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err)
 {
   angular_accel_ref.p = reference_acceleration.err_p * QUAT1_FLOAT_OF_BFP(att_err->qx)
@@ -362,9 +371,14 @@ static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err
 
   //filter the accelerometer ned z axis
   stabilization_indi_filter_accel();
+  stabilization_indi_filter_z();
+
+  vertical_velocity_rc = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
+  vertical_velocity_err = vertical_velocity_rc - stateGetSpeedNed_f()->z;
 
   float inv_control_eff_accel = -500.0;
-  accel_ref = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*1.0;
+//   accel_ref = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*1.0;
+  accel_ref = vertical_velocity_err*vv_gain;
   indi_u_in_actuators[0] = indi_u_in_actuators[0] + inv_control_eff_accel*(accel_ref - filtered_accelz);
   indi_u_in_actuators[1] = indi_u_in_actuators[1] + inv_control_eff_accel*(accel_ref - filtered_accelz);
   indi_u_in_actuators[2] = indi_u_in_actuators[2] + inv_control_eff_accel*(accel_ref - filtered_accelz);

@@ -54,6 +54,8 @@ extern float G1[3][4];
 extern float G2[4];
 extern float indi_u_in_actuators[4];
 
+extern float vv_gain;
+
 extern float pgain[3];
 extern float dgain[3];
 extern float igain[3];
