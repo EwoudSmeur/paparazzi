@@ -58,7 +58,7 @@ float baro_ms5611_sigma2;
 
 void baro_ms5611_init(void)
 {
-  ms5611_spi_init(&baro_ms5611, &MS5611_SPI_DEV, MS5611_SLAVE_IDX);
+  ms5611_spi_init(&baro_ms5611, &MS5611_SPI_DEV, MS5611_SLAVE_IDX, FALSE);
 
   baro_ms5611_enabled = TRUE;
   baro_ms5611_alt_valid = FALSE;
@@ -94,9 +94,9 @@ void baro_ms5611_event(void)
 
   if (baro_ms5611.data_available) {
     float pressure = (float)baro_ms5611.data.pressure;
-    AbiSendMsgBARO_ABS(BARO_MS5611_SENDER_ID, &pressure);
+    AbiSendMsgBARO_ABS(BARO_MS5611_SENDER_ID, pressure);
     float temp = baro_ms5611.data.temperature / 100.0f;
-    AbiSendMsgTEMPERATURE(BARO_MS5611_SENDER_ID, &temp);
+    AbiSendMsgTEMPERATURE(BARO_MS5611_SENDER_ID, temp);
     baro_ms5611.data_available = FALSE;
 
     baro_ms5611_alt = pprz_isa_altitude_of_pressure(pressure);

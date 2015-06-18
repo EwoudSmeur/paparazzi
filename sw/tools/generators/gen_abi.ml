@@ -52,7 +52,7 @@ module Syntax = struct
     { id = id; name = name; fields = fields }
 
   let check_single_ids = fun msgs ->
-    let tab = Array.create 256 false (* TODO remove limitation to 256 msg not needed here *)
+    let tab = Array.make 256 false (* TODO remove limitation to 256 msg not needed here *)
     and  last_id = ref 0 in
     List.iter (fun msg ->
       if tab.(msg.id) then
@@ -99,8 +99,8 @@ module Gen_onboard = struct
     let rec args = fun h l ->
       match l with
           [] -> Printf.fprintf h ")"
-        | [(n,t)] -> Printf.fprintf h ", const %s * %s)" t n
-        | (n,t)::l' -> Printf.fprintf h ", const %s * %s" t n; args h l'
+        | [(n,t)] -> Printf.fprintf h ", %s %s)" t n
+        | (n,t)::l' -> Printf.fprintf h ", %s %s" t n; args h l'
     in
     Printf.fprintf h "(uint8_t sender_id";
     args h fields

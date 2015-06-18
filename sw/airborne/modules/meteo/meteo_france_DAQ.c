@@ -68,7 +68,7 @@ void init_mf_daq(void)
 void mf_daq_send_state(void)
 {
   // Send aircraft state to DAQ board
-  DOWNLINK_SEND_MF_DAQ_STATE(pprz_tp, EXTRA_DOWNLINK_DEVICE,
+  DOWNLINK_SEND_MF_DAQ_STATE(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE,
                              &autopilot_flight_time,
                              &stateGetBodyRates_f()->p,
                              &stateGetBodyRates_f()->q,
@@ -96,7 +96,7 @@ void mf_daq_send_report(void)
     DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 9, mf_daq.values);
   }
   // Test if log is started
-  if (pprzLogFile.fs != NULL) {
+  if (pprzLogFile != -1) {
     if (log_started == FALSE) {
       // Log MD5SUM once
       DOWNLINK_SEND_ALIVE(pprzlog_tp, chibios_sdlog, 16, MD5SUM);

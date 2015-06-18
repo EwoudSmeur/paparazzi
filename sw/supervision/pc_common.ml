@@ -95,7 +95,7 @@ let choose_xml_file = fun ?(multiple = false) title subdir cb ->
 
 
 
-let run_and_monitor = fun ?(once = false) ?file gui log com_name com args ->
+let run_and_monitor = fun ?(once = false) ?file ?(finished_callback = fun () -> ()) gui log com_name com args ->
   let c = sprintf "%s %s" com args in
   let p = new Gtk_process.hbox_program ?file () in
   (gui#vbox_programs:GPack.box)#pack p#toplevel#coerce;
@@ -139,6 +139,7 @@ let run_and_monitor = fun ?(once = false) ?file gui log com_name com args ->
             | (x, _) ->
               log (sprintf "\nSTOPPED '%s'\n\n" com);
           end;
+          finished_callback ();
           p#button_stop#set_label "gtk-redo";
           p#button_remove#misc#set_sensitive true;
           if once then
@@ -170,9 +171,9 @@ let basic_command = fun (log:string->unit) ac_name target ->
   ignore (run_and_log log (fun _ -> ()) com)
 
 
-let command = fun ?file gui (log:string->unit) ac_name target ->
+let command = fun ?file ?finished_callback gui (log:string->unit) ac_name target ->
   let com = sprintf "make -C %s -f Makefile.ac AIRCRAFT=%s %s" Env.paparazzi_src ac_name target in
-  run_and_monitor ~once:true ?file gui log "make" com ""
+  run_and_monitor ~once:true ?file ?finished_callback gui log "make" com ""
 
 
 let conf_is_set = fun home ->
@@ -180,43 +181,20 @@ let conf_is_set = fun home ->
     Sys.file_exists (home // "conf") &&
     Sys.file_exists (home // "data")
 
-let druid = fun home ->
-  let w = GWindow.window ~title:"Configuring Paparazzi" () in
-
-  let  d = GnoDruid.druid ~packing:w#add () in
-
-  ignore (d#connect#cancel (fun () -> exit 1));
-
-  begin
-    let fp = GnoDruid.druid_page_edge ~position:`START ~aa:true ~title:"Configure Paparazzi !!" () in
-    fp#set_text (sprintf "Configuration files need to be installed in your Paparazzi home (%s). To use another directory, please exit this utility, set the PAPARAZZI_HOME variable to the desired folder and restart." home);
-    d#append_page fp;
-    ignore (fp#connect#next
-              (fun _ ->
-                basic_command prerr_endline "" "init";
-                false
-              ))
-
-  end;
-
-  begin
-    let ep = GnoDruid.druid_page_edge ~position:`FINISH ~aa:true ~title:"The end" () in
-    ep#set_text "You are ready. Congratulations!" ;
-    d#append_page ep ;
-
-    ignore (ep#connect#finish
-              (fun _ ->
-                w#destroy ();
-                GMain.quit ()
-              ))
-  end;
-  w#show ();
-  GMain.main ()
+(* This was the place where GnoDruid used to create a wizard configuring your
+ * paparazzi installation. This could be replaced with an implementation using
+ * GtkAssistant instead. The issue tracking this can be found at:
+ * https://github.com/paparazzi/paparazzi/issues/923
+ *)
 
 let _ =
   let home = Env.paparazzi_home in
   if not (conf_is_set home) then
-    druid home
+        printf "ERROR: Configuration files need to be installed in your \
+        Paparazzi home (%s). Run `make init` in the toplevel paparazzi \
+        directory to do that in your Paparazzi home (%s) directory. To \
+        use another directory, set the PAPARAZZI_HOME variable to the \
+        desired folder.\n" home home
 
 let conf_xml_file = conf_dir // "conf.xml"
 let backup_xml_file = conf_xml_file ^ "~"

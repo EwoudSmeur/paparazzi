@@ -8,9 +8,6 @@ SRC_FIRMWARE=firmwares/fixedwing
 
 SRC_BOARD=boards/$(BOARD)
 
-NPSDIR = $(SIMDIR)/nps
-
-
 nps.ARCHDIR = sim
 
 # include Makefile.nps instead of Makefile.sim
@@ -23,9 +20,15 @@ nps.srcs    += $(fbw_srcs) $(ap_srcs)
 nps.CFLAGS  += -DSITL -DUSE_NPS
 nps.CFLAGS  += $(shell pkg-config glib-2.0 --cflags)
 nps.LDFLAGS += $(shell pkg-config glib-2.0 --libs) -lm -lglibivy $(shell pcre-config --libs) -lgsl -lgslcblas
-nps.CFLAGS  += -I$(NPSDIR) -I$(SRC_FIRMWARE) -I$(SRC_BOARD) -I../simulator -I$(PAPARAZZI_HOME)/conf/simulator/nps
+nps.CFLAGS  += -I$(SRC_FIRMWARE) -I$(SRC_BOARD) -I$(PAPARAZZI_SRC)/sw/simulator -I$(PAPARAZZI_HOME)/conf/simulator/nps
 nps.LDFLAGS += $(shell sdl-config --libs)
 
+#
+# add the simulator directory to the make searchpath
+#
+VPATH = $(PAPARAZZI_SRC)/sw/simulator
+
+NPSDIR = nps
 nps.srcs += $(NPSDIR)/nps_main.c                 \
        $(NPSDIR)/nps_fdm_crrcsim.c               \
        $(NPSDIR)/nps_random.c                    \
@@ -47,7 +50,7 @@ nps.srcs += $(NPSDIR)/nps_main.c                 \
        $(NPSDIR)/nps_flightgear.c                \
 
 
-nps.CFLAGS += -DDOWNLINK -DPERIODIC_TELEMETRY -DDOWNLINK_TRANSPORT=ivy_tp -DDOWNLINK_DEVICE=ivy_tp -DDefaultPeriodic='&telemetry_Ap'
+nps.CFLAGS += -DDOWNLINK -DPERIODIC_TELEMETRY -DDOWNLINK_TRANSPORT=ivy_tp -DDOWNLINK_DEVICE=ivy_tp
 nps.srcs += subsystems/datalink/ivy_transport.c
 nps.srcs += subsystems/datalink/downlink.c subsystems/datalink/telemetry.c
 nps.srcs += $(SRC_FIRMWARE)/datalink.c

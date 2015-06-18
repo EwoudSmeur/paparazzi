@@ -26,6 +26,7 @@
 
 #include "ins_module.h"
 #include "imu_chimu.h"
+#include "ahrs_chimu.h"
 
 #include "led.h"
 
@@ -34,9 +35,29 @@ CHIMU_PARSER_DATA CHIMU_DATA;
 INS_FORMAT ins_roll_neutral;
 INS_FORMAT ins_pitch_neutral;
 
-void ahrs_init(void)
+struct AhrsChimu ahrs_chimu;
+
+void ahrs_chimu_update_gps(uint8_t gps_fix, uint16_t gps_speed_3d);
+
+#include "subsystems/abi.h"
+static abi_event gps_ev;
+static void gps_cb(uint8_t sender_id __attribute__((unused)),
+                   uint32_t stamp __attribute__((unused)),
+                   struct GpsState *gps_s)
 {
-  ahrs.status = AHRS_UNINIT;
+  ahrs_chimu_update_gps(gps_s->fix, gps_s->speed_3d);
+}
+void ahrs_chimu_register(void)
+{
+  ahrs_chimu_init();
+  /// @todo: provide enable function
+  ahrs_register_impl(NULL);
+  AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
+}
+
+void ahrs_chimu_init(void)
+{
+  ahrs_chimu.is_aligned = FALSE;
 
   // uint8_t ping[7] = {CHIMU_STX, CHIMU_STX, 0x01, CHIMU_BROADCAST, MSG00_PING, 0x00, 0xE6 };
   uint8_t rate[12] = {CHIMU_STX, CHIMU_STX, 0x06, CHIMU_BROADCAST, MSG10_UARTSETTINGS, 0x05, 0xff, 0x79, 0x00, 0x00, 0x01, 0x76 };  // 50Hz attitude only + SPI
@@ -68,15 +89,12 @@ void ahrs_init(void)
   InsSend(rate, 12);
 }
 
-void ahrs_align(void)
-{
-  ahrs.status = AHRS_RUNNING;
-}
 
 void parse_ins_msg(void)
 {
-  while (InsLink(ChAvailable())) {
-    uint8_t ch = InsLink(Getch());
+  struct link_device *dev = InsLinkDevice;
+  while (dev->char_available(dev->periph)) {
+    uint8_t ch = dev->get_byte(dev->periph);
 
     if (CHIMU_Parse(ch, 0, &CHIMU_DATA)) {
       RunOnceEvery(25, LED_TOGGLE(3));
@@ -98,6 +116,8 @@ void parse_ins_msg(void)
           0.
         }; // FIXME rate r
         stateSetBodyRates_f(&rates);
+        //FIXME
+        ahrs_chimu.is_aligned = TRUE;
       } else if (CHIMU_DATA.m_MsgID == 0x02) {
 #if CHIMU_DOWNLINK_IMMEDIATE
         RunOnceEvery(25, DOWNLINK_SEND_AHRS_EULER(DefaultChannel, DefaultDevice, &CHIMU_DATA.m_sensor.rate[0],
@@ -109,15 +129,15 @@ void parse_ins_msg(void)
 }
 
 
-void ahrs_update_gps(void)
+void ahrs_chimu_update_gps(uint8_t gps_fix, uint16_t gps_speed_3d)
 {
   // Send SW Centripetal Corrections
   uint8_t centripedal[19] = {0xae, 0xae, 0x0d, 0xaa, 0x0b, 0x02,   0x00, 0x00, 0x00, 0x00,   0x00, 0x00, 0x00, 0x00,   0x00, 0x00, 0x00, 0x00,   0xc2 };
 
   float gps_speed = 0;
 
-  if (gps.fix == GPS_FIX_3D) {
-    gps_speed = gps.speed_3d / 100.;
+  if (gps_fix == GPS_FIX_3D) {
+    gps_speed = gps_speed_3d / 100.;
   }
   gps_speed = FloatSwap(gps_speed);
 
@@ -129,12 +149,4 @@ void ahrs_update_gps(void)
   InsSend(centripedal, 19);
 
   // Downlink Send
-}
-
-void ahrs_propagate(float dt __attribute__((unused)))
-{
-}
-
-void ahrs_update_accel(float dt __attribute__((unused)))
-{
 }

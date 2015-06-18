@@ -42,6 +42,9 @@
 #include "messages.h"
 #include "subsystems/datalink/downlink.h"
 
+// for datalink_time hack
+#include "subsystems/datalink/datalink.h"
+
 struct NpsAutopilot autopilot;
 bool_t nps_bypass_ahrs;
 bool_t nps_bypass_ins;
@@ -60,6 +63,7 @@ bool_t nps_bypass_ins;
 
 void nps_autopilot_init(enum NpsRadioControlType type_rc, int num_rc_script, char* rc_dev) {
   autopilot.launch = TRUE;
+  autopilot.datalink_enabled = TRUE;
 
   nps_radio_control_init(type_rc, num_rc_script, rc_dev);
   nps_electrical_init();
@@ -99,14 +103,14 @@ void nps_autopilot_run_step(double time) {
 
   if (nps_sensors_baro_available()) {
     float pressure = (float) sensors.baro.value;
-    AbiSendMsgBARO_ABS(BARO_SIM_SENDER_ID, &pressure);
+    AbiSendMsgBARO_ABS(BARO_SIM_SENDER_ID, pressure);
     main_event();
   }
 
 #if USE_SONAR
   if (nps_sensors_sonar_available()) {
     float dist = (float) sensors.sonar.value;
-    AbiSendMsgAGL(AGL_SONAR_NPS_ID, &dist);
+    AbiSendMsgAGL(AGL_SONAR_NPS_ID, dist);
 
     uint16_t foo = 0;
     DOWNLINK_SEND_SONAR(DefaultChannel, DefaultDevice, &foo, &dist);
@@ -134,6 +138,10 @@ void nps_autopilot_run_step(double time) {
   for (uint8_t i=0; i < NPS_COMMANDS_NB; i++)
     autopilot.commands[i] = (double)motor_mixing.commands[i]/MAX_PPRZ;
 
+  // hack to reset datalink_time, since we don't use actual dl_parse_msg
+  if (autopilot.datalink_enabled) {
+    datalink_time = 0;
+  }
 }
 
 

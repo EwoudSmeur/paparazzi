@@ -80,7 +80,7 @@ let add_key = fun xml do_change keys ->
 
 
 
-let one_setting = fun (i:int) (do_change:int -> float -> unit) ac_id packing dl_setting (tooltips:GData.tooltips) strip keys ->
+let one_setting = fun (i:int) (do_change:int -> float -> unit) ac_id packing dl_setting (tooltips:GData.tooltips) icons_theme strip keys ->
   let f = fun a -> float_of_string (ExtXml.attrib dl_setting a) in
   let lower = f "min"
   and upper = f "max"
@@ -199,6 +199,9 @@ let one_setting = fun (i:int) (do_change:int -> float -> unit) ac_id packing dl_
   let set_default = fun x ->
     if not !modified then set_default x else () in
 
+  (* build setting *)
+  let setting = new setting i dl_setting current_value set_default in
+
   (* click current_value label to request an update, a value of infinity for do_change requests new value *)
   let callback = fun _ ->
     do_change i infinity;
@@ -215,8 +218,12 @@ let one_setting = fun (i:int) (do_change:int -> float -> unit) ac_id packing dl_
   let commit_but = GButton.button ~packing:hbox#pack () in
   commit_but#set_border_width 2;
   let _icon = GMisc.image ~stock:`APPLY ~packing:commit_but#add () in
+  let idx = ref 0 in
   let callback = fun x ->
-    prev_value := (try Some ((float_of_string current_value#text-.alt_b)/.alt_a) with _ -> None);
+    prev_value := (try Some setting#last_known_value with _ ->
+      idx := -1;
+      Array.iteri (fun i v -> if current_value#text = v then idx := i) values;
+      if !idx >= 0 then Some (lower +. (float_of_int !idx)) else None);
     commit x;
     current_value#set_text "?"
   in
@@ -250,7 +257,7 @@ let one_setting = fun (i:int) (do_change:int -> float -> unit) ac_id packing dl_
             try (* Is it an icon ? *)
               let icon = Xml.attrib x "icon" in
               let b = GButton.button () in
-              let pixbuf = GdkPixbuf.from_file (Env.gcs_icons_path // icon) in
+              let pixbuf = GdkPixbuf.from_file (Env.get_gcs_icon_path icons_theme icon) in
               ignore (GMisc.image ~pixbuf ~packing:b#add ());
 
               (* Drag for Drop *)
@@ -258,7 +265,7 @@ let one_setting = fun (i:int) (do_change:int -> float -> unit) ac_id packing dl_
                 ["variable", varname;
                  "value", ExtXml.attrib x "value";
                  "ac_id", ac_id;
-                 "icon", icon] in
+                 "icon", icons_theme // icon] in
               Papget_common.dnd_source b#coerce papget;
 
               (* Associates the label as a tooltip *)
@@ -275,7 +282,8 @@ let one_setting = fun (i:int) (do_change:int -> float -> unit) ac_id packing dl_
       | t -> failwith (sprintf "Page_settings.one_setting, Unexpected tag: '%s'" t))
     (Xml.children dl_setting);
 
-  new setting i dl_setting current_value set_default
+  (* return setting *)
+  setting
 
 
 
@@ -288,12 +296,12 @@ let same_tag_for_all = function
 
 
 (** Build the tree of settings *)
-let rec build_settings = fun do_change ac_id i flat_list keys xml_settings packing tooltips strip ->
+let rec build_settings = fun do_change ac_id i flat_list keys xml_settings packing tooltips icons_theme strip ->
   match same_tag_for_all xml_settings with
       "dl_setting" ->
         List.iter
           (fun dl_setting ->
-            let label_value = one_setting !i do_change ac_id packing dl_setting tooltips strip keys in
+            let label_value = one_setting !i do_change ac_id packing dl_setting tooltips icons_theme strip keys in
             flat_list := label_value :: !flat_list;
             incr i)
           xml_settings
@@ -309,18 +317,18 @@ let rec build_settings = fun do_change ac_id i flat_list keys xml_settings packi
         ignore (n#append_page ~tab_label vbox#coerce);
 
         let children = Xml.children dl_settings in
-        build_settings do_change ac_id i flat_list keys children vbox#pack tooltips strip)
+        build_settings do_change ac_id i flat_list keys children vbox#pack tooltips icons_theme strip)
         xml_settings
     | tag -> failwith (sprintf "Page_settings.build_settings, unexpected tag '%s'" tag)
 
 
-class settings = fun ?(visible = fun _ -> true) xml_settings do_change ac_id strip ->
+class settings = fun ?(visible = fun _ -> true) xml_settings do_change ac_id icons_theme strip ->
   let sw = GBin.scrolled_window ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
   let vbox = GPack.vbox ~packing:sw#add_with_viewport () in
   let tooltips = GData.tooltips () in
   let i = ref 0 and l = ref [] and keys = ref [] in
   let ordered_list =
-    build_settings do_change ac_id i l keys xml_settings vbox#add tooltips strip;
+    build_settings do_change ac_id i l keys xml_settings vbox#add tooltips icons_theme strip;
     List.rev !l in
   let variables = Array.of_list ordered_list in
   let length = Array.length variables in

@@ -32,7 +32,7 @@
  */
 
 #include "subsystems/gps.h"
-
+#include "subsystems/abi.h"
 #include "led.h"
 
 /* currently needed to get nav_utm_zone0 */
@@ -113,6 +113,33 @@ void gps_impl_init(void)
   gps_status_config = 0;
   gps_configuring = TRUE;
 #endif
+}
+
+void gps_mtk_msg(void)
+{
+  // current timestamp
+  uint32_t now_ts = get_sys_time_usec();
+
+  gps.last_msg_ticks = sys_time.nb_sec_rem;
+  gps.last_msg_time = sys_time.nb_sec;
+  gps_mtk_read_message();
+  if (gps_mtk.msg_class == MTK_DIY14_ID &&
+      gps_mtk.msg_id == MTK_DIY14_NAV_ID) {
+    if (gps.fix == GPS_FIX_3D) {
+      gps.last_3dfix_ticks = sys_time.nb_sec_rem;
+      gps.last_3dfix_time = sys_time.nb_sec;
+    }
+    AbiSendMsgGPS(GPS_MTK_ID, now_ts, &gps);
+  }
+  if (gps_mtk.msg_class == MTK_DIY16_ID &&
+      gps_mtk.msg_id == MTK_DIY16_NAV_ID) {
+    if (gps.fix == GPS_FIX_3D) {
+      gps.last_3dfix_ticks = sys_time.nb_sec_rem;
+      gps.last_3dfix_time = sys_time.nb_sec;
+    }
+    AbiSendMsgGPS(GPS_MTK_ID, now_ts, &gps);
+  }
+  gps_mtk.msg_available = FALSE;
 }
 
 static void gps_mtk_time2itow(uint32_t  gps_date, uint32_t  gps_time,
@@ -393,9 +420,12 @@ restart:
  */
 #ifdef GPS_CONFIGURE
 
+#include "mcu_periph/link_device.h"
+
 static void MtkSend_CFG(char *dat)
 {
-  while (*dat != 0) { GpsLink(Transmit(*dat++)); }
+  struct link_device *dev = &((GPS_LINK).device);
+  while (*dat != 0) { dev->put_byte(dev->periph, *dat++); }
 }
 
 void gps_configure_uart(void)

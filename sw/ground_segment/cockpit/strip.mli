@@ -57,10 +57,9 @@ type strip_param = {
   max_bat : float;
   alt_shift_plus_plus : float;
   alt_shift_plus : float;
-  alt_shift_minus : float; }
+  alt_shift_minus : float;
+  icons_theme : string; }
 
 
-val scrolled : GBin.scrolled_window
-
-val add : Pprz.values -> strip_param -> t
+val add : Pprz.values -> strip_param -> GPack.box -> t
 (** [add config params] *)

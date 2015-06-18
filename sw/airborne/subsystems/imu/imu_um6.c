@@ -32,6 +32,7 @@
 */
 #include "subsystems/imu/imu_um6.h"
 #include "subsystems/imu.h"
+#include "subsystems/abi.h"
 #include "mcu_periph/sys_time.h"
 
 struct UM6Packet UM6_packet;
@@ -76,7 +77,7 @@ inline uint16_t UM6_calculate_checksum(uint8_t packet_buffer[], uint8_t packet_l
 inline void UM6_send_packet(uint8_t *packet_buffer, uint8_t packet_length)
 {
   for (int i = 0; i < packet_length; i++) {
-    UM6Link(Transmit(packet_buffer[i]));
+    uart_transmit(&(UM6_LINK), packet_buffer[i]);
   }
 }
 
@@ -363,3 +364,12 @@ void UM6_packet_parse(uint8_t c)
 void imu_scale_gyro(struct Imu *_imu __attribute__((unused))) {}
 void imu_scale_accel(struct Imu *_imu __attribute__((unused))) {}
 void imu_scale_mag(struct Imu *_imu __attribute__((unused))) {}
+
+
+void imu_um6_publish(void)
+{
+  uint32_t now_ts = get_sys_time_usec();
+  AbiSendMsgIMU_GYRO_INT32(IMU_UM6_ID, now_ts, &imu.gyro);
+  AbiSendMsgIMU_ACCEL_INT32(IMU_UM6_ID, now_ts, &imu.accel);
+  AbiSendMsgIMU_MAG_INT32(IMU_UM6_ID, now_ts, &imu.mag);
+}

@@ -35,6 +35,7 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
 #include <libopencm3/cm3/scb.h>
+#include <libopencm3/stm32/desig.h>
 
 #include "mcu_periph/usb_serial.h"
 
@@ -61,8 +62,6 @@ bool_t fifo_put(fifo_t *fifo, uint8_t c);
 bool_t fifo_get(fifo_t *fifo, uint8_t *pc);
 int  fifo_avail(fifo_t *fifo);
 int  fifo_free(fifo_t *fifo);
-inline char *get_dev_unique_id(char *serial_no);
-
 
 
 usbd_device *my_usbd_dev;
@@ -215,31 +214,6 @@ static const char *usb_strings[] = {
   serial_no,
 };
 
-/**
- * Serial is 96bit so 12bytes so 12 hexa numbers, or 24 decimal + termination character
- */
-inline char *get_dev_unique_id(char *s)
-{
-#if defined STM32F4
-  volatile uint8_t *unique_id = (volatile uint8_t *)0x1FFF7A10;
-#else
-  volatile uint8_t *unique_id = (volatile uint8_t *)0x1FFFF7E8;
-#endif
-  int i;
-
-  // Fetch serial number from chip's unique ID
-  for (i = 0; i < 24; i += 2) {
-    s[i] = ((*unique_id >> 4) & 0xF) + '0';
-    s[i + 1] = (*unique_id++ & 0xF) + '0';
-  }
-  for (i = 0; i < 24; i++)
-    if (s[i] > '9') {
-      s[i] += 'A' - '9' - 1;
-    }
-  // add termination character
-  s[24] = '\0';
-  return s;
-}
 
 /*
  *  Buffer to be used for control requests.
@@ -512,6 +486,16 @@ static void usb_serial_send(struct usb_serial_periph *p __attribute__((unused)))
   VCOM_send_message();
 }
 
+static int usb_serial_char_available(struct usb_serial_periph *p __attribute__((unused)))
+{
+  return VCOM_check_available();
+}
+
+static uint8_t usb_serial_getch(struct usb_serial_periph *p __attribute__((unused)))
+{
+  return (uint8_t)(VCOM_getchar());
+}
+
 void VCOM_init(void)
 {
   // initialise fifos
@@ -529,7 +513,7 @@ void VCOM_init(void)
   rcc_periph_clock_enable(RCC_OTGFS);
 
   /* Get serial number */
-  get_dev_unique_id(serial_no);
+  desig_get_unique_id_as_string(serial_no, 25);
 
   /* usb driver init*/
   my_usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config,
@@ -544,6 +528,8 @@ void VCOM_init(void)
   // Configure generic device
   usb_serial.device.periph = (void *)(&usb_serial);
   usb_serial.device.check_free_space = (check_free_space_t) usb_serial_check_free_space;
-  usb_serial.device.transmit = (transmit_t) usb_serial_transmit;
+  usb_serial.device.put_byte = (put_byte_t) usb_serial_transmit;
   usb_serial.device.send_message = (send_message_t) usb_serial_send;
+  usb_serial.device.char_available = (char_available_t) usb_serial_char_available;
+  usb_serial.device.get_byte = (get_byte_t) usb_serial_getch;
 }

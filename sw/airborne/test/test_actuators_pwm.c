@@ -61,6 +61,7 @@ static inline void main_init(void)
 {
   mcu_init();
   sys_time_register_timer((1. / PERIODIC_FREQUENCY), NULL);
+  downlink_init();
   ActuatorsPwmInit();
 }
 
@@ -93,7 +94,9 @@ void dl_parse_msg(void)
     case DL_SET_ACTUATOR: {
       uint8_t servo_no = DL_SET_ACTUATOR_no(dl_buffer);
       uint16_t servo_value = DL_SET_ACTUATOR_value(dl_buffer);
+#ifdef LED_2
       LED_TOGGLE(2);
+#endif
       if (servo_no < ACTUATORS_PWM_NB) {
         ActuatorPwmSet(servo_no, servo_value);
       }

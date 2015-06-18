@@ -287,7 +287,11 @@ void ecef_of_ned_pos_i(struct EcefCoor_i *ecef, struct LtpDef_i *def, struct Ned
   ecef_of_enu_pos_i(ecef, def, &enu);
 }
 
-
+/** Convert a point from LLA to local ENU.
+ * @param[out] enu  ENU point in cm
+ * @param[in]  def  local coordinate system definition
+ * @param[in]  lla  LLA point in 1e7deg and mm
+ */
 void enu_of_lla_point_i(struct EnuCoor_i *enu, struct LtpDef_i *def, struct LlaCoor_i *lla)
 {
   struct EcefCoor_i ecef;
@@ -295,6 +299,11 @@ void enu_of_lla_point_i(struct EnuCoor_i *enu, struct LtpDef_i *def, struct LlaC
   enu_of_ecef_point_i(enu, def, &ecef);
 }
 
+/** Convert a point from LLA to local NED.
+ * @param[out] ned  NED point in cm
+ * @param[in]  def  local coordinate system definition
+ * @param[in]  lla  LLA point in 1e7deg and mm
+ */
 void ned_of_lla_point_i(struct NedCoor_i *ned, struct LtpDef_i *def, struct LlaCoor_i *lla)
 {
   struct EcefCoor_i ecef;
@@ -326,6 +335,20 @@ void ned_of_lla_vect_i(struct NedCoor_i *ned, struct LtpDef_i *def, struct LlaCo
 void lla_of_ecef_i(struct LlaCoor_i *out, struct EcefCoor_i *in)
 {
 
+#if USE_SINGLE_PRECISION_LLA_ECEF
+  /* convert our input to floating point */
+  struct EcefCoor_f in_f;
+  in_f.x = M_OF_CM((float)in->x);
+  in_f.y = M_OF_CM((float)in->y);
+  in_f.z = M_OF_CM((float)in->z);
+  /* calls the floating point transformation */
+  struct LlaCoor_f out_f;
+  lla_of_ecef_f(&out_f, &in_f);
+  /* convert the output to fixed point       */
+  out->lon = (int32_t)rint(EM7DEG_OF_RAD(out_f.lon));
+  out->lat = (int32_t)rint(EM7DEG_OF_RAD(out_f.lat));
+  out->alt = (int32_t)MM_OF_M(out_f.alt);
+#else // use double precision by default
   /* convert our input to floating point */
   struct EcefCoor_d in_d;
   in_d.x = M_OF_CM((double)in->x);
@@ -338,12 +361,27 @@ void lla_of_ecef_i(struct LlaCoor_i *out, struct EcefCoor_i *in)
   out->lon = (int32_t)rint(EM7DEG_OF_RAD(out_d.lon));
   out->lat = (int32_t)rint(EM7DEG_OF_RAD(out_d.lat));
   out->alt = (int32_t)MM_OF_M(out_d.alt);
+#endif
 
 }
 
 void ecef_of_lla_i(struct EcefCoor_i *out, struct LlaCoor_i *in)
 {
 
+#if USE_SINGLE_PRECISION_LLA_ECEF
+  /* convert our input to floating point */
+  struct LlaCoor_f in_f;
+  in_f.lon = RAD_OF_EM7DEG((float)in->lon);
+  in_f.lat = RAD_OF_EM7DEG((float)in->lat);
+  in_f.alt = M_OF_MM((float)in->alt);
+  /* calls the floating point transformation */
+  struct EcefCoor_f out_f;
+  ecef_of_lla_f(&out_f, &in_f);
+  /* convert the output to fixed point       */
+  out->x = (int32_t)CM_OF_M(out_f.x);
+  out->y = (int32_t)CM_OF_M(out_f.y);
+  out->z = (int32_t)CM_OF_M(out_f.z);
+#else // use double precision by default
   /* convert our input to floating point */
   struct LlaCoor_d in_d;
   in_d.lon = RAD_OF_EM7DEG((double)in->lon);
@@ -356,5 +394,6 @@ void ecef_of_lla_i(struct EcefCoor_i *out, struct LlaCoor_i *in)
   out->x = (int32_t)CM_OF_M(out_d.x);
   out->y = (int32_t)CM_OF_M(out_d.y);
   out->z = (int32_t)CM_OF_M(out_d.z);
+#endif
 
 }

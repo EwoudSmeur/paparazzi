@@ -19,10 +19,8 @@
 #
 
 from __future__ import print_function
-import re
 import socket
 import telnetlib
-import os
 import sys
 from ftplib import FTP
 import ftplib
@@ -90,11 +88,11 @@ def uploadfile(ftp, filename, content):
 # Connect with telnet and ftp, wait until login
 def connect(host):
     try:
-        tn = telnetlib.Telnet(host)
+        tn = telnetlib.Telnet(host, timeout=3)
         ftp = FTP(host)
         ftp.login()
         tn.read_until('# ')
-        return (tn, ftp)
+        return tn, ftp
     except:
         print('Could not connect to Parrot UAV (host: ' + host + ')')
         exit(2)

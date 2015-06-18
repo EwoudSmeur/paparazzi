@@ -26,6 +26,8 @@ module G = MapCanvas
 open Printf
 open Latlong
 
+let locale = GtkMain.Main.init ~setlocale:false ()
+
 let soi = string_of_int
 
 let home = Env.paparazzi_home
@@ -338,6 +340,7 @@ and display_particules = ref false
 and wid = ref None
 and srtm = ref false
 and hide_fp = ref false
+and timestamp = ref false
 
 let options =
   [
@@ -371,6 +374,8 @@ let options =
     "-wid", Arg.String (fun s -> wid := Some (Int32.of_string s)), "<window id> Id of an existing window to be attached to";
     "-zoom", Arg.Set_float zoom, "Initial zoom";
     "-auto_hide_fp", Arg.Unit (fun () -> Live.auto_hide_fp true; hide_fp := true), "Automatically hide flight plans of unselected aircraft";
+    "-timestamp", Arg.Set timestamp, "Bind on timestampped telemetry messages";
+    "-ac_ids", Arg.String (fun s -> Live.filter_ac_ids s), "comma separated list of AC IDs to show in GCS";
   ]
 
 
@@ -658,7 +663,14 @@ let () =
               window#unfullscreen () in
           (window:>GWindow.window_skel),switch_fullscreen
 
-      | Some window ->
+      | Some xid ->
+        let window =
+          IFDEF GDK_NATIVE_WINDOW THEN
+            Gdk.Window.native_of_xid xid
+          ELSE
+            xid
+          END
+        in
         (GWindow.plug ~window ~width ~height ():>GWindow.window_skel), fun _ -> () in
 
   (* Editor frame *)
@@ -669,6 +681,10 @@ let () =
   let map_frame = GPack.vbox () in
   (** Put the canvas in a frame *)
   map_frame#add geomap#frame#coerce;
+
+  (** window for the strip panel *)
+  let scrolled = GBin.scrolled_window ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
+  let strips_table = GPack.vbox ~spacing:5 ~packing:scrolled#add_with_viewport () in
 
   (** Aircraft notebook *)
   let ac_notebook = GPack.notebook ~tab_border:0 () in
@@ -685,7 +701,7 @@ let () =
   let plugin_frame = GPack.vbox ~width:plugin_width () in
 
   let widgets = ["map2d", map_frame#coerce;
-                 "strips", Strip.scrolled#coerce;
+                 "strips", scrolled#coerce;
                  "aircraft", ac_notebook#coerce;
                  "editor", editor_frame#coerce;
                  "alarms", alert_page#coerce;
@@ -771,7 +787,7 @@ let () =
     begin
       my_alert#add "Waiting for telemetry...";
       Speech.say "Waiting for telemetry...";
-      Live.listen_acs_and_msgs geomap ac_notebook my_alert !auto_center_new_ac alt_graph
+      Live.listen_acs_and_msgs geomap ac_notebook strips_table my_alert !auto_center_new_ac alt_graph !timestamp
     end;
 
   (** Display the window *)

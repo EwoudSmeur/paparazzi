@@ -542,7 +542,7 @@
     <field name="angle" type="float" unit="deg"/>
     <field name="last_block" type="float"/>
     <field name="count" type="uint16" unit=""/>
-    <field name="shutter" type="uint8" unit="s"/>
+    <field name="shutter" type="uint8" unit="decisec" alt_unit="sec" alt_unit_coef="0.1"/>
   </message>
 
   <message name="AMSYS_BARO" id="65">
@@ -838,48 +838,10 @@
     <field name="values" type="int16[]" unit="none"/>
   </message>
 
-  <message name="BETH" id="106">
-    <field name="azimuth" type="int16"/>
-    <field name="elevation" type="int16"/>
-    <field name="tilt" type="int16"/>
-    <field name="counter" type="uint32"/>
-    <field name="can_errs" type="uint16"/>
-    <field name="spi_errs" type="uint16"/>
-    <field name="thrust_out" type="int8"/>
-    <field name="pitch_out" type="int8"/>
-  </message>
-
-  <message name="BETH_ESTIMATOR" id="107">
-    <field name="tilt" type="float" alt_unit="deg" alt_unit_coef="57.29578"/>
-    <field name="tilt_dot" type="float" alt_unit="deg/s" alt_unit_coef="57.29578"/>
-    <field name="elevation" type="float" alt_unit="deg" alt_unit_coef="57.29578"/>
-    <field name="elevation_dot" type="float" alt_unit="deg/s" alt_unit_coef="57.29578"/>
-    <field name="azimuth" type="float" alt_unit="deg" alt_unit_coef="57.29578"/>
-    <field name="azimuth_dot" type="float" alt_unit="deg/s" alt_unit_coef="57.29578"/>
-  </message>
-
-  <message name="BETH_CONTROLLER" id="108">
-    <field name="pitch" type="float"/>
-    <field name="thrust" type="float"/>
-    <field name="pitch_ff" type="float"/>
-    <field name="pitch_fb" type="float"/>
-    <field name="thrust_ff" type="float"/>
-    <field name="thrust_fb" type="float"/>
-    <field name="tilt_sp" type="float" alt_unit="deg" alt_unit_coef="57.29578"/>
-    <field name="tilt_ref" type="float" alt_unit="deg" alt_unit_coef="57.29578"/>
-    <field name="tilt_dot_ref" type="float" alt_unit="deg/s" alt_unit_coef="57.29578"/>
-    <field name="elevation_sp " type="float" alt_unit="deg" alt_unit_coef="57.29578"/>
-    <field name="elevation_ref " type="float" alt_unit="deg" alt_unit_coef="57.29578"/>
-    <field name="elevation_dot_ref" type="float" alt_unit="deg/s" alt_unit_coef="57.29578"/>
-    <field name="azimuth_sp" type="float" alt_unit="deg" alt_unit_coef="57.29578"/>
-  </message>
-
-  <message name="BETH_CONTROLLER_TWIST" id="109">
-    <field name="S" type="float"/>
-    <field name="S_dot" type="float"/>
-    <field name="U_twt" type="float"/>
-    <field name="error" type="float"/>
-  </message>
+  <!--106 is free -->
+  <!--107 is free -->
+  <!--108 is free -->
+  <!--109 is free -->
 
   <message name="DC_SHOT" id="110">
     <field name="photo_nr" type="int16"/>
@@ -901,9 +863,7 @@
     <field name="servo" type="uint16[]"/>
   </message>
 
-  <message name="BETH_CONTROLLER_SFB" id="112">
-    <field name="one" type="float"/>
-  </message>
+  <!--112 is free -->
 
   <message name="MLX_SERIAL" id="113">
     <field name="serial0" type="uint32"/>
@@ -1973,13 +1933,13 @@
   </message>
 
   <message name="AIR_DATA" id="222">
-    <field name="pressure" type="float" unit="Pa"/>
-    <field name="diff_p" type="float" unit="Pa"/>
-    <field name="temp" type="float" unit="deg celcius"/>
-    <field name="qnh" type="float" unit="hPa"/>
-    <field name="amsl_baro" type="float" unit="m"/>
-    <field name="airspeed" type="float" unit="m/s"/>
-    <field name="tas_factor" type="float"/>
+    <field name="pressure" type="float" unit="Pa">static pressure</field>
+    <field name="diff_p" type="float" unit="Pa">differential pressure</field>
+    <field name="temp" type="float" unit="deg celcius">air temperature</field>
+    <field name="qnh" type="float" unit="hPa">barometric pressure adjusted to sea level</field>
+    <field name="amsl_baro" type="float" unit="m">barometric altitude above mean sea level</field>
+    <field name="airspeed" type="float" unit="m/s">Equivalent Air Speed (or Calibrated Air Speed at low speed/altitude)</field>
+    <field name="tas" type="float">True Air Speed (when P, T and P_diff are available)</field>
   </message>
 
   <message name="AMSL" id="223">
@@ -2003,8 +1963,21 @@
     <field name="t" type="uint32"/>
   </message>
 
- <!--228 is free -->
- <!--229 is free -->
+  <message name="OPTIC_FLOW_EST" id="228">
+    <field name="fps"         type="float"/>
+    <field name="corner_cnt"  type="uint16"/>
+    <field name="tracked_cnt" type="uint16"/>
+    <field name="flow_x"      type="int16" unit="subpixels"/>
+    <field name="flow_y"      type="int16" unit="subpixels"/>
+    <field name="flow_der_x"  type="int16" unit="subpixels"/>
+    <field name="flow_der_y"  type="int16" unit="subpixels"/>
+    <field name="vel_x"       type="float" unit="cm/s"/>
+    <field name="vel_y"       type="float" unit="cm/s"/>
+    <field name="cmd_phi"     type="int32" alt_unit="deg" alt_unit_coef="0.0139882"/>
+    <field name="cmd_theta"   type="int32" alt_unit="deg" alt_unit_coef="0.0139882"/>
+  </message>
+
+  <!--229 is free -->
 
   <message name="AHRS_ARDRONE2" id="230">
     <field name="state" type="uint32" />
@@ -2028,7 +2001,7 @@
     <field name="rc_status"    type="uint8" values="OK|LOST|REALLY_LOST"/>
     <field name="frame_rate"   type="uint8" unit="Hz"/>
     <field name="gps_status"   type="uint8" values="NO_FIX|NA|NA|3Dfix"/>
-    <field name="ap_mode"      type="uint8" values="KILL|FAILSAFE|HOME|RATE_DIRECT|ATTITUDE_DIRECT|RATE_RC_CLIMB|ATTITUDE_RC_CLIMB|ATTITUDE_CLIMB|RATE_Z_HOLD|ATTITUDE_Z_HOLD|HOVER_DIRECT|HOVER_CLIMB|HOVER_Z_HOLD|NAV|RC_DIRECT|CARE_FREE|FORWARD"/>
+    <field name="ap_mode"      type="uint8" values="KILL|FAILSAFE|HOME|RATE_DIRECT|ATTITUDE_DIRECT|RATE_RC_CLIMB|ATTITUDE_RC_CLIMB|ATTITUDE_CLIMB|RATE_Z_HOLD|ATTITUDE_Z_HOLD|HOVER_DIRECT|HOVER_CLIMB|HOVER_Z_HOLD|NAV|RC_DIRECT|CARE_FREE|FORWARD|MODULE"/>
     <field name="ap_in_flight" type="uint8" values="ON_GROUND|IN_FLIGHT"/>
     <field name="ap_motors_on" type="uint8" values="MOTORS_OFF|MOTORS_ON"/>
     <field name="ap_h_mode"    type="uint8" values="KILL|RATE|ATTITUDE|HOVER|NAV|CF"/>
@@ -2038,8 +2011,9 @@
   </message>
 
    <message name="STATE_FILTER_STATUS" id="232">
+     <field name="id" type="uint8"/>
      <field name="state_filter_mode" type="uint8" values="UNKNOWN|INIT|ALIGN|OK|GPS_LOST|IMU_LOST|COV_ERR|IR_CONTRAST|ERROR"/>
-     <field name="value" type="uint16" />
+     <field name="value" type="uint16"/>
    </message>
 
  <!--233 is free -->

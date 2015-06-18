@@ -30,7 +30,6 @@
 
 #include "mcu_periph/uart.h"
 #include "subsystems/radio_control.h"
-#include "subsystems/gps.h"
 #include "subsystems/commands.h"
 #include "subsystems/actuators.h"
 #include "subsystems/electrical.h"
@@ -45,6 +44,12 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 
 #include "generated/settings.h"
+
+#if USE_GPS
+#include "subsystems/gps.h"
+#else
+#define GpsIsLost() TRUE
+#endif
 
 #ifdef POWER_SWITCH_GPIO
 #include "mcu_periph/gpio.h"
@@ -89,10 +94,9 @@ bool_t   autopilot_detect_ground_once;
 #endif
 
 #ifndef AUTOPILOT_DISABLE_AHRS_KILL
-#include "subsystems/ahrs.h"
 static inline int ahrs_is_aligned(void)
 {
-  return (ahrs.status == AHRS_RUNNING);
+  return stateIsAttitudeValid();
 }
 #else
 PRINT_CONFIG_MSG("Using AUTOPILOT_DISABLE_AHRS_KILL")
@@ -423,6 +427,11 @@ void autopilot_set_mode(uint8_t new_autopilot_mode)
       case AP_MODE_NAV:
         guidance_h_mode_changed(GUIDANCE_H_MODE_NAV);
         break;
+      case AP_MODE_MODULE:
+#ifdef GUIDANCE_H_MODE_MODULE_SETTING
+        guidance_h_mode_changed(GUIDANCE_H_MODE_MODULE_SETTING);
+#endif
+        break;
       default:
         break;
     }
@@ -463,6 +472,11 @@ void autopilot_set_mode(uint8_t new_autopilot_mode)
       case AP_MODE_HOME:
       case AP_MODE_NAV:
         guidance_v_mode_changed(GUIDANCE_V_MODE_NAV);
+        break;
+      case AP_MODE_MODULE:
+#ifdef GUIDANCE_V_MODE_MODULE_SETTING
+        guidance_v_mode_changed(GUIDANCE_V_MODE_MODULE_SETTING);
+#endif
         break;
       default:
         break;

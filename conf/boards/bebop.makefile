@@ -16,21 +16,27 @@ ap.MAKEFILE = bebop
 # -----------------------------------------------------------------------
 USER=foobar
 HOST?=192.168.42.1
-SUB_DIR=paparazzi
+SUB_DIR=internal_000/paparazzi
 FTP_DIR=/data/ftp
 TARGET_DIR=$(FTP_DIR)/$(SUB_DIR)
 # -----------------------------------------------------------------------
 
 # The datalink default uses UDP
-MODEM_HOST         ?= \"192.168.42.255\"
+MODEM_HOST         ?= 192.168.42.255
 
 # The GPS sensor is connected internally
 GPS_PORT           ?= UART1
 GPS_BAUD           ?= B230400
-$(TARGET).CFLAGS   += -DUART1_DEV=\"/dev/ttyPA1\"
 
 # handle linux signals by hand
-$(TARGET).CFLAGS += -DUSE_LINUX_SIGNAL
+$(TARGET).CFLAGS += -DUSE_LINUX_SIGNAL -D_GNU_SOURCE
+
+# Compile the video specific parts
+$(TARGET).srcs +=  $(SRC_BOARD)/video.c
+
+# Link static (Done for GLIBC)
+$(TARGET).CFLAGS += -DLINUX_LINK_STATIC
+$(TARGET).LDFLAGS += -static
 
 # -----------------------------------------------------------------------
 

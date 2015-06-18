@@ -21,28 +21,31 @@
 #
 
 #
-# Makefile for linux targets (e.g. OMAP, BBB, ARDrone)
+# Makefile for generic linux targets
+# Normally don't use this makefile directly, but rather Makefile.arm-linux or Makefile.bbb
 #
 
-#
-# find compiler toolchain
-#
-include $(PAPARAZZI_SRC)/conf/Makefile.arm-linux-toolchain
-
-# Define programs and commands.
+# Define some default programs and commands (if not already set by e.g. Makefile.arm-linux
+CC  ?= gcc
+CXX ?= g++
+LD  ?= $(CC)
 
 # Launch with "make Q=''" to get full command display
 Q=@
 
 OPT ?= 3
-CSTANDARD = -std=gnu99
+# Slightly bigger .elf files but gains the ability to decode macros
+DEBUG_FLAGS ?= -ggdb3
+CSTANDARD ?= -std=gnu99
 CINCS = $(INCLUDES) -I$(PAPARAZZI_SRC)/sw/include
 
-FLOAT_ABI = -mfloat-abi=softfp -mfpu=vfp
-
-# Compiler flags.
+#
+# Common compiler flags.
+# add then to arch specific CFLAGS already defined in e.g. Makefile.arm-linux
+#
 CFLAGS += $(CINCS)
-CFLAGS += -O$(OPT) $(FLOAT_ABI) -mtune=cortex-a8 -march=armv7-a
+CFLAGS += -O$(OPT) -fPIC
+CFLAGS += $(DEBUG_FLAGS)
 CFLAGS += -fno-short-enums
 # CFLAGS += -malignment-traps
 CFLAGS += -Wall -Wcast-qual -Wimplicit -Wcast-align
@@ -52,7 +55,7 @@ CFLAGS += -Wredundant-decls -Wreturn-type -Wshadow -Wunused
 #CFLAGS += -Wa,-adhlns=$(OBJDIR)/$(notdir $(subst $(suffix $<),.lst,$<))
 #CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 
-CFLAGS += -lm
+CFLAGS += -lm -pthread
 
 # flags only for C
 CFLAGS += -Wstrict-prototypes -Wmissing-declarations
@@ -61,11 +64,12 @@ CFLAGS += $(CSTANDARD)
 CFLAGS += $($(TARGET).CFLAGS)
 CFLAGS += $(USER_CFLAGS)
 
-LDFLAGS += -lm $(FLOAT_ABI)
+LDFLAGS += -lm -pthread
 
-CXXFLAGS = -pipe -O3 -fshow-column -ffast-math -fPIC
+CXXFLAGS += -O$(OPT) -fPIC
+CXXFLAGS += $(DEBUG_FLAGS)
+CXXFLAGS += -pipe -fshow-column -ffast-math
 CXXFLAGS += -g -ffunction-sections -fdata-sections
-CXXFLAGS += $(FLOAT_ABI) -mtune=cortex-a8 -march=armv7-a
 CXXFLAGS += -Wall -Wextra
 CXXFLAGS += $($(TARGET).CXXFLAGS)
 CXXFLAGS += $(USER_CFLAGS)
@@ -85,9 +89,6 @@ printcommands:
 	@echo ""
 
 all: printcommands build
-
-# depend order only for parallel make
-build: | printcommands
 
 build: $(OBJDIR) elf
 
@@ -122,12 +123,13 @@ $(OBJDIR)/%.o : %.cpp $(OBJDIR)/../Makefile.ac
 # Listing of phony targets.
 .PHONY : printcommands all build elf
 
+.NOTPARALLEL: printcommands
+
 #
 # Dependencies
 #
-
-DEPS = $(addprefix $(OBJDIR)/,$($(TARGET).srcs:.c=.d))
-
 ifneq ($(MAKECMDGOALS),clean)
+DEPS = $(addprefix $(OBJDIR)/,$($(TARGET).srcs:.c=.d))
+DEPS += $(addprefix $(OBJDIR)/,$($(TARGET).srcs:.cpp=.d))
 -include $(DEPS)
 endif

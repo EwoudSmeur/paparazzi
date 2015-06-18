@@ -75,6 +75,7 @@ int main(void)
 static inline void main_init(void)
 {
   mcu_init();
+  downlink_init();
 
   actuators_init();
 #if USE_MOTOR_MIXING
@@ -107,6 +108,7 @@ static inline void main_periodic(void)
 
 static inline void main_event(void)
 {
+  mcu_event();
   DatalinkEvent();
   RadioControlEvent(on_rc_frame);
 }

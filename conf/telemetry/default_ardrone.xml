@@ -21,9 +21,12 @@
       <message name="UART_ERRORS"            period="3.1"/>
       <message name="DATALINK_REPORT"        period="5.1"/>
       <message name="STATE_FILTER_STATUS"    period="3.2"/>
+      <message name="OPTIC_FLOW_EST"         period="0.25"/>
     </mode>
 
     <mode name="ppm">
+      <message name="DL_VALUE"                 period="0.5"/>
+      <message name="ALIVE"                    period="2.1"/>
       <message name="ROTORCRAFT_CMD"           period=".05"/>
       <message name="PPM"                      period="0.5"/>
       <message name="RC"                       period="0.5"/>

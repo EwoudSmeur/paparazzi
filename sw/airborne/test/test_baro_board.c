@@ -29,7 +29,6 @@
 
 #include "mcu.h"
 #include "mcu_periph/sys_time.h"
-#include "mcu_periph/uart.h"
 #include "led.h"
 
 #include "subsystems/datalink/downlink.h"
@@ -78,9 +77,9 @@ int main(void)
   return 0;
 }
 
-static void pressure_abs_cb(uint8_t __attribute__((unused)) sender_id, const float *pressure)
+static void pressure_abs_cb(uint8_t __attribute__((unused)) sender_id, float pressure)
 {
-  float p = *pressure;
+  float p = pressure;
   float foo = 42.;
   DOWNLINK_SEND_BARO_RAW(DefaultChannel, DefaultDevice, &p, &foo);
 }
@@ -89,6 +88,7 @@ static inline void main_init(void)
 {
   mcu_init();
   sys_time_register_timer((1. / PERIODIC_FREQUENCY), NULL);
+  downlink_init();
   baro_init();
 
   baro_tid = sys_time_register_timer(1. / BARO_PERIODIC_FREQUENCY, NULL);
@@ -104,5 +104,6 @@ static inline void main_periodic_task(void)
 
 static inline void main_event_task(void)
 {
+  mcu_event();
   BaroEvent();
 }

@@ -34,17 +34,17 @@ GPS_PORT           ?= UART1
 GPS_BAUD           ?= B57600
 
 # The datalink default uses UDP
-MODEM_HOST         ?= \"192.168.1.255\"
-
-# Here we define what the UART1_DEV device mapping
-$(TARGET).CFLAGS   += -DUART1_DEV=\"/dev/ttyUSB0\"
-#$(TARGET).CFLAGS  += -DUART0_DEV=\"/dev/ttyO3\"
+MODEM_HOST         ?= 192.168.1.255
 
 # for distinction between RAW and SDK version
 $(TARGET).CFLAGS +=-DARDRONE2_RAW
 
 # handle linux signals by hand
 $(TARGET).CFLAGS += -DUSE_LINUX_SIGNAL
+
+# Link static (Done for GLIBC)
+$(TARGET).CFLAGS += -DLINUX_LINK_STATIC
+$(TARGET).LDFLAGS += -static
 
 # -----------------------------------------------------------------------
 

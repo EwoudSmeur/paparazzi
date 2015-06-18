@@ -18,6 +18,13 @@
  * the Free Software Foundation, 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
+
+/**
+ * @file test_settings.c
+ *
+ * Test persistent settings, use together with conf/settings/test_settings.xml
+ */
+
 #define DATALINK_C
 
 #include BOARD_CONFIG
@@ -30,18 +37,19 @@
 #include "subsystems/settings.h"
 #include "generated/settings.h"
 
-#include "mcu_periph/uart.h"
-#include "messages.h"
+#if USE_UDP
+#include "mcu_periph/udp.h"
+#endif
 
 static inline void main_init(void);
 static inline void main_periodic(void);
 static inline void main_event(void);
 
 
-float setting_a;
-float setting_b;
-float setting_c;
-float setting_d;
+float setting_f;
+uint8_t setting_u8;
+double setting_d;
+int32_t setting_i32;
 
 int main(void)
 {
@@ -58,18 +66,19 @@ int main(void)
 
 static inline void main_init(void)
 {
-
   mcu_init();
   sys_time_register_timer((1. / PERIODIC_FREQUENCY), NULL);
   settings_init();
 
   mcu_int_enable();
 
+#if DOWNLINK
+  downlink_init();
+#endif
 }
 
 static inline void main_periodic(void)
 {
-
   RunOnceEvery(100, {
     DOWNLINK_SEND_ALIVE(DefaultChannel, DefaultDevice, 16, MD5SUM);
     PeriodicSendDlValue(&(DefaultChannel).trans_tx, &(DefaultDevice).device);
@@ -79,9 +88,8 @@ static inline void main_periodic(void)
 
 static inline void main_event(void)
 {
-
+  mcu_event();
   DatalinkEvent();
-
 }
 
 void dl_parse_msg(void)
@@ -102,6 +110,13 @@ void dl_parse_msg(void)
         DOWNLINK_SEND_DL_VALUE(DefaultChannel, DefaultDevice, &i, &val);
       }
       break;
+    case DL_GET_SETTING : {
+      if (DL_GET_SETTING_ac_id(dl_buffer) != AC_ID) { break; }
+      uint8_t i = DL_GET_SETTING_index(dl_buffer);
+      float val = settings_get_value(i);
+      DOWNLINK_SEND_DL_VALUE(DefaultChannel, DefaultDevice, &i, &val);
+    }
+    break;
     default:
       break;
   }
