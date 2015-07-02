@@ -20,6 +20,7 @@
     <subsystem name="actuators" type="bebop"/>
     <subsystem name="imu" type="bebop"/>
     <subsystem name="gps" type="furuno"/>
+<!--     <subsystem name="gps" type="datalink"/> -->
     <subsystem name="stabilization" type="indi">
       <define name="INDI_RPM_FEEDBACK" value="TRUE"/>
       <define name="USE_FULL_INDI" value="TRUE"/>
@@ -28,14 +29,15 @@
       <define name="ADAPTIVE_INDI" value="FALSE"/>
     </subsystem>
     <subsystem name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <configure name="USE_MAGNETOMETER" value="TRUE"/>
+      <define name="AHRS_USE_GPS_HEADING" value="FASLE"/>
     </subsystem>
     <subsystem name="ins" type="extended"/>
   </firmware>
 
   <modules main_freq="512">
     <load name="send_imu_mag_current.xml"/>
-    <load name="file_logger.xml">
+    <load name="logger_file.xml">
       <define name="FILE_LOGGER_PATH" value="\\\"/data/ftp/internal_000/\\\""/>
     </load>
   </modules>
@@ -79,13 +81,20 @@
 
   <section name="IMU" prefix="IMU_">
     <!-- Magneto calibration -->
-    <define name="MAG_X_NEUTRAL" value="18"/>
+<!--    <define name="MAG_X_NEUTRAL" value="18"/>
     <define name="MAG_Y_NEUTRAL" value="157"/>
     <define name="MAG_Z_NEUTRAL" value="49"/>
     <define name="MAG_X_SENS" value="10.5007722373" integer="16"/>
     <define name="MAG_Y_SENS" value="11.1147400462" integer="16"/>
-    <define name="MAG_Z_SENS" value="11.6479371722" integer="16"/>
+    <define name="MAG_Z_SENS" value="11.6479371722" integer="16"/>-->
 
+    <define name="MAG_X_NEUTRAL" value="-102"/>
+    <define name="MAG_Y_NEUTRAL" value="-7"/>
+    <define name="MAG_Z_NEUTRAL" value="153"/>
+    <define name="MAG_X_SENS" value="6.97568047567" integer="16"/>
+    <define name="MAG_Y_SENS" value="7.22535985797" integer="16"/>
+    <define name="MAG_Z_SENS" value="7.64811639071" integer="16"/>
+    
     <!-- Magneto current calibration -->
     <define name="MAG_X_CURRENT_COEF" value="0.0"/>
     <define name="MAG_Y_CURRENT_COEF" value="0.0"/>
@@ -233,6 +242,7 @@
     <define name="PGAIN" value="79"/>
     <define name="DGAIN" value="100"/>
     <define name="IGAIN" value="30"/>
+    <define name="USE_SPEED_REF" value="FALSE"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">
@@ -245,7 +255,7 @@
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-    <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_DIRECT"/>
+    <define name="MODE_AUTO1" value="AP_MODE_HOVER_DIRECT"/>
     <define name="MODE_AUTO2" value="AP_MODE_ATTITUDE_DIRECT"/>
   </section>
 

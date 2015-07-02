@@ -60,6 +60,7 @@ float vertical_velocity_rc = 0;
 float vertical_velocity_err = 0;
 float vv_gain = 6.0;
 float z_filt = 0;
+float altitude_sp = 0;
 
 struct FloatRates filtered_rate = {0., 0., 0.};
 struct FloatRates filtered_rate_deriv = {0., 0., 0.};
@@ -136,7 +137,7 @@ static const int32_t pitch_coef[MOTOR_MIXING_NB_MOTOR]  = MOTOR_MIXING_PITCH_COE
 static const int32_t yaw_coef[MOTOR_MIXING_NB_MOTOR]    = MOTOR_MIXING_YAW_COEF;
 
 abi_event rpm_ev;
-static void rpm_cb(uint8_t sender_id, const uint16_t *rpm, const uint8_t *count);
+static void rpm_cb(uint8_t sender_id, uint16_t *rpm, uint8_t count);
 
 #define STABILIZATION_INDI_FILT_OMEGA2 (STABILIZATION_INDI_FILT_OMEGA*STABILIZATION_INDI_FILT_OMEGA)
 
@@ -203,8 +204,8 @@ static void send_att_indi2(struct transport_tx *trans, struct link_device *dev)
                                    &G1G2_pseudo_inv[3][2],
                                    &rc_accel_roll,
                                    &roll_in,
-                                   &roll_filt,
-                                   &filt_accely);
+                                   &speedpitch,
+                                   &speedroll);
 }
 #endif
 
@@ -375,6 +376,14 @@ static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err
 
   vertical_velocity_rc = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
   vertical_velocity_err = vertical_velocity_rc - stateGetSpeedNed_f()->z;
+
+  altitude_sp = -(stabilization_cmd[COMMAND_THRUST]-2500.0)/4500.0*2.0;
+
+  float altitude_gain = 0.5;
+  float vertical_velocity_sp = altitude_gain*(altitude_sp - stateGetPositionNed_f()->z);
+
+  vertical_velocity_err = vertical_velocity_sp - stateGetSpeedNed_f()->z;
+
 
   float inv_control_eff_accel = -500.0;
 //   accel_ref = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*1.0;
@@ -645,9 +654,9 @@ void filter_estimation_indi(void) {
   ratedotdot_estimation.r = -ratedot_estimation.r * 2*IDENTIFICATION_FILT_ZETA*IDENTIFICATION_INDI_FILT_OMEGA + (stateGetBodyRates_f()->r - rate_estimation.r)*IDENTIFICATION_INDI_FILT_OMEGA2;
 }
 
-static void rpm_cb(uint8_t sender_id, const uint16_t *rpm, const uint8_t *count)
+static void rpm_cb(uint8_t sender_id, uint16_t *rpm, uint8_t count)
 {
-  for(int i = 0; i < *count; i++) {
+  for(int i = 0; i < count; i++) {
     act_obs_rpm[i] = (rpm[i] - get_servo_min(i));
     act_obs_rpm[i] *= (MAX_PPRZ / (float)(get_servo_max(i)-get_servo_min(i)));
   }

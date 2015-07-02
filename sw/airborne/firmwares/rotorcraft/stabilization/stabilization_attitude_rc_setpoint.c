@@ -32,6 +32,7 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/autopilot_rc_helpers.h"
 #include "mcu_periph/sys_time.h"
+#include "autopilot.h"
 
 #ifndef STABILIZATION_ATTITUDE_DEADBAND_A
 #define STABILIZATION_ATTITUDE_DEADBAND_A 0
@@ -63,6 +64,9 @@ float filt_accelydd = 0;
 float filt_accelx = 0;
 float filt_accelxd = 0;
 float filt_accelxdd = 0;
+float speedpitch = 0;
+float speedroll = 0;
+float auto_speed_gain = 1.2;
 
 void indi_filter_attitude(void);
 
@@ -348,8 +352,28 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q)
   ov.z = 0.0;
 
   indi_filter_attitude();
-  rc_accel_roll = ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*3.0;
-  rc_accel_pitch = ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*3.0;
+
+  if(guidance_h_mode == GUIDANCE_H_MODE_HOVER) {
+    float rc_speed_roll = ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*10.0;
+    float rc_speed_pitch = ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*10.0;
+
+    float cospsi = cosf(stateGetNedToBodyEulers_f()->psi);
+    float sinpsi = sinf(stateGetNedToBodyEulers_f()->psi);
+
+    speedpitch = cospsi*stateGetSpeedNed_f()->x + sinpsi*stateGetSpeedNed_f()->y;
+    speedroll = -sinpsi*stateGetSpeedNed_f()->x + cospsi*stateGetSpeedNed_f()->y;
+//       float accelx = cospsi*stateGetAccelNed_f()->x + sinpsi*stateGetAccelNed_f()->y;
+//   float accely =-sinpsi*stateGetAccelNed_f()->x + cospsi*stateGetAccelNed_f()->y;
+
+    rc_accel_roll = (rc_speed_roll - speedroll)*auto_speed_gain;
+    rc_accel_pitch = (rc_speed_pitch + speedpitch)*auto_speed_gain;
+//     rc_accel_roll = ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*3.0;
+//     rc_accel_pitch = ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*3.0;
+  }
+  else {
+    rc_accel_roll = ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*8.0;
+    rc_accel_pitch = ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*8.0;
+  }
   float inv_accel_dyn = 1.0/9.81;
   roll_in = roll_filt + inv_accel_dyn*(rc_accel_roll - filt_accely);
   pitch_in = pitch_filt + inv_accel_dyn*(rc_accel_pitch + filt_accelx);

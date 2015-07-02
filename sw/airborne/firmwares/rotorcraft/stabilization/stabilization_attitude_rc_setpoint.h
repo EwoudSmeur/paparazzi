@@ -39,6 +39,9 @@ extern float rc_accel_pitch;
 extern float pitch_in;
 extern float pitch_filt;
 extern float filt_accelx;
+extern float speedpitch;
+extern float speedroll;
+extern float auto_speed_gain;
 
 extern void stabilization_attitude_reset_care_free_heading(void);
 extern int32_t stabilization_attitude_get_heading_i(void);
