@@ -88,12 +88,12 @@
     <define name="MAG_Y_SENS" value="11.1147400462" integer="16"/>
     <define name="MAG_Z_SENS" value="11.6479371722" integer="16"/>-->
 
-    <define name="MAG_X_NEUTRAL" value="-102"/>
-    <define name="MAG_Y_NEUTRAL" value="-7"/>
-    <define name="MAG_Z_NEUTRAL" value="153"/>
-    <define name="MAG_X_SENS" value="6.97568047567" integer="16"/>
-    <define name="MAG_Y_SENS" value="7.22535985797" integer="16"/>
-    <define name="MAG_Z_SENS" value="7.64811639071" integer="16"/>
+    <define name="MAG_X_NEUTRAL" value="-133"/>
+    <define name="MAG_Y_NEUTRAL" value="-70"/>
+    <define name="MAG_Z_NEUTRAL" value="66"/>
+    <define name="MAG_X_SENS" value="7.01689927216" integer="16"/>
+    <define name="MAG_Y_SENS" value="7.30486718075" integer="16"/>
+    <define name="MAG_Z_SENS" value="7.6801782069" integer="16"/>
     
     <!-- Magneto current calibration -->
     <define name="MAG_X_CURRENT_COEF" value="0.0"/>
@@ -256,7 +256,7 @@
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_HOVER_DIRECT"/>
-    <define name="MODE_AUTO2" value="AP_MODE_ATTITUDE_DIRECT"/>
+    <define name="MODE_AUTO2" value="AP_MODE_HOVER_Z_HOLD"/>
   </section>
 
   <section name="BAT">

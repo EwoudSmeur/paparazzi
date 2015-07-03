@@ -35,6 +35,7 @@
 #include "subsystems/imu.h"
 #include "subsystems/actuators/motor_mixing.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
+#include "firmwares/rotorcraft/guidance/guidance_v.h"
 
 //for step input
 #include "subsystems/radio_control.h"
@@ -189,6 +190,7 @@ static void send_att_indi(struct transport_tx *trans, struct link_device *dev)
 
 static void send_att_indi2(struct transport_tx *trans, struct link_device *dev)
 {
+  float possp = POS_FLOAT_OF_BFP(guidance_h_pos_sp.x);
   pprz_msg_send_STAB_ATTITUDE_INDI2(trans, dev, AC_ID,
                                    &vertical_velocity_rc,
                                    &vertical_velocity_err,
@@ -196,12 +198,12 @@ static void send_att_indi2(struct transport_tx *trans, struct link_device *dev)
                                    &z_filt,
                                    &stateGetAccelNed_f()->x,
                                    &stateGetAccelNed_f()->y,
-                                   &G1G2_pseudo_inv[2][1],
-                                   &G1G2_pseudo_inv[3][1],
-                                   &G1G2_pseudo_inv[0][2],
-                                   &G1G2_pseudo_inv[1][2],
-                                   &G1G2_pseudo_inv[2][2],
-                                   &G1G2_pseudo_inv[3][2],
+                                   &altitude_sp,
+                                   &pos_x_err,
+                                   &pos_y_err,
+                                   &possp,
+                                   &rc_speed_roll,
+                                   &rc_speed_pitch,
                                    &rc_accel_roll,
                                    &roll_in,
                                    &speedpitch,
@@ -374,16 +376,19 @@ static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err
   stabilization_indi_filter_accel();
   stabilization_indi_filter_z();
 
-  vertical_velocity_rc = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
-  vertical_velocity_err = vertical_velocity_rc - stateGetSpeedNed_f()->z;
+  if(guidance_h_mode == GUIDANCE_H_MODE_HOVER) {
+//     altitude_sp = -(stabilization_cmd[COMMAND_THRUST]-2500.0)/4500.0*2.0;
+    altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_sp);
 
-  altitude_sp = -(stabilization_cmd[COMMAND_THRUST]-2500.0)/4500.0*2.0;
+    float altitude_gain = 0.5;
+    float vertical_velocity_sp = altitude_gain*(altitude_sp - stateGetPositionNed_f()->z);
 
-  float altitude_gain = 0.5;
-  float vertical_velocity_sp = altitude_gain*(altitude_sp - stateGetPositionNed_f()->z);
-
-  vertical_velocity_err = vertical_velocity_sp - stateGetSpeedNed_f()->z;
-
+    vertical_velocity_err = vertical_velocity_sp - stateGetSpeedNed_f()->z;
+  }
+  else {
+    vertical_velocity_rc = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
+    vertical_velocity_err = vertical_velocity_rc - stateGetSpeedNed_f()->z;
+  }
 
   float inv_control_eff_accel = -500.0;
 //   accel_ref = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*1.0;

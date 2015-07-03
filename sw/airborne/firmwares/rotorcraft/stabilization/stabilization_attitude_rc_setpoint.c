@@ -48,6 +48,11 @@
 
 float care_free_heading = 0;
 
+float pos_x_err =0;
+float pos_y_err =0;
+float rc_speed_roll =0.0;
+float rc_speed_pitch =0.0;
+float pos_gain = 0.2;
 float rc_accel_roll = 0;
 float rc_accel_pitch = 0;
 float roll_in = 0;
@@ -354,16 +359,25 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q)
   indi_filter_attitude();
 
   if(guidance_h_mode == GUIDANCE_H_MODE_HOVER) {
-    float rc_speed_roll = ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*10.0;
-    float rc_speed_pitch = ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*10.0;
 
     float cospsi = cosf(stateGetNedToBodyEulers_f()->psi);
     float sinpsi = sinf(stateGetNedToBodyEulers_f()->psi);
 
+    if(false) { //speed control
+      rc_speed_roll = ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*10.0;
+      rc_speed_pitch = ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*10.0;
+    }
+    else { //position control
+      pos_x_err = (POS_FLOAT_OF_BFP(guidance_h_pos_sp.x) - stateGetPositionNed_f()->x);
+      pos_y_err = POS_FLOAT_OF_BFP(guidance_h_pos_sp.y) - stateGetPositionNed_f()->y;
+      rc_speed_pitch = -pos_gain*(cospsi*pos_x_err + sinpsi*pos_y_err);
+      rc_speed_roll = pos_gain*(-sinpsi*pos_x_err + cospsi*pos_y_err);
+    }
+
     speedpitch = cospsi*stateGetSpeedNed_f()->x + sinpsi*stateGetSpeedNed_f()->y;
     speedroll = -sinpsi*stateGetSpeedNed_f()->x + cospsi*stateGetSpeedNed_f()->y;
-//       float accelx = cospsi*stateGetAccelNed_f()->x + sinpsi*stateGetAccelNed_f()->y;
-//   float accely =-sinpsi*stateGetAccelNed_f()->x + cospsi*stateGetAccelNed_f()->y;
+  //       float accelx = cospsi*stateGetAccelNed_f()->x + sinpsi*stateGetAccelNed_f()->y;
+  //   float accely =-sinpsi*stateGetAccelNed_f()->x + cospsi*stateGetAccelNed_f()->y;
 
     rc_accel_roll = (rc_speed_roll - speedroll)*auto_speed_gain;
     rc_accel_pitch = (rc_speed_pitch + speedpitch)*auto_speed_gain;
