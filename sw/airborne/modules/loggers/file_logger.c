@@ -95,7 +95,7 @@ void file_logger_periodic(void)
   struct NedCoor_f *pos_ned = stateGetPositionNed_f();
   float pos_z_err = POS_FLOAT_OF_BFP(guidance_v_z_sp) - stateGetPositionNed_f()->z;
 
-  fprintf(file_logger, "%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d\n",
+  fprintf(file_logger, "%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%d,%d\n",
           counter,
           float_rates.p,
           float_rates.q,
@@ -135,7 +135,10 @@ void file_logger_periodic(void)
           pos_z_err,
           gps.ecef_vel.x,
           gps.ecef_vel.y,
-          gps.ecef_vel.z
+          gps.ecef_vel.z,
+          gps.ecef_pos.x,
+          gps.ecef_pos.y,
+          gps.ecef_pos.z
          );
   counter++;
 }
