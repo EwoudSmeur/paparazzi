@@ -48,6 +48,13 @@ extern float rc_speed_pitch;
 extern float pos_x_err;
 extern float pos_y_err;
 
+extern struct FloatVect3 inputs;
+extern struct FloatMat33 Ga;
+extern struct FloatMat33 Ga_inv;
+extern struct FloatEulers indicontrol;
+extern float filt_accelxn;
+extern float filt_accelyn;
+
 extern void stabilization_attitude_reset_care_free_heading(void);
 extern int32_t stabilization_attitude_get_heading_i(void);
 extern float stabilization_attitude_get_heading_f(void);
@@ -62,5 +69,6 @@ extern void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_s
 extern void stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(struct FloatQuat *q_sp, bool_t in_flight,
     bool_t in_carefree, bool_t coordinated_turn);
 extern void stabilization_attitude_calc_setpoint(struct FloatQuat *q_sp, bool_t in_flight, bool_t in_carefree);
-
+extern void indi_calcG(struct FloatMat33 *Gmat);
+extern void indi_filter_accel_ned(void);
 #endif /* STABILIZATION_ATTITUDE_RC_SETPOINT_H */

@@ -33,6 +33,7 @@
 #include "firmwares/rotorcraft/autopilot_rc_helpers.h"
 #include "mcu_periph/sys_time.h"
 #include "autopilot.h"
+#include "guidance/guidance_v.h"
 
 #ifndef STABILIZATION_ATTITUDE_DEADBAND_A
 #define STABILIZATION_ATTITUDE_DEADBAND_A 0
@@ -52,7 +53,7 @@ float pos_x_err =0;
 float pos_y_err =0;
 float rc_speed_roll =0.0;
 float rc_speed_pitch =0.0;
-float pos_gain = 0.2;
+float pos_gain = 1.8;
 float rc_accel_roll = 0;
 float rc_accel_pitch = 0;
 float roll_in = 0;
@@ -69,9 +70,25 @@ float filt_accelydd = 0;
 float filt_accelx = 0;
 float filt_accelxd = 0;
 float filt_accelxdd = 0;
+
+float filt_accelyn = 0;
+float filt_accelydn = 0;
+float filt_accelyddn = 0;
+float filt_accelxn = 0;
+float filt_accelxdn = 0;
+float filt_accelxddn = 0;
+float filt_accelzn = 0;
+float filt_accelzdn = 0;
+float filt_accelzddn = 0;
+
 float speedpitch = 0;
 float speedroll = 0;
-float auto_speed_gain = 1.2;
+float auto_speed_gain = 3.5;//1.2;
+
+struct FloatMat33 Ga;
+struct FloatMat33 Ga_inv;
+struct FloatVect3 inputs;
+struct FloatEulers indicontrol;
 
 void indi_filter_attitude(void);
 
@@ -357,6 +374,9 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q)
   ov.z = 0.0;
 
   indi_filter_attitude();
+  indi_filter_accel_ned();
+
+  if(radio_control.values[RADIO_MODE] < -4000) {
 
   if(guidance_h_mode == GUIDANCE_H_MODE_HOVER) {
 
@@ -398,6 +418,47 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q)
 
   /* quaternion from that orientation vector */
   float_quat_of_orientation_vect(q, &ov);
+
+  }
+  else {
+    pos_x_err = POS_FLOAT_OF_BFP(guidance_h_pos_sp.x) - stateGetPositionNed_f()->x +-ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*3.0;
+    pos_y_err = POS_FLOAT_OF_BFP(guidance_h_pos_sp.y) - stateGetPositionNed_f()->y + ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*3.0;
+    float speed_sp_x = pos_x_err*pos_gain;
+    float speed_sp_y = pos_y_err*pos_gain;
+//     float accel_x = (-ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*8.0 - stateGetSpeedNed_f()->x)*auto_speed_gain;
+//     float accel_y = (ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*8.0 - stateGetSpeedNed_f()->y)*auto_speed_gain;
+    float accel_x = (speed_sp_x - stateGetSpeedNed_f()->x)*auto_speed_gain;
+    float accel_y = (speed_sp_y - stateGetSpeedNed_f()->y)*auto_speed_gain;
+
+    //   struct FloatMat33 Ga;
+    indi_calcG(&Ga);
+    MAT33_INV(Ga_inv, Ga);
+
+    float altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_sp);
+    float altitude_gain = 0.5;
+    float vertical_velocity_sp = altitude_gain*(altitude_sp - stateGetPositionNed_f()->z);
+//     float vertical_velocity_rc_euler = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
+    float vertical_velocity_err_euler = vertical_velocity_sp - stateGetSpeedNed_f()->z;
+    float accel_ref_euler = vertical_velocity_err_euler*6.0;
+
+    struct FloatVect3 a_diff = { accel_x - filt_accelxn, accel_y -filt_accelyn, accel_ref_euler - filt_accelzn };
+
+    Bound(a_diff.x, -6.0, 6.0);
+    Bound(a_diff.y, -6.0, 6.0);
+    Bound(a_diff.z, -9.0, 9.0);
+
+    MAT33_VECT3_MUL(inputs, Ga_inv, a_diff);
+
+    indicontrol.phi = roll_filt + inputs.x;
+    indicontrol.theta = pitch_filt + inputs.y;
+    indicontrol.psi = 0;//stateGetNedToBodyEulers_f()->psi;
+
+    //Bound euler angles to prevent flipping and keep upright
+    Bound(indicontrol.phi, -0.7, 0.7);
+    Bound(indicontrol.theta, -0.7, 0.7);
+
+    float_quat_of_eulers(q, &indicontrol);
+  }
 }
 
 /** Read roll/pitch command from RC as quaternion.
@@ -424,6 +485,45 @@ void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q)
   q->qz = qx_roll * qy_pitch;
 }
 
+void indi_calcG(struct FloatMat33 *Gmat) {
+
+  struct FloatEulers *euler = stateGetNedToBodyEulers_f();
+
+  float sphi = sinf(euler->phi);
+  float cphi = cosf(euler->phi);
+  float stheta = sinf(euler->theta);
+  float ctheta = cosf(euler->theta);
+  float spsi = sinf(euler->psi);
+  float cpsi = cosf(euler->psi);
+//   float T = -9.81;
+  float T = (filt_accelzn-9.81)/(cphi*ctheta); //calculate specific force in body z axis by using the accelerometer
+
+  RMAT_ELMT(*Gmat, 0, 0) = (cphi*spsi - sphi*cpsi*stheta)*T;
+  RMAT_ELMT(*Gmat, 1, 0) = (-sphi*spsi*stheta - cpsi*cphi)*T;
+  RMAT_ELMT(*Gmat, 2, 0) = -ctheta*sphi*T;
+  RMAT_ELMT(*Gmat, 0, 1) = (cphi*cpsi*ctheta)*T;
+  RMAT_ELMT(*Gmat, 1, 1) = (cphi*spsi*ctheta)*T;
+  RMAT_ELMT(*Gmat, 2, 1) = -stheta*cphi*T;
+  RMAT_ELMT(*Gmat, 0, 2) = sphi*spsi + cphi*cpsi*stheta;
+  RMAT_ELMT(*Gmat, 1, 2) = cphi*spsi*stheta - cpsi*sphi;
+  RMAT_ELMT(*Gmat, 2, 2) = cphi*ctheta;
+}
+
+void indi_filter_accel_ned(void)
+{
+  filt_accelyn = filt_accelyn + filt_accelydn / 512.0;
+  filt_accelxn = filt_accelxn + filt_accelxdn / 512.0;
+  filt_accelzn = filt_accelzn + filt_accelzdn / 512.0;
+
+  filt_accelydn = filt_accelydn + filt_accelyddn / 512.0;
+  filt_accelxdn = filt_accelxdn + filt_accelxddn / 512.0;
+  filt_accelzdn = filt_accelzdn + filt_accelzddn / 512.0;
+
+  filt_accelyddn = -filt_accelydn * 2 * 0.55 * 50.0 + (stateGetAccelNed_f()->y - filt_accelyn) * 50.0*50.0;
+  filt_accelxddn = -filt_accelxdn * 2 * 0.55 * 50.0 + (stateGetAccelNed_f()->x - filt_accelxn) * 50.0*50.0;
+  filt_accelzddn = -filt_accelzdn * 2 * 0.55 * 50.0 + (stateGetAccelNed_f()->z - filt_accelzn) * 50.0*50.0;
+}
+
 void indi_filter_attitude(void)
 {
   roll_filt = roll_filt + roll_filtd / 512.0;
@@ -441,10 +541,15 @@ void indi_filter_attitude(void)
   float accelx = cospsi*stateGetAccelNed_f()->x + sinpsi*stateGetAccelNed_f()->y;
   float accely =-sinpsi*stateGetAccelNed_f()->x + cospsi*stateGetAccelNed_f()->y;
 
-  roll_filtdd = -roll_filtd * 2 * 0.9 * 20.0 + (stateGetNedToBodyEulers_f()->phi - roll_filt) * 400.0;
-  filt_accelydd = -filt_accelyd * 2 * 0.9 * 20.0 + (accely - filt_accely) * 400.0;
-  pitch_filtdd = -pitch_filtd * 2 * 0.9 * 20.0 + (stateGetNedToBodyEulers_f()->theta - pitch_filt) * 400.0;
-  filt_accelxdd = -filt_accelxd * 2 * 0.9 * 20.0 + (accelx - filt_accelx) * 400.0;
+//   roll_filtdd = -roll_filtd * 2 * 0.9 * 20.0 + (stateGetNedToBodyEulers_f()->phi - roll_filt) * 400.0;
+//   filt_accelydd = -filt_accelyd * 2 * 0.9 * 20.0 + (accely - filt_accely) * 400.0;
+//   pitch_filtdd = -pitch_filtd * 2 * 0.9 * 20.0 + (stateGetNedToBodyEulers_f()->theta - pitch_filt) * 400.0;
+//   filt_accelxdd = -filt_accelxd * 2 * 0.9 * 20.0 + (accelx - filt_accelx) * 400.0;
+
+  roll_filtdd = -roll_filtd * 2 * 0.55 * 50.0 + (stateGetNedToBodyEulers_f()->phi - roll_filt) * 50.0*50.0;
+  filt_accelydd = -filt_accelyd * 2 * 0.55 * 50.0 + (accely - filt_accely) * 50.0*50.0;
+  pitch_filtdd = -pitch_filtd * 2 * 0.55 * 50.0 + (stateGetNedToBodyEulers_f()->theta - pitch_filt) * 50.0*50.0;
+  filt_accelxdd = -filt_accelxd * 2 * 0.55 * 50.0 + (accelx - filt_accelx) * 50.0*50.0;
 }
 
 /** Read attitude setpoint from RC as quaternion

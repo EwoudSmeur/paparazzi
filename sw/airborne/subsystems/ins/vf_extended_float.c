@@ -57,7 +57,7 @@ temps :
 /* initial covariance diagonal */
 #define INIT_PXX 1.
 /* process noise */
-#define ACCEL_NOISE 0.5
+#define ACCEL_NOISE 50.0
 #define Qbiasbias 1e-7
 #define Qoffoff 1e-4
 #define R_BARO 1.

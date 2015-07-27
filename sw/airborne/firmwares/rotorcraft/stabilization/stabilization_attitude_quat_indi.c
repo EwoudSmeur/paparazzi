@@ -174,18 +174,18 @@ static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *d
 static void send_att_indi(struct transport_tx *trans, struct link_device *dev)
 {
   pprz_msg_send_STAB_ATTITUDE_INDI(trans, dev, AC_ID,
-                                   &G1[0][0],
-                                   &G1[0][1],
-                                   &G1[0][2],
-                                   &G1[0][3],
-                                   &G1[1][0],
-                                   &G1[1][1],
-                                   &G1[1][2],
-                                   &G1[1][3],
-                                   &G1[2][0],
-                                   &G1[2][1],
-                                   &G1[2][2],
-                                   &G1[2][3]);
+                                   &MAT33_ELMT(Ga,0,0),
+                                   &MAT33_ELMT(Ga,0,1),
+                                   &MAT33_ELMT(Ga,0,2),
+                                   &MAT33_ELMT(Ga,1,0),
+                                   &MAT33_ELMT(Ga,1,1),
+                                   &MAT33_ELMT(Ga,1,2),
+                                   &MAT33_ELMT(Ga,2,0),
+                                   &MAT33_ELMT(Ga,2,1),
+                                   &MAT33_ELMT(Ga,2,2),
+                                   &inputs.x,
+                                   &inputs.y,
+                                   &inputs.z);
 }
 
 static void send_att_indi2(struct transport_tx *trans, struct link_device *dev)
@@ -200,14 +200,14 @@ static void send_att_indi2(struct transport_tx *trans, struct link_device *dev)
                                    &stateGetAccelNed_f()->y,
                                    &altitude_sp,
                                    &pos_x_err,
-                                   &pos_y_err,
-                                   &possp,
-                                   &rc_speed_roll,
-                                   &rc_speed_pitch,
-                                   &rc_accel_roll,
-                                   &roll_in,
-                                   &speedpitch,
-                                   &speedroll);
+                                   &filt_accelxn,
+                                   &filt_accelyn,
+                                   &inputs.x,
+                                   &inputs.y,
+                                   &inputs.z,
+                                   &indicontrol.phi,
+                                   &indicontrol.theta,
+                                   &indicontrol.psi);
 }
 #endif
 
@@ -367,11 +367,6 @@ static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err
   indi_du_in_actuators[2] = (G1G2_pseudo_inv[2][0] * (angular_accel_ref.p - filtered_rate_deriv.p)) + (G1G2_pseudo_inv[2][1] * (angular_accel_ref.q - filtered_rate_deriv.q)) + (G1G2_pseudo_inv[2][2] * (angular_accel_ref.r - filtered_rate_deriv.r + G2_times_du));
   indi_du_in_actuators[3] = (G1G2_pseudo_inv[3][0] * (angular_accel_ref.p - filtered_rate_deriv.p)) + (G1G2_pseudo_inv[3][1] * (angular_accel_ref.q - filtered_rate_deriv.q)) + (G1G2_pseudo_inv[3][2] * (angular_accel_ref.r - filtered_rate_deriv.r + G2_times_du));
 
-  indi_u_in_actuators[0] = u_actuators[0] + indi_du_in_actuators[0];
-  indi_u_in_actuators[1] = u_actuators[1] + indi_du_in_actuators[1];
-  indi_u_in_actuators[2] = u_actuators[2] + indi_du_in_actuators[2];
-  indi_u_in_actuators[3] = u_actuators[3] + indi_du_in_actuators[3];
-
   //filter the accelerometer ned z axis
   stabilization_indi_filter_accel();
   stabilization_indi_filter_z();
@@ -393,10 +388,23 @@ static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err
   float inv_control_eff_accel = -500.0;
 //   accel_ref = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*1.0;
   accel_ref = vertical_velocity_err*vv_gain;
-  indi_u_in_actuators[0] = indi_u_in_actuators[0] + inv_control_eff_accel*(accel_ref - filtered_accelz);
-  indi_u_in_actuators[1] = indi_u_in_actuators[1] + inv_control_eff_accel*(accel_ref - filtered_accelz);
-  indi_u_in_actuators[2] = indi_u_in_actuators[2] + inv_control_eff_accel*(accel_ref - filtered_accelz);
-  indi_u_in_actuators[3] = indi_u_in_actuators[3] + inv_control_eff_accel*(accel_ref - filtered_accelz);
+  if(radio_control.values[RADIO_MODE] < -4000) {
+    indi_du_in_actuators[0] = indi_du_in_actuators[0] + inv_control_eff_accel*(accel_ref - filtered_accelz);
+    indi_du_in_actuators[1] = indi_du_in_actuators[1] + inv_control_eff_accel*(accel_ref - filtered_accelz);
+    indi_du_in_actuators[2] = indi_du_in_actuators[2] + inv_control_eff_accel*(accel_ref - filtered_accelz);
+    indi_du_in_actuators[3] = indi_du_in_actuators[3] + inv_control_eff_accel*(accel_ref - filtered_accelz);
+  } else {
+    indi_du_in_actuators[0] = indi_du_in_actuators[0] + inv_control_eff_accel*(inputs.z);
+    indi_du_in_actuators[1] = indi_du_in_actuators[1] + inv_control_eff_accel*(inputs.z);
+    indi_du_in_actuators[2] = indi_du_in_actuators[2] + inv_control_eff_accel*(inputs.z);
+    indi_du_in_actuators[3] = indi_du_in_actuators[3] + inv_control_eff_accel*(inputs.z);
+  }
+
+
+  indi_u_in_actuators[0] = u_actuators[0] + indi_du_in_actuators[0];
+  indi_u_in_actuators[1] = u_actuators[1] + indi_du_in_actuators[1];
+  indi_u_in_actuators[2] = u_actuators[2] + indi_du_in_actuators[2];
+  indi_u_in_actuators[3] = u_actuators[3] + indi_du_in_actuators[3];
 
   float avg_u_in = (indi_u_in_actuators[0] + indi_u_in_actuators[1] + indi_u_in_actuators[2] + indi_u_in_actuators[3])/4.0;
 

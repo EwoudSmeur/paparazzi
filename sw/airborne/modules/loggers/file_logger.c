@@ -33,6 +33,9 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_indi.h"
 #include "state.h"
+#include "stabilization/stabilization_attitude_rc_setpoint.h"
+#include "guidance/guidance_v.h"
+#include "subsystems/gps.h"
 
 /** Set the default File logger path to the USB drive */
 #ifndef FILE_LOGGER_PATH
@@ -49,12 +52,12 @@ void file_logger_start(void)
   char filename[512];
 
   // Check for available files
-  sprintf(filename, "%s/%05d.csv", STRINGIFY(FILE_LOGGER_PATH), counter);
+  sprintf(filename, "%s%05d.csv", FILE_LOGGER_PATH, counter);
   while ((file_logger = fopen(filename, "r"))) {
     fclose(file_logger);
 
     counter++;
-    sprintf(filename, "%s/%05d.csv", STRINGIFY(FILE_LOGGER_PATH), counter);
+    sprintf(filename, "%s%05d.csv", FILE_LOGGER_PATH, counter);
   }
 
   file_logger = fopen(filename, "w");
@@ -87,28 +90,16 @@ void file_logger_periodic(void)
   struct FloatRates float_rates = *stateGetBodyRates_f();
   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
   struct Int32Quat *quatsp = &stab_att_sp_quat;
+  struct NedCoor_f *accel_ned = stateGetAccelNed_f();
+  struct NedCoor_f *speed_ned = stateGetSpeedNed_f();
+  struct NedCoor_f *pos_ned = stateGetPositionNed_f();
+  float pos_z_err = POS_FLOAT_OF_BFP(guidance_v_z_sp) - stateGetPositionNed_f()->z;
 
-  fprintf(file_logger, "%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%d,%d,%d\n",
+  fprintf(file_logger, "%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d\n",
           counter,
           float_rates.p,
           float_rates.q,
           float_rates.r,
-          G1[0][0],
-          G1[0][1],
-          G1[0][2],
-          G1[0][3],
-          G1[1][0],
-          G1[1][1],
-          G1[1][2],
-          G1[1][3],
-          G1[2][0],
-          G1[2][1],
-          G1[2][2],
-          G1[2][3],
-          G2[0],
-          G2[1],
-          G2[2],
-          G2[3],
           indi_u_in_actuators[0],
           indi_u_in_actuators[1],
           indi_u_in_actuators[2],
@@ -128,9 +119,23 @@ void file_logger_periodic(void)
           quatsp->qx,
           quatsp->qy,
           quatsp->qz,
-          imu.accel.x,
-          imu.accel.y,
-          imu.accel.z
+          accel_ned->x,
+          accel_ned->y,
+          accel_ned->z,
+          speed_ned->x,
+          speed_ned->y,
+          speed_ned->z,
+          pos_ned->x,
+          pos_ned->y,
+          pos_ned->z,
+          indicontrol.phi,
+          indicontrol.theta,
+          pos_x_err,
+          pos_y_err,
+          pos_z_err,
+          gps.ecef_vel.x,
+          gps.ecef_vel.y,
+          gps.ecef_vel.z
          );
   counter++;
 }
