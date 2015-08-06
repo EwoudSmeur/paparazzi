@@ -43,17 +43,24 @@
 #define STABILIZATION_ATTITUDE_DEADBAND_E 0
 #endif
 
+#ifndef OUTER_LOOP_INDI
+#define OUTER_LOOP_INDI TRUE
+#endif
+
 #define YAW_DEADBAND_EXCEEDED()                                         \
   (radio_control.values[RADIO_YAW] >  STABILIZATION_ATTITUDE_DEADBAND_R || \
    radio_control.values[RADIO_YAW] < -STABILIZATION_ATTITUDE_DEADBAND_R)
 
 float care_free_heading = 0;
 
+float pv_gain = 0.5;
+float sum_gain = 0.4;
 float pos_x_err =0;
 float pos_y_err =0;
 float rc_speed_roll =0.0;
 float rc_speed_pitch =0.0;
-float pos_gain = 1.8;
+// float pos_gain = 1.8;
+float pos_gain = 0.9;
 float rc_accel_roll = 0;
 float rc_accel_pitch = 0;
 float roll_in = 0;
@@ -83,7 +90,8 @@ float filt_accelzddn = 0;
 
 float speedpitch = 0;
 float speedroll = 0;
-float auto_speed_gain = 3.5;//1.2;
+// float auto_speed_gain = 3.5;//1.2;
+float auto_speed_gain = 1.8;
 
 struct FloatMat33 Ga;
 struct FloatMat33 Ga_inv;
@@ -365,7 +373,7 @@ void stabilization_attitude_read_rc_setpoint_eulers_f(struct FloatEulers *sp, bo
  * Interprets the stick positions as axes.
  * @param[out] q quaternion representing the RC roll/pitch input
  */
-void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q)
+void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q, bool_t in_flight)
 {
   /* orientation vector describing simultaneous rotation of roll/pitch */
   struct FloatVect3 ov;
@@ -421,43 +429,87 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q)
 
   }
   else {
-    pos_x_err = POS_FLOAT_OF_BFP(guidance_h_pos_sp.x) - stateGetPositionNed_f()->x +-ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*3.0;
-    pos_y_err = POS_FLOAT_OF_BFP(guidance_h_pos_sp.y) - stateGetPositionNed_f()->y + ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*3.0;
-    float speed_sp_x = pos_x_err*pos_gain;
-    float speed_sp_y = pos_y_err*pos_gain;
-//     float accel_x = (-ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*8.0 - stateGetSpeedNed_f()->x)*auto_speed_gain;
-//     float accel_y = (ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*8.0 - stateGetSpeedNed_f()->y)*auto_speed_gain;
-    float accel_x = (speed_sp_x - stateGetSpeedNed_f()->x)*auto_speed_gain;
-    float accel_y = (speed_sp_y - stateGetSpeedNed_f()->y)*auto_speed_gain;
+    if(OUTER_LOOP_INDI) {
+      pos_x_err = POS_FLOAT_OF_BFP(guidance_h_pos_sp.x) - stateGetPositionNed_f()->x +-ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*3.0;
+      pos_y_err = POS_FLOAT_OF_BFP(guidance_h_pos_sp.y) - stateGetPositionNed_f()->y + ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*3.0;
 
-    //   struct FloatMat33 Ga;
-    indi_calcG(&Ga);
-    MAT33_INV(Ga_inv, Ga);
+      float speed_sp_x = pos_x_err*pos_gain;
+      float speed_sp_y = pos_y_err*pos_gain;
 
-    float altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_sp);
-    float altitude_gain = 0.5;
-    float vertical_velocity_sp = altitude_gain*(altitude_sp - stateGetPositionNed_f()->z);
-//     float vertical_velocity_rc_euler = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
-    float vertical_velocity_err_euler = vertical_velocity_sp - stateGetSpeedNed_f()->z;
-    float accel_ref_euler = vertical_velocity_err_euler*6.0;
+  //     float accel_x = (-ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*8.0 - stateGetSpeedNed_f()->x)*auto_speed_gain;
+  //     float accel_y = (ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*8.0 - stateGetSpeedNed_f()->y)*auto_speed_gain;
+      float accel_x = (speed_sp_x - stateGetSpeedNed_f()->x)*auto_speed_gain;
+      float accel_y = (speed_sp_y - stateGetSpeedNed_f()->y)*auto_speed_gain;
 
-    struct FloatVect3 a_diff = { accel_x - filt_accelxn, accel_y -filt_accelyn, accel_ref_euler - filt_accelzn };
+      //   struct FloatMat33 Ga;
+      indi_calcG(&Ga);
+      MAT33_INV(Ga_inv, Ga);
 
-    Bound(a_diff.x, -6.0, 6.0);
-    Bound(a_diff.y, -6.0, 6.0);
-    Bound(a_diff.z, -9.0, 9.0);
+      float altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_sp);
+      float vertical_velocity_sp = pv_gain*(altitude_sp - stateGetPositionNed_f()->z);
+  //     float vertical_velocity_rc_euler = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
+      float vertical_velocity_err_euler = vertical_velocity_sp - stateGetSpeedNed_f()->z;
+      float accel_ref_euler = vertical_velocity_err_euler*vv_gain;
 
-    MAT33_VECT3_MUL(inputs, Ga_inv, a_diff);
+      struct FloatVect3 a_diff = { accel_x - filt_accelxn, accel_y -filt_accelyn, accel_ref_euler - filt_accelzn };
 
-    indicontrol.phi = roll_filt + inputs.x;
-    indicontrol.theta = pitch_filt + inputs.y;
-    indicontrol.psi = 0;//stateGetNedToBodyEulers_f()->psi;
+      Bound(a_diff.x, -6.0, 6.0);
+      Bound(a_diff.y, -6.0, 6.0);
+      Bound(a_diff.z, -9.0, 9.0);
 
-    //Bound euler angles to prevent flipping and keep upright
-    Bound(indicontrol.phi, -0.7, 0.7);
-    Bound(indicontrol.theta, -0.7, 0.7);
+      MAT33_VECT3_MUL(inputs, Ga_inv, a_diff);
 
-    float_quat_of_eulers(q, &indicontrol);
+      indicontrol.phi = roll_filt + inputs.x;
+      indicontrol.theta = pitch_filt + inputs.y;
+      indicontrol.psi = 0;//stateGetNedToBodyEulers_f()->psi;
+
+      //Bound euler angles to prevent flipping and keep upright
+      Bound(indicontrol.phi, -0.7, 0.7);
+      Bound(indicontrol.theta, -0.7, 0.7);
+
+      float_quat_of_eulers(q, &indicontrol);
+    }
+    else {
+      pos_x_err = POS_FLOAT_OF_BFP(guidance_h_pos_sp.x) - stateGetPositionNed_f()->x +-ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*2.0;
+      pos_y_err = POS_FLOAT_OF_BFP(guidance_h_pos_sp.y) - stateGetPositionNed_f()->y + ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*2.0;
+
+      static float sum_errx, sum_erry;
+      if(in_flight) {
+        sum_errx += pos_x_err;
+        sum_erry += pos_y_err;
+      }
+      else {
+        sum_errx = 0;
+        sum_erry = 0;
+      }
+
+      float speed_sp_x = pos_x_err*pos_gain + sum_errx/512*pos_gain*sum_gain;
+      float speed_sp_y = pos_y_err*pos_gain + sum_erry/512*pos_gain*sum_gain;
+  //     float accel_x = (-ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*8.0 - stateGetSpeedNed_f()->x)*auto_speed_gain;
+  //     float accel_y = (ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*8.0 - stateGetSpeedNed_f()->y)*auto_speed_gain;
+      float accel_x = (speed_sp_x - stateGetSpeedNed_f()->x)*auto_speed_gain;
+      float accel_y = (speed_sp_y - stateGetSpeedNed_f()->y)*auto_speed_gain;
+
+      float altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_sp);
+      float altitude_gain = 0.5;
+      float vertical_velocity_sp = altitude_gain*(altitude_sp - stateGetPositionNed_f()->z);
+  //     float vertical_velocity_rc_euler = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
+      float vertical_velocity_err_euler = vertical_velocity_sp - stateGetSpeedNed_f()->z;
+      float accel_ref_euler = vertical_velocity_err_euler*6.0;
+
+      float cospsi = cosf(stateGetNedToBodyEulers_f()->psi);
+      float sinpsi = sinf(stateGetNedToBodyEulers_f()->psi);
+
+      indicontrol.phi = (cospsi*accel_y -sinpsi*accel_x)/10.0;
+      indicontrol.theta = (cospsi*-accel_x - sinpsi*accel_y)/10.0;
+      indicontrol.psi = 0;//stateGetNedToBodyEulers_f()->psi;
+
+      //Bound euler angles to prevent flipping and keep upright
+      Bound(indicontrol.phi, -0.3, 0.3);
+      Bound(indicontrol.theta, -0.3, 0.3);
+
+      float_quat_of_eulers(q, &indicontrol);
+    }
   }
 }
 
@@ -574,7 +626,7 @@ void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_sp, bool
 
 void stabilization_attitude_calc_setpoint(struct FloatQuat *q_sp, bool_t in_flight, bool_t in_carefree) {
   struct FloatQuat q_rp_cmd;
-  stabilization_attitude_read_rc_roll_pitch_quat_f(&q_rp_cmd);
+  stabilization_attitude_read_rc_roll_pitch_quat_f(&q_rp_cmd, in_flight);
 
   /* get current heading */
   const struct FloatVect3 zaxis = {0., 0., 1.};

@@ -57,9 +57,14 @@ float filtered_accelz_deriv = 0;
 float filtered_accelz_2deriv = 0;
 float accel_ref = 0;
 
+float filtered_T = 0;
+float filtered_T_deriv = 0;
+float filtered_T_2deriv = 0;
+float indi_u_in_T = 0;
+
 float vertical_velocity_rc = 0;
 float vertical_velocity_err = 0;
-float vv_gain = 6.0;
+float vv_gain = 3.0; //6.0 for 15 hz tracking
 float z_filt = 0;
 float altitude_sp = 0;
 
@@ -191,11 +196,12 @@ static void send_att_indi(struct transport_tx *trans, struct link_device *dev)
 static void send_att_indi2(struct transport_tx *trans, struct link_device *dev)
 {
   float possp = POS_FLOAT_OF_BFP(guidance_h_pos_sp.x);
+  float zooi = (float)stabilization_cmd[COMMAND_THRUST];
   pprz_msg_send_STAB_ATTITUDE_INDI2(trans, dev, AC_ID,
-                                   &vertical_velocity_rc,
-                                   &vertical_velocity_err,
-                                   &stateGetPositionNed_f()->z,
-                                   &z_filt,
+                                   &indi_u_in_actuators[0],
+                                   &indi_u_in_actuators[1],
+                                   &indi_u_in_actuators[2],
+                                   &zooi,
                                    &stateGetAccelNed_f()->x,
                                    &stateGetAccelNed_f()->y,
                                    &altitude_sp,
@@ -383,40 +389,64 @@ static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err
   else {
     vertical_velocity_rc = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
     vertical_velocity_err = vertical_velocity_rc - stateGetSpeedNed_f()->z;
+//     vertical_velocity_err = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0/6.0;
   }
 
+if(OUTER_LOOP_INDI) {
   float inv_control_eff_accel = -500.0;
 //   accel_ref = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*1.0;
   accel_ref = vertical_velocity_err*vv_gain;
-  if(radio_control.values[RADIO_MODE] < -4000) {
+  if(radio_control.values[RADIO_MODE] < -4000) { //rc mode
     indi_du_in_actuators[0] = indi_du_in_actuators[0] + inv_control_eff_accel*(accel_ref - filtered_accelz);
     indi_du_in_actuators[1] = indi_du_in_actuators[1] + inv_control_eff_accel*(accel_ref - filtered_accelz);
     indi_du_in_actuators[2] = indi_du_in_actuators[2] + inv_control_eff_accel*(accel_ref - filtered_accelz);
     indi_du_in_actuators[3] = indi_du_in_actuators[3] + inv_control_eff_accel*(accel_ref - filtered_accelz);
-  } else {
+
+    indi_u_in_actuators[0] = u_actuators[0] + indi_du_in_actuators[0];
+    indi_u_in_actuators[1] = u_actuators[1] + indi_du_in_actuators[1];
+    indi_u_in_actuators[2] = u_actuators[2] + indi_du_in_actuators[2];
+    indi_u_in_actuators[3] = u_actuators[3] + indi_du_in_actuators[3];
+  } else { //Real outer loop INDI guidance
     indi_du_in_actuators[0] = indi_du_in_actuators[0] + inv_control_eff_accel*(inputs.z);
     indi_du_in_actuators[1] = indi_du_in_actuators[1] + inv_control_eff_accel*(inputs.z);
     indi_du_in_actuators[2] = indi_du_in_actuators[2] + inv_control_eff_accel*(inputs.z);
     indi_du_in_actuators[3] = indi_du_in_actuators[3] + inv_control_eff_accel*(inputs.z);
-  }
 
+    indi_u_in_actuators[0] = u_actuators[0] + indi_du_in_actuators[0];
+    indi_u_in_actuators[1] = u_actuators[1] + indi_du_in_actuators[1];
+    indi_u_in_actuators[2] = u_actuators[2] + indi_du_in_actuators[2];
+    indi_u_in_actuators[3] = u_actuators[3] + indi_du_in_actuators[3];
+
+//     float avg_u_actuators = (u_actuators[0] + u_actuators[1] + u_actuators[2] + u_actuators[3])/4.0;
+//     indi_u_in_T = avg_u_actuators + inv_control_eff_accel*(inputs.z); //u_in = u_in+du;
+//     stabilization_indi_filter_T();
+//
+//     indi_u_in_actuators[0] = u_actuators[0] - avg_u_actuators + indi_du_in_actuators[0] + filtered_T;
+//     indi_u_in_actuators[1] = u_actuators[1] - avg_u_actuators + indi_du_in_actuators[1] + filtered_T;
+//     indi_u_in_actuators[2] = u_actuators[2] - avg_u_actuators + indi_du_in_actuators[2] + filtered_T;
+//     indi_u_in_actuators[3] = u_actuators[3] - avg_u_actuators + indi_du_in_actuators[3] + filtered_T;
+  }
+}
+else {
 
   indi_u_in_actuators[0] = u_actuators[0] + indi_du_in_actuators[0];
   indi_u_in_actuators[1] = u_actuators[1] + indi_du_in_actuators[1];
   indi_u_in_actuators[2] = u_actuators[2] + indi_du_in_actuators[2];
   indi_u_in_actuators[3] = u_actuators[3] + indi_du_in_actuators[3];
-
   float avg_u_in = (indi_u_in_actuators[0] + indi_u_in_actuators[1] + indi_u_in_actuators[2] + indi_u_in_actuators[3])/4.0;
 
 #warning "saturation at 8100 instead of max_pprz because of bebop motors"
   Bound(stabilization_cmd[COMMAND_THRUST],0, 8100);
 
 //   if(avg_u_in > 1.0) { //avoid dividing by zero
-//     indi_u_in_actuators[0] = indi_u_in_actuators[0] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
-//     indi_u_in_actuators[1] = indi_u_in_actuators[1] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
-//     indi_u_in_actuators[2] = indi_u_in_actuators[2] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
-//     indi_u_in_actuators[3] = indi_u_in_actuators[3] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+  if(avg_u_in < 1.0)
+    avg_u_in = 1.0;
+  indi_u_in_actuators[0] = indi_u_in_actuators[0] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+  indi_u_in_actuators[1] = indi_u_in_actuators[1] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+  indi_u_in_actuators[2] = indi_u_in_actuators[2] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+  indi_u_in_actuators[3] = indi_u_in_actuators[3] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
 //   }
+}
 
   Bound(indi_u_in_actuators[0],0,8100);
   Bound(indi_u_in_actuators[1],0,8100);
@@ -579,6 +609,14 @@ void stabilization_indi_filter_accel(void)
   filtered_accelz_2deriv = -filtered_accelz_deriv * 2 * STABILIZATION_INDI_FILT_ZETA * STABILIZATION_INDI_FILT_OMEGA + (stateGetAccelNed_f()->z - filtered_accelz) * STABILIZATION_INDI_FILT_OMEGA2;
 }
 
+void stabilization_indi_filter_T(void)
+{
+  filtered_T = filtered_T + filtered_T_deriv / 512.0;
+
+  filtered_T_deriv = filtered_T_deriv + filtered_T_2deriv / 512.0;
+
+  filtered_T_2deriv = -filtered_T_deriv * 2 * 1.0 * STABILIZATION_INDI_FILT_OMEGA/2.0 + (indi_u_in_T - filtered_T) * STABILIZATION_INDI_FILT_OMEGA2/4.0;
+}
 
 void filter_inputs_actuators(void) {
 #ifdef INDI_RPM_FEEDBACK

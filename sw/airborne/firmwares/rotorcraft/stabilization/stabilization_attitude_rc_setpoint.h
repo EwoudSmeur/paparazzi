@@ -35,6 +35,9 @@ extern float roll_in;
 extern float roll_filt;
 extern float filt_accely;
 
+extern float sum_gain;
+extern float pv_gain;
+
 extern float rc_accel_pitch;
 extern float pitch_in;
 extern float pitch_filt;
@@ -62,7 +65,7 @@ extern void stabilization_attitude_read_rc_setpoint_eulers(struct Int32Eulers *s
     bool_t coordinated_turn);
 extern void stabilization_attitude_read_rc_setpoint_eulers_f(struct FloatEulers *sp, bool_t in_flight,
     bool_t in_carefree, bool_t coordinated_turn);
-extern void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q);
+extern void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q, bool_t in_flight);
 extern void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q);
 extern void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_sp, bool_t in_flight, bool_t in_carefree,
     bool_t coordinated_turn);

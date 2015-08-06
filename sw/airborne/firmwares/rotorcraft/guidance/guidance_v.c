@@ -327,9 +327,10 @@ void guidance_v_run(bool_t in_flight)
         gv_update_ref_from_z_sp(guidance_v_z_sp);
         run_hover_loop(in_flight);
       } else if (vertical_mode == VERTICAL_MODE_CLIMB) {
-        guidance_v_z_sp = stateGetPositionNed_i()->z;
-        guidance_v_zd_sp = -nav_climb;
-        gv_update_ref_from_zd_sp(guidance_v_zd_sp, stateGetPositionNed_i()->z);
+        guidance_v_z_sp +=  -(nav_climb>>(INT32_SPEED_FRAC - INT32_POS_FRAC))/512; //stateGetPositionNed_i()->z;
+        gv_update_ref_from_z_sp(guidance_v_z_sp);
+//         guidance_v_zd_sp = -nav_climb;
+//         gv_update_ref_from_zd_sp(guidance_v_zd_sp, stateGetPositionNed_i()->z);
         run_hover_loop(in_flight);
       } else if (vertical_mode == VERTICAL_MODE_MANUAL) {
         guidance_v_z_sp = stateGetPositionNed_i()->z;

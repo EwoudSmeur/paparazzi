@@ -318,7 +318,8 @@ void guidance_h_read_rc(bool_t  in_flight)
 
     case GUIDANCE_H_MODE_NAV:
       if (radio_control.status == RC_OK) {
-        stabilization_attitude_read_rc_setpoint_eulers(&guidance_h_rc_sp, in_flight, FALSE, FALSE);
+        stabilization_attitude_read_rc(in_flight, FALSE, FALSE);
+//         stabilization_attitude_read_rc_setpoint_eulers(&guidance_h_rc_sp, in_flight, FALSE, FALSE);
       } else {
         INT_EULERS_ZERO(guidance_h_rc_sp);
       }
