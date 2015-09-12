@@ -117,14 +117,22 @@ float indi_u_in_estimation[4] = {0.0, 0.0, 0.0, 0.0};
 // { 14.0, 18.0, -4.0},
 // { 14.0, -18.0, 4.0},
 // {-14.0 , -18.0, -4.0}};
+#if OUTER_LOOP_INDI
+float G1G2_pseudo_inv[4][4] = {{   -12.2494,   15.7704,    3.3484,  -478.6813},
+{    10.9329,   16.1216,   -2.9605,  -431.4438},
+{    10.4985,  -17.9321,    3.3776,  -488.1852},
+{   -12.2845,  -18.0980,   -2.9966,  -488.7898}};
+float G2[4] = {75.8128,  -79.2725,   76.0685,  -80.2873};
+#else
 float G1G2_pseudo_inv[4][3] = {{-12.5000,   17.8571,    4.0984},
 {  12.5000,   17.8571,   -4.0984},
 {  12.5000,  -17.8571,    4.0984},
 { -12.5000,  -17.8571,   -4.0984}};
+float G2[4] = {60.0, -60.0, 60.0, -60.0}; //scaled by 1000
+#endif
 float G1[3][4] = {{-20 , 20, 20 , -20 }, //scaled by 1000
 {14 , 14, -14 , -14 },
 {1, -1, 1, -1}};
-float G2[4] = {60.0, -60.0, 60.0, -60.0}; //scaled by 1000
 float G1G2[3][4] = {{-0.01 , 0.01 , 0.01 , -0.01 },
 {0.01 , 0.01, -0.01 , -0.01 },
 {-0.0025, 0.0025, -0.0025, 0.0025}};
@@ -179,7 +187,7 @@ static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *d
 static void send_att_indi(struct transport_tx *trans, struct link_device *dev)
 {
   pprz_msg_send_STAB_ATTITUDE_INDI(trans, dev, AC_ID,
-                                   &MAT33_ELMT(Ga,0,0),
+                                   &filt_accelzbody,
                                    &MAT33_ELMT(Ga,0,1),
                                    &MAT33_ELMT(Ga,0,2),
                                    &MAT33_ELMT(Ga,1,0),
@@ -397,20 +405,20 @@ if(OUTER_LOOP_INDI) {
 //   accel_ref = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*1.0;
   accel_ref = vertical_velocity_err*vv_gain;
   if(radio_control.values[RADIO_MODE] < -4000) { //rc mode
-    indi_du_in_actuators[0] = indi_du_in_actuators[0] + inv_control_eff_accel*(accel_ref - filtered_accelz);
-    indi_du_in_actuators[1] = indi_du_in_actuators[1] + inv_control_eff_accel*(accel_ref - filtered_accelz);
-    indi_du_in_actuators[2] = indi_du_in_actuators[2] + inv_control_eff_accel*(accel_ref - filtered_accelz);
-    indi_du_in_actuators[3] = indi_du_in_actuators[3] + inv_control_eff_accel*(accel_ref - filtered_accelz);
+    indi_du_in_actuators[0] = indi_du_in_actuators[0] + G1G2_pseudo_inv[0][3]*(accel_ref - filtered_accelz);
+    indi_du_in_actuators[1] = indi_du_in_actuators[1] + G1G2_pseudo_inv[1][3]*(accel_ref - filtered_accelz);
+    indi_du_in_actuators[2] = indi_du_in_actuators[2] + G1G2_pseudo_inv[2][3]*(accel_ref - filtered_accelz);
+    indi_du_in_actuators[3] = indi_du_in_actuators[3] + G1G2_pseudo_inv[3][3]*(accel_ref - filtered_accelz);
 
     indi_u_in_actuators[0] = u_actuators[0] + indi_du_in_actuators[0];
     indi_u_in_actuators[1] = u_actuators[1] + indi_du_in_actuators[1];
     indi_u_in_actuators[2] = u_actuators[2] + indi_du_in_actuators[2];
     indi_u_in_actuators[3] = u_actuators[3] + indi_du_in_actuators[3];
   } else { //Real outer loop INDI guidance
-    indi_du_in_actuators[0] = indi_du_in_actuators[0] + inv_control_eff_accel*(inputs.z);
-    indi_du_in_actuators[1] = indi_du_in_actuators[1] + inv_control_eff_accel*(inputs.z);
-    indi_du_in_actuators[2] = indi_du_in_actuators[2] + inv_control_eff_accel*(inputs.z);
-    indi_du_in_actuators[3] = indi_du_in_actuators[3] + inv_control_eff_accel*(inputs.z);
+    indi_du_in_actuators[0] = indi_du_in_actuators[0] + G1G2_pseudo_inv[0][3]*(inputs.z);
+    indi_du_in_actuators[1] = indi_du_in_actuators[1] + G1G2_pseudo_inv[1][3]*(inputs.z);
+    indi_du_in_actuators[2] = indi_du_in_actuators[2] + G1G2_pseudo_inv[2][3]*(inputs.z);
+    indi_du_in_actuators[3] = indi_du_in_actuators[3] + G1G2_pseudo_inv[3][3]*(inputs.z);
 
     indi_u_in_actuators[0] = u_actuators[0] + indi_du_in_actuators[0];
     indi_u_in_actuators[1] = u_actuators[1] + indi_du_in_actuators[1];

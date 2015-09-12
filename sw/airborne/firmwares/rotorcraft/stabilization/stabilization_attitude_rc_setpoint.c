@@ -26,8 +26,10 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "generated/airframe.h"
 
+#include "subsystems/ins/ins_int.h"
 #include "subsystems/radio_control.h"
 #include "state.h"
+#include "subsystems/imu.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/autopilot_rc_helpers.h"
@@ -52,6 +54,7 @@
    radio_control.values[RADIO_YAW] < -STABILIZATION_ATTITUDE_DEADBAND_R)
 
 float care_free_heading = 0;
+struct FloatVect3 accel_meas_body_f;
 
 float pv_gain = 0.5;
 float sum_gain = 0.4;
@@ -88,6 +91,10 @@ float filt_accelzn = 0;
 float filt_accelzdn = 0;
 float filt_accelzddn = 0;
 
+float filt_accelzbody = 0;
+float filt_accelzbodyd = 0;
+float filt_accelzbodydd = 0;
+
 float speedpitch = 0;
 float speedroll = 0;
 // float auto_speed_gain = 3.5;//1.2;
@@ -97,6 +104,8 @@ struct FloatMat33 Ga;
 struct FloatMat33 Ga_inv;
 struct FloatVect3 inputs;
 struct FloatEulers indicontrol;
+
+struct FloatVect3 sp_accel = {0.0,0.0,0.0};
 
 void indi_filter_attitude(void);
 
@@ -381,6 +390,11 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q, bool_
   ov.y = get_rc_pitch_f();
   ov.z = 0.0;
 
+  struct Int32Vect3 accel_meas_body_i;
+  struct Int32RMat *body_to_imu_rmat = orientationGetRMat_i(&imu.body_to_imu);
+  int32_rmat_transp_vmult(&accel_meas_body_i, body_to_imu_rmat, &save_body_accel);
+  ACCELS_FLOAT_OF_BFP(accel_meas_body_f,accel_meas_body_i);
+
   indi_filter_attitude();
   indi_filter_accel_ned();
 
@@ -438,8 +452,8 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q, bool_
 
   //     float accel_x = (-ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*8.0 - stateGetSpeedNed_f()->x)*auto_speed_gain;
   //     float accel_y = (ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*8.0 - stateGetSpeedNed_f()->y)*auto_speed_gain;
-      float accel_x = (speed_sp_x - stateGetSpeedNed_f()->x)*auto_speed_gain;
-      float accel_y = (speed_sp_y - stateGetSpeedNed_f()->y)*auto_speed_gain;
+      sp_accel.x = (speed_sp_x - stateGetSpeedNed_f()->x)*auto_speed_gain;
+      sp_accel.y = (speed_sp_y - stateGetSpeedNed_f()->y)*auto_speed_gain;
 
       //   struct FloatMat33 Ga;
       indi_calcG(&Ga);
@@ -449,9 +463,9 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q, bool_
       float vertical_velocity_sp = pv_gain*(altitude_sp - stateGetPositionNed_f()->z);
   //     float vertical_velocity_rc_euler = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
       float vertical_velocity_err_euler = vertical_velocity_sp - stateGetSpeedNed_f()->z;
-      float accel_ref_euler = vertical_velocity_err_euler*vv_gain;
+      sp_accel.z = vertical_velocity_err_euler*vv_gain;
 
-      struct FloatVect3 a_diff = { accel_x - filt_accelxn, accel_y -filt_accelyn, accel_ref_euler - filt_accelzn };
+      struct FloatVect3 a_diff = { sp_accel.x - filt_accelxn, sp_accel.y -filt_accelyn, sp_accel.z - filt_accelzn };
 
       Bound(a_diff.x, -6.0, 6.0);
       Bound(a_diff.y, -6.0, 6.0);
@@ -487,21 +501,14 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q, bool_
       float speed_sp_y = pos_y_err*pos_gain + sum_erry/512*pos_gain*sum_gain;
   //     float accel_x = (-ov.y/ (STABILIZATION_ATTITUDE_SP_MAX_THETA)*8.0 - stateGetSpeedNed_f()->x)*auto_speed_gain;
   //     float accel_y = (ov.x/ (STABILIZATION_ATTITUDE_SP_MAX_PHI)*8.0 - stateGetSpeedNed_f()->y)*auto_speed_gain;
-      float accel_x = (speed_sp_x - stateGetSpeedNed_f()->x)*auto_speed_gain;
-      float accel_y = (speed_sp_y - stateGetSpeedNed_f()->y)*auto_speed_gain;
-
-      float altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_sp);
-      float altitude_gain = 0.5;
-      float vertical_velocity_sp = altitude_gain*(altitude_sp - stateGetPositionNed_f()->z);
-  //     float vertical_velocity_rc_euler = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
-      float vertical_velocity_err_euler = vertical_velocity_sp - stateGetSpeedNed_f()->z;
-      float accel_ref_euler = vertical_velocity_err_euler*6.0;
+      sp_accel.x = (speed_sp_x - stateGetSpeedNed_f()->x)*auto_speed_gain;
+      sp_accel.y = (speed_sp_y - stateGetSpeedNed_f()->y)*auto_speed_gain;
 
       float cospsi = cosf(stateGetNedToBodyEulers_f()->psi);
       float sinpsi = sinf(stateGetNedToBodyEulers_f()->psi);
 
-      indicontrol.phi = (cospsi*accel_y -sinpsi*accel_x)/10.0;
-      indicontrol.theta = (cospsi*-accel_x - sinpsi*accel_y)/10.0;
+      indicontrol.phi = (cospsi*sp_accel.y -sinpsi*sp_accel.x)/10.0;
+      indicontrol.theta = (cospsi*-sp_accel.x - sinpsi*sp_accel.y)/10.0;
       indicontrol.psi = 0;//stateGetNedToBodyEulers_f()->psi;
 
       //Bound euler angles to prevent flipping and keep upright
@@ -548,7 +555,8 @@ void indi_calcG(struct FloatMat33 *Gmat) {
   float spsi = sinf(euler->psi);
   float cpsi = cosf(euler->psi);
 //   float T = -9.81;
-  float T = (filt_accelzn-9.81)/(cphi*ctheta); //calculate specific force in body z axis by using the accelerometer
+//   float T = (filt_accelzn-9.81)/(cphi*ctheta); //calculate specific force in body z axis by using the accelerometer
+  float T = filt_accelzbody;
 
   RMAT_ELMT(*Gmat, 0, 0) = (cphi*spsi - sphi*cpsi*stheta)*T;
   RMAT_ELMT(*Gmat, 1, 0) = (-sphi*spsi*stheta - cpsi*cphi)*T;
@@ -566,14 +574,17 @@ void indi_filter_accel_ned(void)
   filt_accelyn = filt_accelyn + filt_accelydn / 512.0;
   filt_accelxn = filt_accelxn + filt_accelxdn / 512.0;
   filt_accelzn = filt_accelzn + filt_accelzdn / 512.0;
+  filt_accelzbody = filt_accelzbody + filt_accelzbodyd / 512.0; //also do body z accel
 
   filt_accelydn = filt_accelydn + filt_accelyddn / 512.0;
   filt_accelxdn = filt_accelxdn + filt_accelxddn / 512.0;
   filt_accelzdn = filt_accelzdn + filt_accelzddn / 512.0;
+  filt_accelzbodyd = filt_accelzbodyd + filt_accelzbodydd / 512.0; //also do body z accel
 
   filt_accelyddn = -filt_accelydn * 2 * 0.55 * 50.0 + (stateGetAccelNed_f()->y - filt_accelyn) * 50.0*50.0;
   filt_accelxddn = -filt_accelxdn * 2 * 0.55 * 50.0 + (stateGetAccelNed_f()->x - filt_accelxn) * 50.0*50.0;
   filt_accelzddn = -filt_accelzdn * 2 * 0.55 * 50.0 + (stateGetAccelNed_f()->z - filt_accelzn) * 50.0*50.0;
+  filt_accelzbodydd= -filt_accelzbodyd * 2 * 0.55 * 50.0 + (accel_meas_body_f.z - filt_accelzbody) * 50.0*50.0;
 }
 
 void indi_filter_attitude(void)

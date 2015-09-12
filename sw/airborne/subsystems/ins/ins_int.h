@@ -35,6 +35,8 @@
 #include "math/pprz_geodetic_int.h"
 #include "math/pprz_algebra_float.h"
 
+extern struct Int32Vect3 save_body_accel;
+
 /** Ins implementation state (fixed point) */
 struct InsInt {
   struct LtpDef_i  ltp_def;

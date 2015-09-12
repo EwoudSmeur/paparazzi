@@ -51,6 +51,9 @@ extern float rc_speed_pitch;
 extern float pos_x_err;
 extern float pos_y_err;
 
+extern float filt_accelzbody;
+extern struct FloatVect3 sp_accel;
+
 extern struct FloatVect3 inputs;
 extern struct FloatMat33 Ga;
 extern struct FloatMat33 Ga_inv;

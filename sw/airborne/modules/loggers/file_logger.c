@@ -35,6 +35,7 @@
 #include "state.h"
 #include "stabilization/stabilization_attitude_rc_setpoint.h"
 #include "guidance/guidance_v.h"
+#include "guidance/guidance_h.h"
 #include "subsystems/gps.h"
 
 /** Set the default File logger path to the USB drive */
@@ -93,9 +94,11 @@ void file_logger_periodic(void)
   struct NedCoor_f *accel_ned = stateGetAccelNed_f();
   struct NedCoor_f *speed_ned = stateGetSpeedNed_f();
   struct NedCoor_f *pos_ned = stateGetPositionNed_f();
-  float pos_z_err = POS_FLOAT_OF_BFP(guidance_v_z_sp) - stateGetPositionNed_f()->z;
+  float sp_x = POS_FLOAT_OF_BFP(guidance_h_pos_sp.x);
+  float sp_y = POS_FLOAT_OF_BFP(guidance_h_pos_sp.y);
+  float sp_z = POS_FLOAT_OF_BFP(guidance_v_z_sp);
 
-  fprintf(file_logger, "%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%d,%d\n",
+  fprintf(file_logger, "%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%d,%d,%f,%f,%f\n",
           counter,
           float_rates.p,
           float_rates.q,
@@ -130,15 +133,18 @@ void file_logger_periodic(void)
           pos_ned->z,
           indicontrol.phi,
           indicontrol.theta,
-          pos_x_err,
-          pos_y_err,
-          pos_z_err,
+          sp_x,
+          sp_y,
+          sp_z,
           gps.ecef_vel.x,
           gps.ecef_vel.y,
           gps.ecef_vel.z,
           gps.ecef_pos.x,
           gps.ecef_pos.y,
-          gps.ecef_pos.z
+          gps.ecef_pos.z,
+          sp_accel.x,
+          sp_accel.y,
+          sp_accel.z
          );
   counter++;
 }

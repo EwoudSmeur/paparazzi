@@ -132,6 +132,8 @@ static abi_event gps_ev;
 
 struct InsInt ins_int;
 
+struct Int32Vect3 save_body_accel;
+
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
 
@@ -497,6 +499,8 @@ static void accel_cb(uint8_t sender_id __attribute__((unused)),
   if (last_stamp > 0) {
     float dt = (float)(stamp - last_stamp) * 1e-6;
     ins_int_propagate(accel, dt);
+
+    VECT3_COPY(save_body_accel,*accel);
   }
   last_stamp = stamp;
 }
