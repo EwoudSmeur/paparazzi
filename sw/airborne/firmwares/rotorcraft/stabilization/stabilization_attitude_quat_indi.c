@@ -33,6 +33,7 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
 
+#include "subsystems/radio_control.h"
 #include "state.h"
 #include "generated/airframe.h"
 #include "paparazzi.h"
@@ -276,6 +277,12 @@ void stabilization_attitude_run(bool_t enable_integrator)
   BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
   BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
   BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
+
+  stabilization_cmd[COMMAND_ROLL] = 0;
+  stabilization_cmd[COMMAND_PITCH] = 0;
+  stabilization_cmd[COMMAND_YAW] = 0;
+  if(radio_control.values[RADIO_ROLL] > 2000)
+    stabilization_cmd[COMMAND_ROLL] = 3000;
 }
 
 // This function reads rc commands
