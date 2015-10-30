@@ -196,7 +196,11 @@
     <field name="YprU3" 	type="float" 	unit="deg"/>
   </message>
 
-  <!--24 is free -->
+  <message name="OUTER_INDI" id="24">
+    <field name="val1"   type="float"/>
+    <field name="val2"   type="float"/>
+    <field name="val3"   type="float"/>
+  </message>
 
   <message name="SVINFO" id="25">
     <field name="chn" type="uint8"/>

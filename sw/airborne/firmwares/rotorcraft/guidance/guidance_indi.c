@@ -40,6 +40,7 @@
 #include "mcu_periph/sys_time.h"
 #include "autopilot.h"
 #include "stabilization/stabilization_attitude_ref_quat_int.h"
+#include "subsystems/datalink/downlink.h"
 
 float guidance_indi_pos_gain = 0.5;
 float guidance_indi_speed_gain = 1.8;
@@ -57,6 +58,11 @@ float roll_filtdd = 0;
 float pitch_filt = 0;
 float pitch_filtd = 0;
 float pitch_filtdd = 0;
+float T_in = 0;
+float T_act = 0;
+float T_filt = 0;
+float T_filtd = 0;
+float T_filtdd = 0;
 
 struct FloatMat33 Ga;
 struct FloatMat33 Ga_inv;
@@ -66,6 +72,10 @@ float filter_omega = 20.0;
 float filter_zeta = 0.65;
 
 struct FloatEulers guidance_euler_cmd;
+
+struct FloatVect3 calc_input_accel(struct FloatEulers *eulers);
+struct FloatEulers calc_euler_cmd_nl(struct FloatVect3 input_accel);
+void guidance_indi_filter_thrust(void);
 
 void guidance_indi_enter(void) {
   filt_accelzbody = 0;
@@ -80,6 +90,11 @@ void guidance_indi_enter(void) {
   FLOAT_VECT3_ZERO(filt_accel_ned);
   FLOAT_VECT3_ZERO(filt_accel_ned_d);
   FLOAT_VECT3_ZERO(filt_accel_ned_dd);
+  T_in = 0;
+  T_act = 0;
+  T_filt = 0;
+  T_filtd = 0;
+  T_filtdd = 0;
 }
 
 void guidance_indi_run(bool_t in_flight, int32_t heading) {
@@ -95,31 +110,68 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
   float speed_sp_x = pos_x_err*guidance_indi_pos_gain;
   float speed_sp_y = pos_y_err*guidance_indi_pos_gain;
 
-  sp_accel.x = (speed_sp_x - stateGetSpeedNed_f()->x)*guidance_indi_speed_gain;
-  sp_accel.y = (speed_sp_y - stateGetSpeedNed_f()->y)*guidance_indi_speed_gain;
-//   sp_accel.x = (radio_control.values[RADIO_PITCH]/9600.0)*8.0;
-//   sp_accel.y = -(radio_control.values[RADIO_ROLL]/9600.0)*8.0;
+//   sp_accel.x = (speed_sp_x - stateGetSpeedNed_f()->x)*guidance_indi_speed_gain;
+//   sp_accel.y = (speed_sp_y - stateGetSpeedNed_f()->y)*guidance_indi_speed_gain;
+
+  //rotate rc commands to ned axes
+  struct FloatEulers *state_eulers = stateGetNedToBodyEulers_f();
+  float psi = state_eulers->psi;
+  float rc_x = -(radio_control.values[RADIO_PITCH]/9600.0)*8.0;
+  float rc_y = (radio_control.values[RADIO_ROLL]/9600.0)*8.0;
+  sp_accel.x = cosf(psi) * rc_x - sinf(psi) * rc_y;
+  sp_accel.y = sinf(psi) * rc_x + cosf(psi) * rc_y;
+
+//   sp_accel.z = -(radio_control.values[RADIO_THROTTLE]-4500.0)/4500.0*2.0;
 
   //   struct FloatMat33 Ga;
   guidance_indi_calcG(&Ga);
   MAT33_INV(Ga_inv, Ga);
 
-  float altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_sp);
-  float vertical_velocity_sp = guidance_indi_pos_gain*(altitude_sp - stateGetPositionNed_f()->z);
-//     float vertical_velocity_rc_euler = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
+//   float altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_sp);
+//   float vertical_velocity_sp = guidance_indi_pos_gain*(altitude_sp - stateGetPositionNed_f()->z);
+
+  float vertical_velocity_rc_euler = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
+  float vertical_velocity_sp = vertical_velocity_rc_euler;
   float vertical_velocity_err_euler = vertical_velocity_sp - stateGetSpeedNed_f()->z;
   sp_accel.z = vertical_velocity_err_euler*guidance_indi_speed_gain;
 
-  struct FloatVect3 a_diff = { sp_accel.x - filt_accel_ned.x, sp_accel.y -filt_accel_ned.y, 0.0};
+  struct FloatVect3 a_diff = { sp_accel.x - filt_accel_ned.x, sp_accel.y -filt_accel_ned.y, sp_accel.z -filt_accel_ned.z};
 
-  Bound(a_diff.x, -6.0, 6.0);
-  Bound(a_diff.y, -6.0, 6.0);
-  Bound(a_diff.z, -9.0, 9.0);
+  guidance_indi_filter_thrust();
+
+
+  struct FloatEulers filt_state_eulers;
+  filt_state_eulers.phi = roll_filt;
+  filt_state_eulers.theta = pitch_filt;
+  filt_state_eulers.psi = state_eulers->psi; //TODO this should be filtered as well i guess?
+  struct FloatVect3 input_accel0 = calc_input_accel(&filt_state_eulers);
+
+  struct FloatVect3 input_accel;
+  VECT3_SUM(input_accel, input_accel0, a_diff);
+
+  struct FloatEulers output_euler = calc_euler_cmd_nl(input_accel);
+
+    RunOnceEvery(50, DOWNLINK_SEND_OUTER_INDI(DefaultChannel, DefaultDevice, &T_in, &output_euler.phi, &input_accel.z));
+
+//   Bound(a_diff.x, -6.0, 6.0);
+//   Bound(a_diff.y, -6.0, 6.0);
+//   Bound(a_diff.z, -9.0, 9.0);
+
+  if(radio_control.values[RADIO_THROTTLE]<300) {
+    T_in = 0;
+  }
+
+  guidance_euler_cmd.phi = output_euler.phi;
+  guidance_euler_cmd.theta = output_euler.theta;
+  stabilization_cmd[COMMAND_THRUST] = T_in;
 
   MAT33_VECT3_MUL(euler_cmd, Ga_inv, a_diff);
 
-  guidance_euler_cmd.phi = roll_filt + euler_cmd.x;
-  guidance_euler_cmd.theta = pitch_filt + euler_cmd.y;
+//   T_in = T_filt - 500.0*euler_cmd.z;
+//   Bound(T_in, 0, 9600);
+//   stabilization_cmd[COMMAND_THRUST] = T_in;
+//   guidance_euler_cmd.phi = roll_filt + euler_cmd.x;
+//   guidance_euler_cmd.theta = pitch_filt + euler_cmd.y;
   guidance_euler_cmd.psi = 0;//stateGetNedToBodyEulers_f()->psi;
 
   //Bound euler angles to prevent flipping and keep upright
@@ -127,7 +179,57 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
   Bound(guidance_euler_cmd.theta, -GUIDANCE_H_MAX_BANK, GUIDANCE_H_MAX_BANK);
 
   stabilization_attitude_set_setpoint_rp_quat_f(in_flight, heading);
+}
 
+struct FloatEulers calc_euler_cmd_nl(struct FloatVect3 input_accel) {
+
+  float Tm;
+  if(input_accel.z > 0.0)
+    Tm = -0.5;
+  else
+    Tm = -float_vect3_norm(&input_accel);
+
+  T_in = Tm*-500.0;
+  Bound(T_in, 0.0, 9600.0);
+
+  struct FloatEulers output;
+
+  float psi = stateGetNedToBodyEulers_f()->psi;
+  float spsi = sinf(psi);
+  float cpsi = cosf(psi);
+
+  float temp = (spsi*input_accel.x-cpsi*input_accel.y)/Tm;
+  if(temp>1.0) {
+    temp = 1.0;
+  }
+  else if(temp<-1.0) {
+    temp = -1.0;
+  }
+
+  output.phi = asinf(temp);
+
+  temp = (spsi*input_accel.y + cpsi*input_accel.x)/Tm/cosf(output.phi);
+  if(temp>1.0) {
+    temp = 1.0;
+  }
+  else if(temp<-1.0) {
+    temp = -1.0;
+  }
+
+  output.theta = asinf(temp);
+  output.psi = 0;
+
+  return output;
+}
+
+struct FloatVect3 calc_input_accel(struct FloatEulers *eulers) {
+  float Tm = T_filt/-500.0;
+  struct FloatVect3 accel_input0;
+  accel_input0.x = (sinf(eulers->phi)*sinf(eulers->psi) + cosf(eulers->phi)*cosf(eulers->psi)*sinf(eulers->theta))*Tm;
+  accel_input0.y = (cosf(eulers->phi)*sinf(eulers->psi)*sinf(eulers->theta) - cosf(eulers->psi)*sinf(eulers->phi))*Tm;
+  accel_input0.z = cosf(eulers->phi)*cosf(eulers->theta)*Tm;
+
+  return accel_input0;
 }
 
 //low pass the accelerometer measurements with a second order filter to remove noise from vibrations
@@ -157,6 +259,15 @@ void guidance_indi_filter_attitude(void)
 
   roll_filtdd = -roll_filtd * 2 * filter_zeta * filter_omega + (stateGetNedToBodyEulers_f()->phi - roll_filt) * filter_omega*filter_omega;
   pitch_filtdd = -pitch_filtd * 2 * filter_zeta * filter_omega + (stateGetNedToBodyEulers_f()->theta - pitch_filt) * filter_omega*filter_omega;
+}
+
+void guidance_indi_filter_thrust(void)
+{
+  T_act = T_act + STABILIZATION_INDI_ACT_DYN_P * (T_in - T_act);
+
+  T_filt = T_filt + T_filtd / PERIODIC_FREQUENCY;
+  T_filtd = T_filtd + T_filtdd / PERIODIC_FREQUENCY;
+  T_filtdd = -T_filtd * 2 * filter_zeta * filter_omega + (T_act - T_filt) * filter_omega*filter_omega;
 }
 
 void guidance_indi_calcG(struct FloatMat33 *Gmat) {

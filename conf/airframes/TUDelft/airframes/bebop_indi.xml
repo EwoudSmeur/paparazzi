@@ -32,9 +32,9 @@
     <load name="geo_mag.xml"/>
     <load name="air_data.xml"/>
     <load name="send_imu_mag_current.xml"/>
-    <!--load name="logger_file.xml">
+    <load name="logger_file.xml">
       <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
-    </load-->
+    </load>
   </modules>
 
   <commands>
@@ -189,7 +189,7 @@
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
     <!-- Good weather -->
-    <define name="MAX_BANK" value="20" unit="deg"/>
+    <define name="MAX_BANK" value="40" unit="deg"/>
     <define name="REF_MAX_SPEED" value="2" unit="m/s"/>
     <!-- Bad weather -->
     <!-- define name="MAX_BANK" value="32" unit="deg"/ -->
@@ -213,7 +213,7 @@
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
-    <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+    <define name="MODE_AUTO2" value="AP_MODE_HOVER_DIRECT"/>
 
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
   </section>
