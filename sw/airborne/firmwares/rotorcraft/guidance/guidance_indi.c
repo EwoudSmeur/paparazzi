@@ -76,6 +76,7 @@ struct FloatEulers guidance_euler_cmd;
 struct FloatVect3 calc_input_accel(struct FloatEulers *eulers);
 struct FloatEulers calc_euler_cmd_nl(struct FloatVect3 input_accel);
 void guidance_indi_filter_thrust(void);
+float calcthrust(uint16_t *rpm);
 
 void guidance_indi_enter(void) {
   filt_accelzbody = 0;
@@ -110,28 +111,27 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
   float speed_sp_x = pos_x_err*guidance_indi_pos_gain;
   float speed_sp_y = pos_y_err*guidance_indi_pos_gain;
 
-//   sp_accel.x = (speed_sp_x - stateGetSpeedNed_f()->x)*guidance_indi_speed_gain;
-//   sp_accel.y = (speed_sp_y - stateGetSpeedNed_f()->y)*guidance_indi_speed_gain;
-
-  //rotate rc commands to ned axes
   struct FloatEulers *state_eulers = stateGetNedToBodyEulers_f();
+
+#if !OUTER_LOOP_INDI_USE_RC
+  sp_accel.x = (speed_sp_x - stateGetSpeedNed_f()->x)*guidance_indi_speed_gain;
+  sp_accel.y = (speed_sp_y - stateGetSpeedNed_f()->y)*guidance_indi_speed_gain;
+#else
+  //rotate rc commands to ned axes
   float psi = state_eulers->psi;
   float rc_x = -(radio_control.values[RADIO_PITCH]/9600.0)*8.0;
   float rc_y = (radio_control.values[RADIO_ROLL]/9600.0)*8.0;
   sp_accel.x = cosf(psi) * rc_x - sinf(psi) * rc_y;
   sp_accel.y = sinf(psi) * rc_x + cosf(psi) * rc_y;
+#endif
 
 //   sp_accel.z = -(radio_control.values[RADIO_THROTTLE]-4500.0)/4500.0*2.0;
-
-  //   struct FloatMat33 Ga;
-  guidance_indi_calcG(&Ga);
-  MAT33_INV(Ga_inv, Ga);
 
 //   float altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_sp);
 //   float vertical_velocity_sp = guidance_indi_pos_gain*(altitude_sp - stateGetPositionNed_f()->z);
 
-  float vertical_velocity_rc_euler = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
-  float vertical_velocity_sp = vertical_velocity_rc_euler;
+  float vertical_velocity_rc = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
+  float vertical_velocity_sp = vertical_velocity_rc;
   float vertical_velocity_err_euler = vertical_velocity_sp - stateGetSpeedNed_f()->z;
   sp_accel.z = vertical_velocity_err_euler*guidance_indi_speed_gain;
 
@@ -139,7 +139,7 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
 
   guidance_indi_filter_thrust();
 
-
+#if NONLINEAR_INDI
   struct FloatEulers filt_state_eulers;
   filt_state_eulers.phi = roll_filt;
   filt_state_eulers.theta = pitch_filt;
@@ -151,12 +151,6 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
 
   struct FloatEulers output_euler = calc_euler_cmd_nl(input_accel);
 
-    RunOnceEvery(50, DOWNLINK_SEND_OUTER_INDI(DefaultChannel, DefaultDevice, &T_in, &output_euler.phi, &input_accel.z));
-
-//   Bound(a_diff.x, -6.0, 6.0);
-//   Bound(a_diff.y, -6.0, 6.0);
-//   Bound(a_diff.z, -9.0, 9.0);
-
   if(radio_control.values[RADIO_THROTTLE]<300) {
     T_in = 0;
   }
@@ -165,13 +159,33 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
   guidance_euler_cmd.theta = output_euler.theta;
   stabilization_cmd[COMMAND_THRUST] = T_in;
 
+//   RunOnceEvery(50, DOWNLINK_SEND_OUTER_INDI(DefaultChannel, DefaultDevice, &T_in, &Tm_meas, &input_accel.z));
+#else
+  //   struct FloatMat33 Ga;
+  guidance_indi_calcG(&Ga);
+  MAT33_INV(Ga_inv, Ga);
+
+//   Bound(a_diff.x, -6.0, 6.0);
+//   Bound(a_diff.y, -6.0, 6.0);
+//   Bound(a_diff.z, -9.0, 9.0);
+
   MAT33_VECT3_MUL(euler_cmd, Ga_inv, a_diff);
 
-//   T_in = T_filt - 500.0*euler_cmd.z;
-//   Bound(T_in, 0, 9600);
-//   stabilization_cmd[COMMAND_THRUST] = T_in;
-//   guidance_euler_cmd.phi = roll_filt + euler_cmd.x;
-//   guidance_euler_cmd.theta = pitch_filt + euler_cmd.y;
+  T_in = T_filt -500.0*euler_cmd.z;
+  Bound(T_in, 0.0, 9600.0);
+
+  if(radio_control.values[RADIO_THROTTLE]<300) {
+    T_in = 0;
+  }
+
+  stabilization_cmd[COMMAND_THRUST] = T_in;
+
+//   RunOnceEvery(50, DOWNLINK_SEND_OUTER_INDI(DefaultChannel, DefaultDevice, &T_in, &euler_cmd.z, &a_diff.z));
+
+  guidance_euler_cmd.phi = roll_filt + euler_cmd.x;
+  guidance_euler_cmd.theta = pitch_filt + euler_cmd.y;
+#endif
+
   guidance_euler_cmd.psi = 0;//stateGetNedToBodyEulers_f()->psi;
 
   //Bound euler angles to prevent flipping and keep upright
@@ -284,6 +298,9 @@ void guidance_indi_calcG(struct FloatMat33 *Gmat) {
 //   float T = (filt_accelzn-9.81)/(cphi*ctheta); //calculate specific force in body z axis by using the accelerometer
 //   float T = filt_accelzbody; //if body acceleration is available, use that!
 
+  T = -calcthrust(actuators_bebop.rpm_obs)/0.395;
+  RunOnceEvery(50, DOWNLINK_SEND_OUTER_INDI(DefaultChannel, DefaultDevice, &T_in, &T, &T));
+
   RMAT_ELMT(*Gmat, 0, 0) = (cphi*spsi - sphi*cpsi*stheta)*T;
   RMAT_ELMT(*Gmat, 1, 0) = (-sphi*spsi*stheta - cpsi*cphi)*T;
   RMAT_ELMT(*Gmat, 2, 0) = -ctheta*sphi*T;
@@ -330,4 +347,14 @@ void stabilization_attitude_set_setpoint_rp_quat_f(bool_t in_flight, int32_t hea
   }
 
   QUAT_BFP_OF_REAL(stab_att_sp_quat,q_sp);
+}
+
+float calcthrust(uint16_t *rpm){
+  float thrust = 0;
+  float rps = 0;
+  for(int i=0; i<4; i++) {
+    rps = rpm[i]/60.0;
+    thrust = thrust + 0.08 -0.002283*rps + 7.088e-5 * rps * rps;
+  }
+  return thrust;
 }
