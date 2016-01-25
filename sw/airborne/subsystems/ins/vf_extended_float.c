@@ -128,30 +128,30 @@ void vff_propagate(float accel, float dt)
 {
   /* update state */
   vff.zdotdot = accel + 9.81 - vff.bias;
-  vff.z = vff.z + dt * vff.zdot;
-  vff.zdot = vff.zdot + dt * vff.zdotdot;
-  /* update covariance */
-  const float FPF00 = vff.P[0][0] + dt * (vff.P[1][0] + vff.P[0][1] + dt * vff.P[1][1]);
-  const float FPF01 = vff.P[0][1] + dt * (vff.P[1][1] - vff.P[0][2] - dt * vff.P[1][2]);
-  const float FPF02 = vff.P[0][2] + dt * (vff.P[1][2]);
-  const float FPF10 = vff.P[1][0] + dt * (-vff.P[2][0] + vff.P[1][1] - dt * vff.P[2][1]);
-  const float FPF11 = vff.P[1][1] + dt * (-vff.P[2][1] - vff.P[1][2] + dt * vff.P[2][2]);
-  const float FPF12 = vff.P[1][2] + dt * (-vff.P[2][2]);
-  const float FPF20 = vff.P[2][0] + dt * (vff.P[2][1]);
-  const float FPF21 = vff.P[2][1] + dt * (-vff.P[2][2]);
-  const float FPF22 = vff.P[2][2];
-  const float FPF33 = vff.P[3][3];
-
-  vff.P[0][0] = FPF00 + VFF_EXTENDED_ACCEL_NOISE * dt * dt / 2.;
-  vff.P[0][1] = FPF01;
-  vff.P[0][2] = FPF02;
-  vff.P[1][0] = FPF10;
-  vff.P[1][1] = FPF11 + VFF_EXTENDED_ACCEL_NOISE * dt;
-  vff.P[1][2] = FPF12;
-  vff.P[2][0] = FPF20;
-  vff.P[2][1] = FPF21;
-  vff.P[2][2] = FPF22 + Qbiasbias;
-  vff.P[3][3] = FPF33 + Qoffoff;
+//   vff.z = vff.z + dt * vff.zdot;
+//   vff.zdot = vff.zdot + dt * vff.zdotdot;
+//   /* update covariance */
+//   const float FPF00 = vff.P[0][0] + dt * (vff.P[1][0] + vff.P[0][1] + dt * vff.P[1][1]);
+//   const float FPF01 = vff.P[0][1] + dt * (vff.P[1][1] - vff.P[0][2] - dt * vff.P[1][2]);
+//   const float FPF02 = vff.P[0][2] + dt * (vff.P[1][2]);
+//   const float FPF10 = vff.P[1][0] + dt * (-vff.P[2][0] + vff.P[1][1] - dt * vff.P[2][1]);
+//   const float FPF11 = vff.P[1][1] + dt * (-vff.P[2][1] - vff.P[1][2] + dt * vff.P[2][2]);
+//   const float FPF12 = vff.P[1][2] + dt * (-vff.P[2][2]);
+//   const float FPF20 = vff.P[2][0] + dt * (vff.P[2][1]);
+//   const float FPF21 = vff.P[2][1] + dt * (-vff.P[2][2]);
+//   const float FPF22 = vff.P[2][2];
+//   const float FPF33 = vff.P[3][3];
+//
+//   vff.P[0][0] = FPF00 + VFF_EXTENDED_ACCEL_NOISE * dt * dt / 2.;
+//   vff.P[0][1] = FPF01;
+//   vff.P[0][2] = FPF02;
+//   vff.P[1][0] = FPF10;
+//   vff.P[1][1] = FPF11 + VFF_EXTENDED_ACCEL_NOISE * dt;
+//   vff.P[1][2] = FPF12;
+//   vff.P[2][0] = FPF20;
+//   vff.P[2][1] = FPF21;
+//   vff.P[2][2] = FPF22 + Qbiasbias;
+//   vff.P[3][3] = FPF33 + Qoffoff;
 
 #if DEBUG_VFF_EXTENDED
   RunOnceEvery(10, send_vffe(&(DefaultChannel).trans_tx, &(DefaultDevice).device));
@@ -284,6 +284,15 @@ void vff_update_z(float z_meas)
 void vff_update_z_conf(float z_meas, float conf)
 {
   update_alt_conf(z_meas, conf);
+}
+
+void vff_update_z_hack(float z_meas, float zd_meas)
+{
+  vff.z_meas = z_meas;
+  vff.z       = z_meas;
+  vff.zdot    = zd_meas;
+  vff.bias    = 0.0;
+  vff.offset  = 0.0;
 }
 
 /**

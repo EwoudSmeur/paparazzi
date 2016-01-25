@@ -58,5 +58,6 @@ extern void vff_update_baro_conf(float z_meas, float conf);
 extern void vff_update_z_conf(float z_meas, float conf);
 //extern void vff_update_vz_conf(float vz_meas, float conf);
 extern void vff_realign(float z_meas);
+void vff_update_z_hack(float z_meas, float zd_meas);
 
 #endif /* VF_EXTENDED_FLOAT_H */

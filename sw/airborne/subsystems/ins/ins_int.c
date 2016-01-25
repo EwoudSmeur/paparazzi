@@ -358,7 +358,11 @@ void ins_int_update_gps(struct GpsState *gps_s)
   ned_of_ecef_vect_i(&gps_speed_cm_s_ned, &ins_int.ltp_def, &gps_s->ecef_vel);
 
 #if INS_USE_GPS_ALT
-  vff_update_z_conf(((float)gps_pos_cm_ned.z) / 100.0, INS_VFF_R_GPS);
+  struct NedCoor_i gps_vel_cm_ned;
+  ned_of_ecef_vect_i(&gps_vel_cm_ned, &ins_int.ltp_def, &gps_s->ecef_vel);
+
+//   vff_update_z_conf(((float)gps_pos_cm_ned.z) / 100.0, INS_VFF_R_GPS);
+  vff_update_z_hack(((float)gps_pos_cm_ned.z) / 100.0, ((float)gps_vel_cm_ned.z)/100.0);
 #endif
 
 #if USE_HFF
