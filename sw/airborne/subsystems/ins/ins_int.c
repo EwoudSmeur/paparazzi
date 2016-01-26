@@ -249,12 +249,20 @@ void ins_reset_altitude_ref(void)
   ins_int.vf_reset = TRUE;
 }
 
+#include "firmwares/rotorcraft/guidance/guidance_indi.h"
 void ins_int_propagate(struct Int32Vect3 *accel, float dt)
 {
   /* untilt accels */
   struct Int32Vect3 accel_meas_body;
   struct Int32RMat *body_to_imu_rmat = orientationGetRMat_i(&imu.body_to_imu);
-  int32_rmat_transp_vmult(&accel_meas_body, body_to_imu_rmat, accel);
+//   int32_rmat_transp_vmult(&accel_meas_body, body_to_imu_rmat, accel);
+
+  struct Int32Vect3 accel_unbiased;
+  accel_unbiased.x = accel->x + ACCEL_BFP_OF_REAL(accel_diff_body_filt.x);
+  accel_unbiased.y = accel->y + ACCEL_BFP_OF_REAL(accel_diff_body_filt.y);
+  accel_unbiased.z = accel->z + ACCEL_BFP_OF_REAL(accel_diff_body_filt.z);
+  int32_rmat_transp_vmult(&accel_meas_body, body_to_imu_rmat, &accel_unbiased);
+
   struct Int32Vect3 accel_meas_ltp;
   int32_rmat_transp_vmult(&accel_meas_ltp, stateGetNedToBodyRMat_i(), &accel_meas_body);
 
@@ -284,6 +292,10 @@ void ins_int_propagate(struct Int32Vect3 *accel, float dt)
   ins_int.ltp_accel.x = accel_meas_ltp.x;
   ins_int.ltp_accel.y = accel_meas_ltp.y;
 #endif /* USE_HFF */
+
+  ins_int.ltp_accel.x = accel_meas_ltp.x;
+  ins_int.ltp_accel.y = accel_meas_ltp.y;
+  ins_int.ltp_accel.z = accel_meas_ltp.z + ACCEL_BFP_OF_REAL(9.81);
 
   ins_ned_to_state();
 

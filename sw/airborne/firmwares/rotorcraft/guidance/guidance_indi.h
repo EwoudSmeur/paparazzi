@@ -34,6 +34,13 @@
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_algebra_float.h"
 
+extern float guidance_indi_pos_gain;
+extern float guidance_indi_speed_gain;
+
+extern struct FloatVect3 accel_diff_body_filt;
+extern struct FloatEulers guidance_euler_cmd;
+extern struct FloatVect3 sp_accel;
+
 extern void guidance_indi_enter(void);
 extern void guidance_indi_run(bool_t in_flight, int32_t heading);
 extern void guidance_indi_filter_attitude(void);

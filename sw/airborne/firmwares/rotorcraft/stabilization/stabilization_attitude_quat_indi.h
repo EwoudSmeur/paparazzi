@@ -57,6 +57,8 @@ struct IndiVariables {
   struct FloatRates udotdot;
 };
 
+extern struct IndiVariables indi;
+
 extern struct FloatRates g1;
 extern float g2;
 extern struct ReferenceSystem reference_acceleration;
