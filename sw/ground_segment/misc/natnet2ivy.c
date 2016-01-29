@@ -65,7 +65,7 @@ char *ivy_bus                   = "127.255.255.255:2010";
 #endif
 
 /** Sample frequency and derevitive defaults */
-uint32_t freq_transmit          = 30;     ///< Transmitting frequency in Hz
+uint32_t freq_transmit          = 4;     ///< Transmitting frequency in Hz
 uint16_t min_velocity_samples   = 4;      ///< The amount of position samples needed for a valid velocity
 bool small_packets              = FALSE;
 
@@ -763,7 +763,7 @@ int main(int argc, char** argv)
   tracking_ecef.x = 3924332;
   tracking_ecef.y = 300362;
   tracking_ecef.z = 5002197;
-  tracking_offset_angle = 33.0 / 57.6;
+  tracking_offset_angle = 90.0 / 57.6;
   ltp_def_from_ecef_d(&tracking_ltp, &tracking_ecef);
 
   // Parse the options from cmdline

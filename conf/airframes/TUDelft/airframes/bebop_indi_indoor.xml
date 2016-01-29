@@ -19,7 +19,10 @@
     <subsystem name="actuators" type="bebop"/>
     <subsystem name="imu" type="bebop"/>
     <subsystem name="gps" type="datalink"/>
-    <subsystem name="stabilization" type="indi"/>
+    <subsystem name="stabilization" type="indi">
+      <define name="INDI_RPM_FEEDBACK" value="TRUE"/>
+      <define name="ADAPTIVE_INDI" value="FALSE"/>
+    </subsystem>
     <subsystem name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
@@ -31,8 +34,9 @@
     </subsystem>
     <subsystem name="ins" type="extended"/>
     <subsystem name="guidance" type="indi">
-      <define name="NONLINEAR_INDI" value="FALSE"/>
+      <define name="NONLINEAR_INDI" value="TRUE"/>
       <define name="OUTER_LOOP_INDI_USE_RC" value="FALSE"/>
+      <define name="OUTER_LOOP_INDI" value="FALSE"/>
     </subsystem>
   </firmware>
 
@@ -188,11 +192,11 @@
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
-    <define name="HOVER_KP" value="283"/>
-    <define name="HOVER_KD" value="82"/>
-    <define name="HOVER_KI" value="20"/>
-    <define name="NOMINAL_HOVER_THROTTLE" value="0.655"/>
-    <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
+    <define name="HOVER_KP" value="500"/>
+    <define name="HOVER_KD" value="200"/>
+    <define name="HOVER_KI" value="60"/>
+    <define name="NOMINAL_HOVER_THROTTLE" value="0.5"/>
+    <define name="ADAPT_THROTTLE_ENABLED" value="FALSE"/>
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
@@ -201,9 +205,9 @@
     <define name="REF_MAX_SPEED" value="2" unit="m/s"/>
     <!-- Bad weather -->
     <!-- define name="MAX_BANK" value="32" unit="deg"/ -->
-    <define name="PGAIN" value="79"/>
-    <define name="DGAIN" value="100"/>
-    <define name="IGAIN" value="30"/>
+    <define name="PGAIN" value="130"/>
+    <define name="DGAIN" value="200"/>
+    <define name="IGAIN" value="70"/>
   </section>
 
   <section name="NAVIGATION" prefix="NAV_">

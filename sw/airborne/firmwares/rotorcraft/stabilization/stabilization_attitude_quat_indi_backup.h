@@ -1,5 +1,12 @@
 /*
- * Copyright (C) 2008-2009 Antoine Drouin <poinix@gmail.com>
+ * Copyright (C) Ewoud Smeur <ewoud_smeur@msn.com>
+ * MAVLab Delft University of Technology
+ *
+ * This control algorithm is Incremental Nonlinear Dynamic Inversion (INDI)
+ *
+ * This is a simplified implementation of the (soon to be) publication in the
+ * journal of Control Guidance and Dynamics: Adaptive Incremental Nonlinear
+ * Dynamic Inversion for Attitude Control of Micro Aerial Vehicles
  *
  * This file is part of paparazzi.
  *
@@ -19,13 +26,15 @@
  * Boston, MA 02111-1307, USA.
  */
 
+/** @file stabilization_attitude_quat_indi.h
+ * This is the header file of the corresponding c file
+ */
+
 #ifndef STABILIZATION_ATTITUDE_QUAT_INDI_H
 #define STABILIZATION_ATTITUDE_QUAT_INDI_H
 
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_common_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_quat_int.h"
 
-#include "math/pprz_algebra_int.h"
 struct ReferenceSystem {
   float err_p;
   float err_q;
@@ -35,38 +44,34 @@ struct ReferenceSystem {
   float rate_r;
 };
 
-extern struct FloatRates inv_control_effectiveness;
+struct IndiVariables {
+  struct FloatRates filtered_rate;
+  struct FloatRates filtered_rate_deriv;
+  struct FloatRates filtered_rate_2deriv;
+  struct FloatRates angular_accel_ref;
+  struct FloatRates du;
+  struct FloatRates u_act_dyn;
+  struct FloatRates u_in;
+  struct FloatRates u;
+  struct FloatRates udot;
+  struct FloatRates udotdot;
+};
+
+extern struct IndiVariables indi;
+
+extern struct FloatRates g1;
+extern float g2;
 extern struct ReferenceSystem reference_acceleration;
 
-extern struct FloatRates filtered_rate;
-extern struct FloatRates filtered_rate_deriv;
-extern struct FloatRates filtered_rate_2deriv;
-extern struct FloatRates angular_accel_ref;
-extern struct FloatRates indi_u;
-extern struct FloatRates indi_du;
-extern struct FloatRates u_act_dyn;
-extern struct FloatRates u_in;
-extern struct FloatRates udot;
-extern struct FloatRates udotdot;
-extern int32_t indi_u_in_actuators_i[4];
-extern float G1[3][4];
-extern float G2[4];
-extern float indi_u_in_actuators[4];
-extern float u_actuators[4];
-
-extern float vv_gain;
+extern struct FloatRates g_est;
+extern bool_t use_adaptive_indi;
 
 extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
 extern struct Int32Quat   stab_att_sp_quat;  ///< with #INT32_QUAT_FRAC
 
-void stabilization_indi_filter_gyro(void);
+void stabilization_indi_second_order_filter(struct FloatRates *input, struct FloatRates *filter_ddx,
+    struct FloatRates *filter_dx, struct FloatRates *filter_x, float omega, float zeta, float omega_r);
 void lms_estimation(void);
-void filter_inputs_actuators(void);
-void calc_g1_element(float du_norm, float dx_error, int8_t i, int8_t j, float mu_extra);
-void calc_g2_element(float dx_error, int8_t j, float mu_extra);
-void filter_estimation_indi(void);
-void calc_g1g2_pseudo_inv(void);
-void stabilization_indi_filter_accel(void);
 
 #endif /* STABILIZATION_ATTITUDE_QUAT_INT_H */
 

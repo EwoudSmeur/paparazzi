@@ -83,6 +83,12 @@ void actuators_bebop_commit(void)
   actuators_bebop.rpm_obs[2] = (actuators_bebop.i2c_trans.buf[5] + (actuators_bebop.i2c_trans.buf[4] << 8)) & ~(1<<15);
   actuators_bebop.rpm_obs[3] = (actuators_bebop.i2c_trans.buf[7] + (actuators_bebop.i2c_trans.buf[6] << 8)) & ~(1<<15);
 
+  //get motor rpm feedback and transform to pprz cmd range (0-9600)
+  act_obs_rpm[0] = (actuators_bebop.rpm_obs[1] - 3000)*(MAX_PPRZ / (float)(12000-3000));
+  act_obs_rpm[1] = (actuators_bebop.rpm_obs[0] - 3000)*(MAX_PPRZ / (float)(12000-3000));
+  act_obs_rpm[2] = (actuators_bebop.rpm_obs[3] - 3000)*(MAX_PPRZ / (float)(12000-3000));
+  act_obs_rpm[3] = (actuators_bebop.rpm_obs[2] - 3000)*(MAX_PPRZ / (float)(12000-3000));
+
   // Saturate the bebop motors
   //actuators_bebop_saturate();
 

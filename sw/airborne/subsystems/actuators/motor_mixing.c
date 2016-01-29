@@ -28,6 +28,8 @@
 #include "subsystems/actuators/motor_mixing.h"
 #include "paparazzi.h"
 
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_indi.h"
+
 //#include <stdint.h>
 #ifndef INT32_MIN
 #define INT32_MIN (-2147483647-1)
@@ -182,49 +184,26 @@ void motor_mixing_run(bool_t motors_on, bool_t override_on, pprz_t in_cmd[])
 #else
   if (FALSE) {
 #endif
-
-    int32_t tmp_cmd;
-    int32_t max_overflow = 0;
-
-    /* first calculate the highest priority part of the command:
-     * - add trim + roll + pitch + thrust for each motor
-     * - calc max saturation/overflow when yaw command is also added
-     */
-    for (i = 0; i < MOTOR_MIXING_NB_MOTOR; i++) {
-      motor_mixing.commands[i] = motor_mixing.trim[i] +
-        roll_coef[i] * in_cmd[COMMAND_ROLL] +
-        pitch_coef[i] * in_cmd[COMMAND_PITCH] +
-        thrust_coef[i] * in_cmd[COMMAND_THRUST];
-
-      /* compute the command with yaw for each motor to check how much it would saturate */
-      tmp_cmd = motor_mixing.commands[i] + yaw_coef[i] * in_cmd[COMMAND_YAW];
-      tmp_cmd /= MOTOR_MIXING_SCALE;
-
-      /* remember max overflow (how much in saturation) */
-      if (-tmp_cmd > max_overflow) {
-        max_overflow = -tmp_cmd;
-      }
-      else if (tmp_cmd - MAX_PPRZ > max_overflow) {
-        max_overflow = tmp_cmd - MAX_PPRZ;
-      }
-    }
-
-    /* calculate how much authority is left for yaw command */
-    int32_t yaw_authority = ABS(in_cmd[COMMAND_YAW]) - max_overflow;
-    Bound(yaw_authority, 0, MAX_PPRZ);
-    int32_t bounded_yaw_cmd = in_cmd[COMMAND_YAW];
-    BoundAbs(bounded_yaw_cmd, yaw_authority);
-
-    /* min/max of commands */
     int32_t min_cmd = INT32_MAX;
     int32_t max_cmd = INT32_MIN;
-
-    /* add the bounded yaw command and scale */
+    /* do the mixing in float to avoid overflows, implicitly casted back to int32_t */
     for (i = 0; i < MOTOR_MIXING_NB_MOTOR; i++) {
-      motor_mixing.commands[i] += yaw_coef[i] * bounded_yaw_cmd;
-      motor_mixing.commands[i] /= MOTOR_MIXING_SCALE;
-
-      /* remember min/max */
+#if TRUE //INDI_RPM_FEEDBACK
+      motor_mixing.commands[i] = MOTOR_MIXING_MIN_MOTOR +
+//         (thrust_coef[i] * in_cmd[COMMAND_THRUST] +
+        // yaw_coef[i] * in_cmd[COMMAND_YAW] +
+        (motor_mixing.trim[i]) / MOTOR_MIXING_SCALE *
+        (MOTOR_MIXING_MAX_MOTOR - MOTOR_MIXING_MIN_MOTOR) / MAX_PPRZ +
+        indi_u_in_actuators_i[i];
+#else
+      motor_mixing.commands[i] = MOTOR_MIXING_MIN_MOTOR +
+                                 (thrust_coef[i] * in_cmd[COMMAND_THRUST] +
+                                  roll_coef[i]   * in_cmd[COMMAND_ROLL]   +
+                                  pitch_coef[i]  * in_cmd[COMMAND_PITCH]  +
+                                  yaw_coef[i]    * in_cmd[COMMAND_YAW]    +
+                                  motor_mixing.trim[i]) / MOTOR_MIXING_SCALE *
+                                 (MOTOR_MIXING_MAX_MOTOR - MOTOR_MIXING_MIN_MOTOR) / MAX_PPRZ;
+#endif
       if (motor_mixing.commands[i] < min_cmd) {
         min_cmd = motor_mixing.commands[i];
       }

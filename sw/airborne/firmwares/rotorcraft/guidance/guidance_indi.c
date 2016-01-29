@@ -42,7 +42,7 @@
 #include "stabilization/stabilization_attitude_ref_quat_int.h"
 #include "subsystems/datalink/downlink.h"
 
-float guidance_indi_pos_gain = 1.2;
+float guidance_indi_pos_gain = 0.7;
 float guidance_indi_speed_gain = 1.5;
 float guidance_indi_pos_gain_vertical = 0.5;
 float guidance_indi_speed_gain_vertical = 3.0;
@@ -70,8 +70,8 @@ struct FloatMat33 Ga;
 struct FloatMat33 Ga_inv;
 struct FloatVect3 euler_cmd;
 
-float filter_omega = 20.0;
-float filter_zeta = 0.65;
+float filter_omega = 50.0;
+float filter_zeta = 0.55;
 
 struct FloatEulers guidance_euler_cmd;
 
@@ -132,7 +132,7 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
   sp_accel.x = cosf(psi) * rc_x - sinf(psi) * rc_y;
   sp_accel.y = sinf(psi) * rc_x + cosf(psi) * rc_y;
 
-  float vertical_velocity_sp = -(radio_control.values[RADIO_THRUST]-4500.0)/4500.0*2.0;
+  float vertical_velocity_sp = -(radio_control.values[RADIO_THROTTLE]-4500.0)/4500.0*2.0;
   //   sp_accel.z = -(radio_control.values[RADIO_THROTTLE]-4500.0)/4500.0*2.0;
 #endif
 
@@ -161,7 +161,9 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
 
   guidance_euler_cmd.phi = output_euler.phi;
   guidance_euler_cmd.theta = output_euler.theta;
-  stabilization_cmd[COMMAND_THRUST] = T_in;
+//   stabilization_cmd[COMMAND_THRUST] = T_in;
+
+#warning "the command taken by inner loop is now euler_cmd. make sure NONLINEAR_INDI outputs an acceleration!"
 
 //   RunOnceEvery(50, DOWNLINK_SEND_OUTER_INDI(DefaultChannel, DefaultDevice, &T_in, &Tm_meas, &input_accel.z));
 #else
@@ -182,7 +184,7 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
     T_in = 0;
   }
 
-  stabilization_cmd[COMMAND_THRUST] = T_in;
+//   stabilization_cmd[COMMAND_THRUST] = T_in;
 
 //   RunOnceEvery(50, DOWNLINK_SEND_OUTER_INDI(DefaultChannel, DefaultDevice, &T_in, &euler_cmd.z, &a_diff.z));
 
@@ -207,8 +209,14 @@ struct FloatEulers calc_euler_cmd_nl(struct FloatVect3 input_accel) {
   else
     Tm = -float_vect3_norm(&input_accel); //linear thrust/acceleration assumption
 
-  T_in = Tm*-500.0;
-  Bound(T_in, 0.0, 9600.0);
+  uint16_t rpm_filt[4];
+  rpm_filt[0] =(uint16_t) (u_actuators[0]/9000.0*9600.0+3000.0);
+  rpm_filt[1] =(uint16_t) (u_actuators[1]/9000.0*9600.0+3000.0);
+  rpm_filt[2] =(uint16_t) (u_actuators[2]/9000.0*9600.0+3000.0);
+  rpm_filt[3] =(uint16_t) (u_actuators[3]/9000.0*9600.0+3000.0);
+  euler_cmd.z = Tm-(-calcthrust(rpm_filt)/0.395);
+//   T_in = Tm*-500.0;
+//   Bound(T_in, 0.0, 9600.0);
 
   struct FloatEulers output;
 
@@ -241,7 +249,15 @@ struct FloatEulers calc_euler_cmd_nl(struct FloatVect3 input_accel) {
 }
 
 struct FloatVect3 calc_input_accel(struct FloatEulers *eulers) {
-  float Tm = T_filt/-500.0; //linear thrust/acceleration assumption
+//   float Tm = T_filt/-500.0; //linear thrust/acceleration assumption
+
+  uint16_t rpm_filt[4];
+  rpm_filt[0] =(uint16_t) (u_actuators[0]/9000.0*9600.0+3000.0);
+  rpm_filt[1] =(uint16_t) (u_actuators[1]/9000.0*9600.0+3000.0);
+  rpm_filt[2] =(uint16_t) (u_actuators[2]/9000.0*9600.0+3000.0);
+  rpm_filt[3] =(uint16_t) (u_actuators[3]/9000.0*9600.0+3000.0);
+  float Tm = -calcthrust(rpm_filt)/0.395;
+
   struct FloatVect3 accel_input0;
   accel_input0.x = (sinf(eulers->phi)*sinf(eulers->psi) + cosf(eulers->phi)*cosf(eulers->psi)*sinf(eulers->theta))*Tm;
   accel_input0.y = (cosf(eulers->phi)*sinf(eulers->psi)*sinf(eulers->theta) - cosf(eulers->psi)*sinf(eulers->phi))*Tm;
@@ -298,19 +314,19 @@ void guidance_indi_calcG(struct FloatMat33 *Gmat) {
   float ctheta = cosf(euler->theta);
   float spsi = sinf(euler->psi);
   float cpsi = cosf(euler->psi);
-  float T = -9.81; //minus gravity is a good guesstimate of the thrust force
+  float Tm = -9.81; //minus gravity is a good guesstimate of the thrust force
 //   float T = (filt_accelzn-9.81)/(cphi*ctheta); //calculate specific force in body z axis by using the accelerometer
 //   float T = filt_accelzbody; //if body acceleration is available, use that!
 
-  T = -calcthrust(actuators_bebop.rpm_obs)/0.395;
+  Tm = -calcthrust(actuators_bebop.rpm_obs)/0.395;
 //   RunOnceEvery(50, DOWNLINK_SEND_OUTER_INDI(DefaultChannel, DefaultDevice, &T_in, &T, &T));
 
-  RMAT_ELMT(*Gmat, 0, 0) = (cphi*spsi - sphi*cpsi*stheta)*T;
-  RMAT_ELMT(*Gmat, 1, 0) = (-sphi*spsi*stheta - cpsi*cphi)*T;
-  RMAT_ELMT(*Gmat, 2, 0) = -ctheta*sphi*T;
-  RMAT_ELMT(*Gmat, 0, 1) = (cphi*cpsi*ctheta)*T;
-  RMAT_ELMT(*Gmat, 1, 1) = (cphi*spsi*ctheta)*T;
-  RMAT_ELMT(*Gmat, 2, 1) = -stheta*cphi*T;
+  RMAT_ELMT(*Gmat, 0, 0) = (cphi*spsi - sphi*cpsi*stheta)*Tm;
+  RMAT_ELMT(*Gmat, 1, 0) = (-sphi*spsi*stheta - cpsi*cphi)*Tm;
+  RMAT_ELMT(*Gmat, 2, 0) = -ctheta*sphi*Tm;
+  RMAT_ELMT(*Gmat, 0, 1) = (cphi*cpsi*ctheta)*Tm;
+  RMAT_ELMT(*Gmat, 1, 1) = (cphi*spsi*ctheta)*Tm;
+  RMAT_ELMT(*Gmat, 2, 1) = -stheta*cphi*Tm;
   RMAT_ELMT(*Gmat, 0, 2) = sphi*spsi + cphi*cpsi*stheta;
   RMAT_ELMT(*Gmat, 1, 2) = cphi*spsi*stheta - cpsi*sphi;
   RMAT_ELMT(*Gmat, 2, 2) = cphi*ctheta;

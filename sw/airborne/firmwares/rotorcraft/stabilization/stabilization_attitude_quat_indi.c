@@ -1,6 +1,5 @@
 /*
- * Copyright (C) Ewoud Smeur <ewoud_smeur@msn.com>
- * MAVLab Delft University of Technology
+ * Copyright (C) 2008-2009 Antoine Drouin <poinix@gmail.com>
  *
  * This file is part of paparazzi.
  *
@@ -21,80 +20,135 @@
  */
 
 /** @file stabilization_attitude_quat_indi.c
- * MAVLab Delft University of Technology
- * This control algorithm is Incremental Nonlinear Dynamic Inversion (INDI)
- *
- * This is a simplified implementation of the (soon to be) publication in the
- * journal of Control Guidance and Dynamics: Adaptive Incremental Nonlinear
- * Dynamic Inversion for Attitude Control of Micro Aerial Vehicles
+ * Rotorcraft quaternion attitude stabilization INDI control
  */
 
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
 
+#include "math/pprz_algebra_float.h"
+#include "math/pprz_algebra_int.h"
 #include "state.h"
 #include "generated/airframe.h"
-#include "paparazzi.h"
+#include "subsystems/abi.h"
+#include "subsystems/imu.h"
+#include "subsystems/actuators/motor_mixing.h"
+#include "firmwares/rotorcraft/guidance/guidance_h.h"
+#include "firmwares/rotorcraft/guidance/guidance_v.h"
+#include "firmwares/rotorcraft/guidance/guidance_indi.h"
 
-#if !defined(STABILIZATION_INDI_ACT_DYN_P) && !defined(STABILIZATION_INDI_ACT_DYN_Q) && !defined(STABILIZATION_INDI_ACT_DYN_R)
-#error You have to define the first order time constant of the actuator dynamics!
-#endif
+//for step input
+#include "subsystems/radio_control.h"
+
 
 int32_t stabilization_att_indi_cmd[COMMANDS_NB];
-
-struct FloatRates g1 = {STABILIZATION_INDI_G1_P, STABILIZATION_INDI_G1_Q, STABILIZATION_INDI_G1_R};
-float g2 = STABILIZATION_INDI_G2_R;
-struct ReferenceSystem reference_acceleration = {STABILIZATION_INDI_REF_ERR_P,
-         STABILIZATION_INDI_REF_ERR_Q,
-         STABILIZATION_INDI_REF_ERR_R,
-         STABILIZATION_INDI_REF_RATE_P,
-         STABILIZATION_INDI_REF_RATE_Q,
-         STABILIZATION_INDI_REF_RATE_R,
+struct FloatRates inv_control_effectiveness = {STABILIZATION_INDI_G1_P, STABILIZATION_INDI_G1_Q, STABILIZATION_INDI_G1_R};
+struct ReferenceSystem reference_acceleration = {
+  STABILIZATION_INDI_REF_ERR_P,
+  STABILIZATION_INDI_REF_ERR_Q,
+  STABILIZATION_INDI_REF_ERR_R,
+  STABILIZATION_INDI_REF_RATE_P,
+  STABILIZATION_INDI_REF_RATE_Q,
+  STABILIZATION_INDI_REF_RATE_R,
 };
 
-struct IndiVariables indi = {
-  {0., 0., 0.},
-  {0., 0., 0.},
-  {0., 0., 0.},
-  {0., 0., 0.},
-  {0., 0., 0.},
-  {0., 0., 0.},
-  {0., 0., 0.},
-  {0., 0., 0.},
-  {0., 0., 0.},
-  {0., 0., 0.}
-};
+float filtered_accelz = 0;
+float filtered_accelz_deriv = 0;
+float filtered_accelz_2deriv = 0;
+float accel_ref = 0;
+
+float filtered_T = 0;
+float filtered_T_deriv = 0;
+float filtered_T_2deriv = 0;
+float indi_u_in_T = 0;
+
+float vertical_velocity_rc = 0;
+float vertical_velocity_err = 0;
+float vv_gain = 3.0; //6.0 for 15 hz tracking
+float z_filt = 0;
+float altitude_sp = 0;
+
+struct FloatRates filtered_rate = {0., 0., 0.};
+struct FloatRates filtered_rate_deriv = {0., 0., 0.};
+struct FloatRates filtered_rate_2deriv = {0., 0., 0.};
+struct FloatRates angular_accel_ref = {0., 0., 0.};
+struct FloatRates indi_u = {0., 0., 0.};
+struct FloatRates indi_du = {0., 0., 0.};
+
+float att_err_x = 0;
+struct FloatRates u_act_dyn = {0., 0., 0.};
+struct FloatRates u_in = {0., 0., 0.};
+struct FloatRates udot = {0., 0., 0.};
+struct FloatRates udotdot = {0., 0., 0.};
+struct FloatRates filt_rate = {0., 0., 0.};
+float act_obs_rpm[ACTUATORS_NB];
+
+float dx_error_disp[3];
+
+struct FloatQuat quat_saved;
 
 struct Int32Eulers stab_att_sp_euler;
 struct Int32Quat   stab_att_sp_quat;
 
-// Variables for adaptation
-struct FloatRates filtered_rate_estimation = {0., 0., 0.};
-struct FloatRates filtered_rate_deriv_estimation  = {0., 0., 0.};
-struct FloatRates filtered_rate_2deriv_estimation  = {0., 0., 0.};
-struct FloatRates indi_u_estimation  = {0., 0., 0.};
-struct FloatRates udot_estimation  = {0., 0., 0.};
-struct FloatRates udotdot_estimation  = {0., 0., 0.};
-#define INDI_EST_SCALE 0.001 //The G values are scaled to avoid numerical problems during the estimation
-struct FloatRates g_est = {STABILIZATION_INDI_G1_P / INDI_EST_SCALE, STABILIZATION_INDI_G1_Q / INDI_EST_SCALE, STABILIZATION_INDI_G1_R / INDI_EST_SCALE};
-float g2_est = STABILIZATION_INDI_G2_R / INDI_EST_SCALE;
-float mu = STABILIZATION_INDI_ADAPTIVE_MU;
-
-#if STABILIZATION_INDI_USE_ADAPTIVE
-#warning "Use caution with adaptive indi. See the wiki for more info"
-bool_t use_adaptive_indi = TRUE;
+struct FloatMat33 G1G2_trans_mult;
+struct FloatMat33 G1G2inv;
+float G2_times_du = 0;
+int32_t indi_u_in_actuators_i[4] = {0, 0, 0, 0};
+float indi_du_estimation[4] = {0.0, 0.0, 0.0, 0.0};
+float u_estimation[4] = {0.0, 0.0, 0.0, 0.0};
+float udot_estimation[4] = {0.0, 0.0, 0.0, 0.0};
+float udotdot_estimation[4] = {0.0, 0.0, 0.0, 0.0};
+float u_actuators[4] = {0.0, 0.0, 0.0, 0.0};
+float udot_actuators[4] = {0.0, 0.0, 0.0, 0.0};
+float udotdot_actuators[4] = {0.0, 0.0, 0.0, 0.0};
+float u_act_dyn_estimation[4] = {0.0, 0.0, 0.0, 0.0};
+float indi_u_in_actuators[4] = {0.0, 0.0, 0.0, 0.0};
+float indi_du_in_actuators[4] = {0.0, 0.0, 0.0, 0.0};
+float u_act_dyn_actuators[4] = {0.0, 0.0, 0.0, 0.0};
+struct FloatRates rate_estimation = {0., 0., 0.};
+struct FloatRates ratedot_estimation = {0., 0., 0.};
+struct FloatRates ratedotdot_estimation = {0., 0., 0.};
+float u_in_estimation[4] = {0.0, 0.0, 0.0, 0.0};
+float indi_u_in_estimation[4] = {0.0, 0.0, 0.0, 0.0};
+#if OUTER_LOOP_INDI
+//Now we have square matrix, so this is actually the real inverse of G1+G2
+// float G1G2_pseudo_inv[4][4] = {{    10.9329,   16.1216,   -2.9605,  -431.4438},
+//                                {   -12.2494,   15.7704,    3.3484,  -478.6813},
+//                                {   -12.2845,  -18.0980,   -2.9966,  -488.7898},
+//                                {    10.4985,  -17.9321,    3.3776,  -488.1852}};
+// float G2[4] = {-79.2725, 75.8128,  -80.2873, 76.0685};
+float G1G2_pseudo_inv[4][4] = {{   10.0475,   15.0102,   -3.7050, -293.4546},
+                               {  -10.0178,   12.9530,    3.6735, -295.5986},
+                               {   -9.4472,  -19.2131,   -3.8656, -294.1587},
+                               {    9.4047,  -20.7342,    3.9106, -292.9080}};
+float G2[4] = {-59.3000,   66.5000,  -70.4000,   63.7000};
 #else
-bool_t use_adaptive_indi = FALSE;
+float G1G2_pseudo_inv[4][3] = {{  12.5000,   17.8571,   -4.0984},
+{-12.5000,   17.8571,    4.0984},
+{ -12.5000,  -17.8571,   -4.0984},
+{  12.5000,  -17.8571,    4.0984}};
+float G2[4] = {-60.0, 60.0, -60.0, 60.0}; //scaled by 1000
 #endif
+float G1[3][4] = {{20 , -20, -20 , 20 }, //scaled by 1000
+{14 , 14, -14 , -14 },
+{-1, 1, -1, 1}};
+float G1G2[3][4] = {{0.01 , -0.01 , -0.01 , 0.01 },
+{0.01 , 0.01, -0.01 , -0.01 },
+{0.0025, -0.0025, 0.0025, -0.0025}};
+float G1_new[3][4] = {{-0.015 , 0.015, 0.015 , -0.015 },
+{0.015 , 0.015, -0.015 , -0.015 },
+{0.0025, -0.0025, 0.0025, -0.0025}};
+float G2_new[4];
+float mu1 = 0.00001;
+float mu2 = 0.00001*600.0;
+float dx_estimation[3] = {0.0, 0.0, 0.0};
+float du_estimation[4] = {0.0, 0.0, 0.0, 0.0};
+float ddu_estimation[4] = {0.0, 0.0, 0.0, 0.0};
 
-#ifndef STABILIZATION_INDI_FILT_OMEGA
-#define STABILIZATION_INDI_FILT_OMEGA 50.0
-#endif
-
-#ifndef STABILIZATION_INDI_FILT_ZETA
-#define STABILIZATION_INDI_FILT_ZETA 0.55
-#endif
+static const int32_t roll_coef[MOTOR_MIXING_NB_MOTOR]   = MOTOR_MIXING_ROLL_COEF;
+static const int32_t pitch_coef[MOTOR_MIXING_NB_MOTOR]  = MOTOR_MIXING_PITCH_COEF;
+static const int32_t yaw_coef[MOTOR_MIXING_NB_MOTOR]    = MOTOR_MIXING_YAW_COEF;
 
 #define STABILIZATION_INDI_FILT_OMEGA2 (STABILIZATION_INDI_FILT_OMEGA*STABILIZATION_INDI_FILT_OMEGA)
 
@@ -105,55 +159,93 @@ bool_t use_adaptive_indi = FALSE;
 
 #define STABILIZATION_INDI_FILT_OMEGA2_R (STABILIZATION_INDI_FILT_OMEGA_R*STABILIZATION_INDI_FILT_OMEGA_R)
 
+#define IDENTIFICATION_INDI_FILT_OMEGA 25
+#define IDENTIFICATION_INDI_FILT_OMEGA2 625
+#define IDENTIFICATION_FILT_ZETA 0.55
+
+
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
 
 static void send_att_indi(struct transport_tx *trans, struct link_device *dev)
 {
-  //The estimated G values are scaled, so scale them back before sending
-  struct FloatRates g_est_disp;
-  RATES_SMUL(g_est_disp, g_est, INDI_EST_SCALE);
-  float g2_est_disp = g2_est * INDI_EST_SCALE;
-
   pprz_msg_send_STAB_ATTITUDE_INDI(trans, dev, AC_ID,
-                                   &indi.filtered_rate_deriv.p,
-                                   &indi.filtered_rate_deriv.q,
-                                   &indi.filtered_rate_deriv.r,
-                                   &indi.angular_accel_ref.p,
-                                   &indi.angular_accel_ref.q,
-                                   &indi.angular_accel_ref.r,
-                                   &g_est_disp.p,
-                                   &g_est_disp.q,
-                                   &g_est_disp.r,
-                                   &g2_est_disp);
+                                   &euler_cmd.z,
+                                   &act_obs_rpm[0],
+                                   &indi_u_in_actuators[0],
+                                   &indi_du_in_actuators[0],
+                                   &indi_u_in_actuators[1],
+                                   &indi_u_in_actuators[1],
+                                   &indi_u_in_actuators[2],
+                                   &indi_u_in_actuators[3],
+                                   &G1[2][0],
+                                   &G1[2][1]);
 }
 #endif
 
 void stabilization_attitude_init(void)
 {
-
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, "STAB_ATTITUDE_INDI", send_att_indi);
 #endif
 }
 
+#define BOUND_CONTROLS(_v, _min, _max) { \
+_v = _v < _min ? _min : _v > _max ? _max : _v; \
+}
+
+#define VECT4_ADD(_a, _b, _c) { \
+_a[0] = _b[0] + _c[0]; \
+_a[1] = _b[1] + _c[1]; \
+_a[2] = _b[2] + _c[2]; \
+_a[3] = _b[3] + _c[3]; \
+}
+#define VECT4_SIMPLE_MULT(_a, _b, _c) { \
+_a[0] = _b[0] * _c; \
+_a[1] = _b[1] * _c; \
+_a[2] = _b[2] * _c; \
+_a[3] = _b[3] * _c; \
+}
+#define VECT4_MULT(_a, _b, _c) { \
+_a[0] = _b[0] * _c[0]; \
+_a[1] = _b[1] * _c[1]; \
+_a[2] = _b[2] * _c[2]; \
+_a[3] = _b[3] * _c[3]; \
+}
+#define VECT4_ZERO(_a) { \
+_a[0] = 0; \
+_a[1] = 0; \
+_a[2] = 0; \
+_a[3] = 0; \
+}
+#define VECT4_INTEGRATE(_a, _b, _c) { \
+_a[0] = _a[0] + _b[0]/_c; \
+_a[1] = _a[1] + _b[1]/_c; \
+_a[2] = _a[2] + _b[2]/_c; \
+_a[3] = _a[3] + _b[3]/_c; \
+}
+#define RATES_INTEGRATE(_a, _b, _c) { \
+_a.p = _a.p + _b.p/_c; \
+_a.q = _a.q + _b.q/_c; \
+_a.r = _a.r + _b.r/_c; \
+}
+
 void stabilization_attitude_enter(void)
 {
-
   /* reset psi setpoint to current psi angle */
   stab_att_sp_euler.psi = stabilization_attitude_get_heading_i();
 
-  FLOAT_RATES_ZERO(indi.filtered_rate);
-  FLOAT_RATES_ZERO(indi.filtered_rate_deriv);
-  FLOAT_RATES_ZERO(indi.filtered_rate_2deriv);
-  FLOAT_RATES_ZERO(indi.angular_accel_ref);
-  FLOAT_RATES_ZERO(indi.u);
-  FLOAT_RATES_ZERO(indi.du);
-  FLOAT_RATES_ZERO(indi.u_act_dyn);
-  FLOAT_RATES_ZERO(indi.u_in);
-  FLOAT_RATES_ZERO(indi.udot);
-  FLOAT_RATES_ZERO(indi.udotdot);
-
+  FLOAT_RATES_ZERO(filtered_rate);
+  FLOAT_RATES_ZERO(filtered_rate_deriv);
+  FLOAT_RATES_ZERO(filtered_rate_2deriv);
+  FLOAT_RATES_ZERO(angular_accel_ref);
+  FLOAT_RATES_ZERO(indi_u);
+  FLOAT_RATES_ZERO(indi_du);
+  FLOAT_RATES_ZERO(u_act_dyn);
+  FLOAT_RATES_ZERO(u_in);
+  FLOAT_RATES_ZERO(udot);
+  FLOAT_RATES_ZERO(udotdot);
+  FLOAT_RATES_ZERO(filt_rate);
 }
 
 void stabilization_attitude_set_failsafe_setpoint(void)
@@ -169,7 +261,7 @@ void stabilization_attitude_set_failsafe_setpoint(void)
 void stabilization_attitude_set_rpy_setpoint_i(struct Int32Eulers *rpy)
 {
   // stab_att_sp_euler.psi still used in ref..
-  stab_att_sp_euler = *rpy;
+  memcpy(&stab_att_sp_euler, rpy, sizeof(struct Int32Eulers));
 
   quat_from_rpy_cmd_i(&stab_att_sp_quat, &stab_att_sp_euler);
 }
@@ -191,82 +283,172 @@ void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t head
   quat_from_earth_cmd_i(&stab_att_sp_quat, cmd, heading);
 }
 
-static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err, bool_t in_flight __attribute__((unused)))
+static void stabilization_indi_filter_z(void) {
+  z_filt = z_filt + 0.01*(stateGetPositionNed_f()->z - z_filt);
+}
+
+static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err)
 {
-  //Calculate required angular acceleration
-  struct FloatRates *body_rate = stateGetBodyRates_f();
-  indi.angular_accel_ref.p = reference_acceleration.err_p * QUAT1_FLOAT_OF_BFP(att_err->qx)
-                             - reference_acceleration.rate_p * body_rate->p;
-  indi.angular_accel_ref.q = reference_acceleration.err_q * QUAT1_FLOAT_OF_BFP(att_err->qy)
-                             - reference_acceleration.rate_q * body_rate->q;
-  indi.angular_accel_ref.r = reference_acceleration.err_r * QUAT1_FLOAT_OF_BFP(att_err->qz)
-                             - reference_acceleration.rate_r * body_rate->r;
+  //calculate the virtual control (reference acceleration) based on a PD controller
+  angular_accel_ref.p = reference_acceleration.err_p * QUAT1_FLOAT_OF_BFP(att_err->qx)
+                        - reference_acceleration.rate_p * stateGetBodyRates_f()->p;
+  angular_accel_ref.q = reference_acceleration.err_q * QUAT1_FLOAT_OF_BFP(att_err->qy)
+                        - reference_acceleration.rate_q * stateGetBodyRates_f()->q;
+  angular_accel_ref.r = reference_acceleration.err_r * QUAT1_FLOAT_OF_BFP(att_err->qz)
+                        - reference_acceleration.rate_r * stateGetBodyRates_f()->r;
 
-  //Incremented in angular acceleration requires increment in control input
-  //G1 is the actuator effectiveness. In the yaw axis, we need something additional: G2.
-  //It takes care of the angular acceleration caused by the change in rotation rate of the propellers
-  //(they have significant inertia, see the paper mentioned in the header for more explanation)
-  indi.du.p = 1.0 / g1.p * (indi.angular_accel_ref.p - indi.filtered_rate_deriv.p);
-  indi.du.q = 1.0 / g1.q * (indi.angular_accel_ref.q - indi.filtered_rate_deriv.q);
-  indi.du.r = 1.0 / (g1.r + g2) * (indi.angular_accel_ref.r - indi.filtered_rate_deriv.r + g2 * indi.du.r);
+  indi_u_in_estimation[0] = (float) motor_mixing.commands[0];
+  indi_u_in_estimation[1] = (float) motor_mixing.commands[1];
+  indi_u_in_estimation[2] = (float) motor_mixing.commands[2];
+  indi_u_in_estimation[3] = (float) motor_mixing.commands[3];
 
-  //add the increment to the total control input
-  indi.u_in.p = indi.u.p + indi.du.p;
-  indi.u_in.q = indi.u.q + indi.du.q;
-  indi.u_in.r = indi.u.r + indi.du.r;
+  G2_times_du = (G2[0]/1000.0*indi_du_in_actuators[0] + G2[1]/1000.0*indi_du_in_actuators[1] + G2[2]/1000.0*indi_du_in_actuators[2] + G2[3]/1000.0*indi_du_in_actuators[3]);
 
-  //bound the total control input
-  Bound(indi.u_in.p, -4500, 4500);
-  Bound(indi.u_in.q, -4500, 4500);
-  Bound(indi.u_in.r, -4500, 4500);
+  indi_du_in_actuators[0] = (G1G2_pseudo_inv[0][0] * (angular_accel_ref.p - filtered_rate_deriv.p)) + (G1G2_pseudo_inv[0][1] * (angular_accel_ref.q - filtered_rate_deriv.q)) + (G1G2_pseudo_inv[0][2] * (angular_accel_ref.r - filtered_rate_deriv.r + G2_times_du));
+  indi_du_in_actuators[1] = (G1G2_pseudo_inv[1][0] * (angular_accel_ref.p - filtered_rate_deriv.p)) + (G1G2_pseudo_inv[1][1] * (angular_accel_ref.q - filtered_rate_deriv.q)) + (G1G2_pseudo_inv[1][2] * (angular_accel_ref.r - filtered_rate_deriv.r + G2_times_du));
+  indi_du_in_actuators[2] = (G1G2_pseudo_inv[2][0] * (angular_accel_ref.p - filtered_rate_deriv.p)) + (G1G2_pseudo_inv[2][1] * (angular_accel_ref.q - filtered_rate_deriv.q)) + (G1G2_pseudo_inv[2][2] * (angular_accel_ref.r - filtered_rate_deriv.r + G2_times_du));
+  indi_du_in_actuators[3] = (G1G2_pseudo_inv[3][0] * (angular_accel_ref.p - filtered_rate_deriv.p)) + (G1G2_pseudo_inv[3][1] * (angular_accel_ref.q - filtered_rate_deriv.q)) + (G1G2_pseudo_inv[3][2] * (angular_accel_ref.r - filtered_rate_deriv.r + G2_times_du));
 
-  //Propagate input filters
-  //first order actuator dynamics
-  indi.u_act_dyn.p = indi.u_act_dyn.p + STABILIZATION_INDI_ACT_DYN_P * (indi.u_in.p - indi.u_act_dyn.p);
-  indi.u_act_dyn.q = indi.u_act_dyn.q + STABILIZATION_INDI_ACT_DYN_Q * (indi.u_in.q - indi.u_act_dyn.q);
-  indi.u_act_dyn.r = indi.u_act_dyn.r + STABILIZATION_INDI_ACT_DYN_R * (indi.u_in.r - indi.u_act_dyn.r);
+  //filter the accelerometer ned z axis
+  stabilization_indi_filter_accel();
+  stabilization_indi_filter_z();
 
-  //sensor filter
-  stabilization_indi_second_order_filter(&indi.u_act_dyn, &indi.udotdot, &indi.udot, &indi.u,
-                                         STABILIZATION_INDI_FILT_OMEGA, STABILIZATION_INDI_FILT_ZETA, STABILIZATION_INDI_FILT_OMEGA_R);
+  if( (guidance_h.mode == GUIDANCE_H_MODE_HOVER) || (guidance_h.mode == GUIDANCE_H_MODE_NAV) ) {
+    altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_sp);
+
+    float altitude_gain = 0.5;
+    float vertical_velocity_sp = altitude_gain*(altitude_sp - stateGetPositionNed_f()->z);
+
+    vertical_velocity_err = vertical_velocity_sp - stateGetSpeedNed_f()->z;
+  }
+  else {
+    vertical_velocity_rc = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*2.0;
+    vertical_velocity_err = vertical_velocity_rc - stateGetSpeedNed_f()->z;
+  }
+
+if(OUTER_LOOP_INDI) {
+  if(radio_control.values[RADIO_MODE] < -4000) { //rc mode
+    accel_ref = vertical_velocity_err*vv_gain;
+//     accel_ref = -(stabilization_cmd[COMMAND_THRUST]-4500.0)/4500.0*1.0*0;
+    indi_du_in_actuators[0] = indi_du_in_actuators[0] + G1G2_pseudo_inv[0][3]*(accel_ref - filtered_accelz);
+    indi_du_in_actuators[1] = indi_du_in_actuators[1] + G1G2_pseudo_inv[1][3]*(accel_ref - filtered_accelz);
+    indi_du_in_actuators[2] = indi_du_in_actuators[2] + G1G2_pseudo_inv[2][3]*(accel_ref - filtered_accelz);
+    indi_du_in_actuators[3] = indi_du_in_actuators[3] + G1G2_pseudo_inv[3][3]*(accel_ref - filtered_accelz);
+
+    indi_u_in_actuators[0] = u_actuators[0] + indi_du_in_actuators[0];
+    indi_u_in_actuators[1] = u_actuators[1] + indi_du_in_actuators[1];
+    indi_u_in_actuators[2] = u_actuators[2] + indi_du_in_actuators[2];
+    indi_u_in_actuators[3] = u_actuators[3] + indi_du_in_actuators[3];
+  } else { //Real outer loop INDI guidance
+    indi_du_in_actuators[0] = indi_du_in_actuators[0] + G1G2_pseudo_inv[0][3]*(euler_cmd.z);
+    indi_du_in_actuators[1] = indi_du_in_actuators[1] + G1G2_pseudo_inv[1][3]*(euler_cmd.z);
+    indi_du_in_actuators[2] = indi_du_in_actuators[2] + G1G2_pseudo_inv[2][3]*(euler_cmd.z);
+    indi_du_in_actuators[3] = indi_du_in_actuators[3] + G1G2_pseudo_inv[3][3]*(euler_cmd.z);
+
+    indi_u_in_actuators[0] = u_actuators[0] + indi_du_in_actuators[0];
+    indi_u_in_actuators[1] = u_actuators[1] + indi_du_in_actuators[1];
+    indi_u_in_actuators[2] = u_actuators[2] + indi_du_in_actuators[2];
+    indi_u_in_actuators[3] = u_actuators[3] + indi_du_in_actuators[3];
+  }
+}
+else {
+
+  indi_u_in_actuators[0] = u_actuators[0] + indi_du_in_actuators[0];
+  indi_u_in_actuators[1] = u_actuators[1] + indi_du_in_actuators[1];
+  indi_u_in_actuators[2] = u_actuators[2] + indi_du_in_actuators[2];
+  indi_u_in_actuators[3] = u_actuators[3] + indi_du_in_actuators[3];
+  float avg_u_in = (indi_u_in_actuators[0] + indi_u_in_actuators[1] + indi_u_in_actuators[2] + indi_u_in_actuators[3])/4.0;
+
+#warning "saturation at 8100 instead of max_pprz because of bebop motors"
+  Bound(stabilization_cmd[COMMAND_THRUST],0, 8100);
+
+//avoid dividing by zero
+  if(avg_u_in < 1.0)
+    avg_u_in = 1.0;
+  indi_u_in_actuators[0] = indi_u_in_actuators[0] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+  indi_u_in_actuators[1] = indi_u_in_actuators[1] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+  indi_u_in_actuators[2] = indi_u_in_actuators[2] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+  indi_u_in_actuators[3] = indi_u_in_actuators[3] /avg_u_in * stabilization_cmd[COMMAND_THRUST];
+}
+
+  Bound(indi_u_in_actuators[0],0,8100);
+  Bound(indi_u_in_actuators[1],0,8100);
+  Bound(indi_u_in_actuators[2],0,8100);
+  Bound(indi_u_in_actuators[3],0,8100);
+
+  indi_u_in_actuators_i[0] = (int32_t) indi_u_in_actuators[0];
+  indi_u_in_actuators_i[1] = (int32_t) indi_u_in_actuators[1];
+  indi_u_in_actuators_i[2] = (int32_t) indi_u_in_actuators[2];
+  indi_u_in_actuators_i[3] = (int32_t) indi_u_in_actuators[3];
+
+  //the motor rpm feedback is written to act_obs_rpm in the bebop actuators board file
+
+//   stabilization_indi_filter_inputs();
+  filter_inputs_actuators();
+  filter_estimation_indi();
+
+  indi_du.p = inv_control_effectiveness.p * (angular_accel_ref.p - filtered_rate_deriv.p);
+  indi_du.q = inv_control_effectiveness.q * (angular_accel_ref.q - filtered_rate_deriv.q);
+  indi_du.r = inv_control_effectiveness.r * (angular_accel_ref.r - filtered_rate_deriv.r);
+
+  u_in.p = indi_u.p + indi_du.p;
+  u_in.q = indi_u.q + indi_du.q;
+  u_in.r = indi_u.r + indi_du.r;
+
+  Bound(u_in.p, -4500, 4500);
+  Bound(u_in.q, -4500, 4500);
+  float half_thrust = ((float) stabilization_cmd[COMMAND_THRUST] / 2);
+  Bound(u_in.r, -half_thrust, half_thrust);
 
   //Don't increment if thrust is off
   if (stabilization_cmd[COMMAND_THRUST] < 300) {
-    FLOAT_RATES_ZERO(indi.u);
-    FLOAT_RATES_ZERO(indi.du);
-    FLOAT_RATES_ZERO(indi.u_act_dyn);
-    FLOAT_RATES_ZERO(indi.u_in);
-    FLOAT_RATES_ZERO(indi.udot);
-    FLOAT_RATES_ZERO(indi.udotdot);
-  } else {
+    indi_u_in_actuators[0] = 0;
+    indi_u_in_actuators[1] = 0;
+    indi_u_in_actuators[2] = 0;
+    indi_u_in_actuators[3] = 0;
+    indi_u_in_actuators_i[0] = 0;
+    indi_u_in_actuators_i[1] = 0;
+    indi_u_in_actuators_i[2] = 0;
+    indi_u_in_actuators_i[3] = 0;
+    FLOAT_RATES_ZERO(indi_u);
+    FLOAT_RATES_ZERO(indi_du);
+    FLOAT_RATES_ZERO(u_act_dyn);
+    FLOAT_RATES_ZERO(u_in);
+    FLOAT_RATES_ZERO(udot);
+    FLOAT_RATES_ZERO(udotdot);
+  }
+  else {
+#if ADAPTIVE_INDI
     lms_estimation();
+#endif
   }
 
   /*  INDI feedback */
-  indi_commands[COMMAND_ROLL] = indi.u_in.p;
-  indi_commands[COMMAND_PITCH] = indi.u_in.q;
-  indi_commands[COMMAND_YAW] = indi.u_in.r;
+  indi_commands[COMMAND_ROLL] = u_in.p;
+  indi_commands[COMMAND_PITCH] = u_in.q;
+  indi_commands[COMMAND_YAW] = u_in.r;
 }
 
 void stabilization_attitude_run(bool_t enable_integrator)
 {
 
   /* Propagate the second order filter on the gyroscopes */
-  struct FloatRates *body_rates = stateGetBodyRates_f();
-  stabilization_indi_second_order_filter(body_rates, &indi.filtered_rate_2deriv, &indi.filtered_rate_deriv,
-                                         &indi.filtered_rate, STABILIZATION_INDI_FILT_OMEGA, STABILIZATION_INDI_FILT_ZETA, STABILIZATION_INDI_FILT_OMEGA_R);
+  stabilization_indi_filter_gyro();
+
+  /*
+   * Compute error for feedback
+   */
 
   /* attitude error                          */
   struct Int32Quat att_err;
   struct Int32Quat *att_quat = stateGetNedToBodyQuat_i();
-//   INT32_QUAT_INV_COMP(att_err, *att_quat, stab_att_sp_quat);
-  int32_quat_inv_comp(&att_err, att_quat, &stab_att_sp_quat);
+  INT32_QUAT_INV_COMP(att_err, *att_quat, stab_att_sp_quat);
   /* wrap it in the shortest direction       */
-  int32_quat_wrap_shortest(&att_err);
-  int32_quat_normalize(&att_err);
+  INT32_QUAT_WRAP_SHORTEST(att_err);
+  INT32_QUAT_NORMALIZE(att_err);
 
   /* compute the INDI command */
-  attitude_run_indi(stabilization_att_indi_cmd, &att_err, enable_integrator);
+  attitude_run_indi(stabilization_att_indi_cmd, &att_err);
 
   stabilization_cmd[COMMAND_ROLL] = stabilization_att_indi_cmd[COMMAND_ROLL];
   stabilization_cmd[COMMAND_PITCH] = stabilization_att_indi_cmd[COMMAND_PITCH];
@@ -287,59 +469,188 @@ void stabilization_attitude_read_rc(bool_t in_flight, bool_t in_carefree, bool_t
 #else
   stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
 #endif
+
   QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
 }
 
-// This is a simple second order low pass filter
-void stabilization_indi_second_order_filter(struct FloatRates *input, struct FloatRates *filter_ddx,
-    struct FloatRates *filter_dx, struct FloatRates *filter_x, float omega, float zeta, float omega_r)
+void stabilization_indi_filter_gyro(void)
 {
-  float_rates_integrate_fi(filter_x, filter_dx, 1.0 / PERIODIC_FREQUENCY);
-  float_rates_integrate_fi(filter_dx, filter_ddx, 1.0 / PERIODIC_FREQUENCY);
-  float omega2 = omega * omega;
-  float omega2_r = omega_r * omega_r;
+  filtered_rate.p = filtered_rate.p + filtered_rate_deriv.p / 512.0;
+  filtered_rate.q = filtered_rate.q + filtered_rate_deriv.q / 512.0;
+  filtered_rate.r = filtered_rate.r + filtered_rate_deriv.r / 512.0;
 
-  filter_ddx->p = -filter_dx->p * 2 * zeta * omega   + (input->p - filter_x->p) * omega2;    \
-  filter_ddx->q = -filter_dx->q * 2 * zeta * omega   + (input->q - filter_x->q) * omega2;    \
-  filter_ddx->r = -filter_dx->r * 2 * zeta * omega_r + (input->r - filter_x->r) * omega2_r;
+  filtered_rate_deriv.p = filtered_rate_deriv.p + filtered_rate_2deriv.p / 512.0;
+  filtered_rate_deriv.q = filtered_rate_deriv.q + filtered_rate_2deriv.q / 512.0;
+  filtered_rate_deriv.r = filtered_rate_deriv.r + filtered_rate_2deriv.r / 512.0;
+
+  filtered_rate_2deriv.p = -filtered_rate_deriv.p * 2 * STABILIZATION_INDI_FILT_ZETA * STABILIZATION_INDI_FILT_OMEGA + (stateGetBodyRates_f()->p - filtered_rate.p) * STABILIZATION_INDI_FILT_OMEGA2;
+  filtered_rate_2deriv.q = -filtered_rate_deriv.q * 2 * STABILIZATION_INDI_FILT_ZETA * STABILIZATION_INDI_FILT_OMEGA + (stateGetBodyRates_f()->q - filtered_rate.q) * STABILIZATION_INDI_FILT_OMEGA2;
+  filtered_rate_2deriv.r = -filtered_rate_deriv.r * 2 * STABILIZATION_INDI_FILT_ZETA_R * STABILIZATION_INDI_FILT_OMEGA_R + (stateGetBodyRates_f()->r - filtered_rate.r) * STABILIZATION_INDI_FILT_OMEGA2_R;
 }
 
-// This is a Least Mean Squares adaptive filter
-// It estiamtes the actuator effectiveness online by comparing the expected angular acceleration based on the inputs with the measured angular acceleration
-void lms_estimation(void)
+void stabilization_indi_filter_accel(void)
 {
+  filtered_accelz = filtered_accelz + filtered_accelz_deriv / 512.0;
 
-  // Only pass really low frequencies so you don't adapt to noise
-  float omega = 10.0;
-  float zeta = 0.8;
-  stabilization_indi_second_order_filter(&indi.u_act_dyn, &udotdot_estimation, &udot_estimation, &indi_u_estimation,
-                                         omega, zeta, omega);
-  struct FloatRates *body_rates = stateGetBodyRates_f();
-  stabilization_indi_second_order_filter(body_rates, &filtered_rate_2deriv_estimation, &filtered_rate_deriv_estimation,
-                                         &filtered_rate_estimation, omega, zeta, omega);
+  filtered_accelz_deriv = filtered_accelz_deriv + filtered_accelz_2deriv / 512.0;
 
-  // The inputs are scaled in order to avoid overflows
-  float du = udot_estimation.p * INDI_EST_SCALE;
-  g_est.p = g_est.p - (g_est.p * du - filtered_rate_2deriv_estimation.p) * du * mu;
-  du = udot_estimation.q * INDI_EST_SCALE;
-  g_est.q = g_est.q - (g_est.q * du - filtered_rate_2deriv_estimation.q) * du * mu;
-  du = udot_estimation.r * INDI_EST_SCALE;
-  float ddu = udotdot_estimation.r * INDI_EST_SCALE / PERIODIC_FREQUENCY;
-  float error = (g_est.r * du + g2_est * ddu - filtered_rate_2deriv_estimation.r);
-  g_est.r = g_est.r - error * du * mu / 3;
-  g2_est = g2_est - error * 1000 * ddu * mu / 3;
+  filtered_accelz_2deriv = -filtered_accelz_deriv * 2 * STABILIZATION_INDI_FILT_ZETA * STABILIZATION_INDI_FILT_OMEGA + (stateGetAccelNed_f()->z - filtered_accelz) * STABILIZATION_INDI_FILT_OMEGA2;
+}
 
-  //the g values should be larger than zero, otherwise there is positive feedback, the command will go to max and there is nothing to learn anymore...
-  if (g_est.p < 0.01) { g_est.p = 0.01; }
-  if (g_est.q < 0.01) { g_est.q = 0.01; }
-  if (g_est.r < 0.01) { g_est.r = 0.01; }
-  if (g2_est < 0.01) { g2_est = 0.01; }
+void filter_inputs_actuators(void) {
+#if INDI_RPM_FEEDBACK
+  u_act_dyn_actuators[0] = act_obs_rpm[0];
+  u_act_dyn_actuators[1] = act_obs_rpm[1];
+  u_act_dyn_actuators[2] = act_obs_rpm[2];
+  u_act_dyn_actuators[3] = act_obs_rpm[3];
+#else
+#warning "not using rpm feedback"
+  //actuator dynamics
+  u_act_dyn_actuators[0] = u_act_dyn_actuators[0] + STABILIZATION_INDI_ACT_DYN_P*( indi_u_in_actuators[0] - u_act_dyn_actuators[0]);
+  u_act_dyn_actuators[1] = u_act_dyn_actuators[1] + STABILIZATION_INDI_ACT_DYN_P*( indi_u_in_actuators[1] - u_act_dyn_actuators[1]);
+  u_act_dyn_actuators[2] = u_act_dyn_actuators[2] + STABILIZATION_INDI_ACT_DYN_P*( indi_u_in_actuators[2] - u_act_dyn_actuators[2]);
+  u_act_dyn_actuators[3] = u_act_dyn_actuators[3] + STABILIZATION_INDI_ACT_DYN_P*( indi_u_in_actuators[3] - u_act_dyn_actuators[3]);
+#endif
 
-  if (use_adaptive_indi) {
-    //Commit the estimated G values and apply the scaling
-    g1.p = g_est.p * INDI_EST_SCALE;
-    g1.q = g_est.q * INDI_EST_SCALE;
-    g1.r = g_est.r * INDI_EST_SCALE;
-    g2 = g2_est * INDI_EST_SCALE;
+  //Sensor dynamics (same filter as on gyro measurements)
+  VECT4_INTEGRATE(u_actuators,udot_actuators,512.0);
+
+  VECT4_INTEGRATE(udot_actuators,udotdot_actuators,512.0);
+
+  udotdot_actuators[0] = -udot_actuators[0] * 2*STABILIZATION_INDI_FILT_ZETA*STABILIZATION_INDI_FILT_OMEGA + (u_act_dyn_actuators[0] - u_actuators[0])*STABILIZATION_INDI_FILT_OMEGA2;
+  udotdot_actuators[1] = -udot_actuators[1] * 2*STABILIZATION_INDI_FILT_ZETA*STABILIZATION_INDI_FILT_OMEGA + (u_act_dyn_actuators[1] - u_actuators[1])*STABILIZATION_INDI_FILT_OMEGA2;
+  udotdot_actuators[2] = -udot_actuators[2] * 2*STABILIZATION_INDI_FILT_ZETA*STABILIZATION_INDI_FILT_OMEGA + (u_act_dyn_actuators[2] - u_actuators[2])*STABILIZATION_INDI_FILT_OMEGA2;
+  udotdot_actuators[3] = -udot_actuators[3] * 2*STABILIZATION_INDI_FILT_ZETA*STABILIZATION_INDI_FILT_OMEGA + (u_act_dyn_actuators[3] - u_actuators[3])*STABILIZATION_INDI_FILT_OMEGA2;
+}
+
+void filter_estimation_indi(void) {
+#if INDI_RPM_FEEDBACK
+  u_act_dyn_estimation[0] = act_obs_rpm[0];
+  u_act_dyn_estimation[1] = act_obs_rpm[1];
+  u_act_dyn_estimation[2] = act_obs_rpm[2];
+  u_act_dyn_estimation[3] = act_obs_rpm[3];
+#else
+  //actuator dynamics
+  u_act_dyn_estimation[0] = u_act_dyn_estimation[0] + STABILIZATION_INDI_ACT_DYN_P*( indi_u_in_estimation[0] - u_act_dyn_estimation[0]);
+  u_act_dyn_estimation[1] = u_act_dyn_estimation[1] + STABILIZATION_INDI_ACT_DYN_P*( indi_u_in_estimation[1] - u_act_dyn_estimation[1]);
+  u_act_dyn_estimation[2] = u_act_dyn_estimation[2] + STABILIZATION_INDI_ACT_DYN_P*( indi_u_in_estimation[2] - u_act_dyn_estimation[2]);
+  u_act_dyn_estimation[3] = u_act_dyn_estimation[3] + STABILIZATION_INDI_ACT_DYN_P*( indi_u_in_estimation[3] - u_act_dyn_estimation[3]);
+#endif
+
+  //Sensor dynamics (same filter as on gyro measurements)
+  VECT4_INTEGRATE(u_estimation,udot_estimation,512.0);
+
+  VECT4_INTEGRATE(udot_estimation,udotdot_estimation,512.0);
+
+  udotdot_estimation[0] = -udot_estimation[0] * 2*IDENTIFICATION_FILT_ZETA*IDENTIFICATION_INDI_FILT_OMEGA + (u_act_dyn_estimation[0] - u_estimation[0])*IDENTIFICATION_INDI_FILT_OMEGA2;
+  udotdot_estimation[1] = -udot_estimation[1] * 2*IDENTIFICATION_FILT_ZETA*IDENTIFICATION_INDI_FILT_OMEGA + (u_act_dyn_estimation[1] - u_estimation[1])*IDENTIFICATION_INDI_FILT_OMEGA2;
+  udotdot_estimation[2] = -udot_estimation[2] * 2*IDENTIFICATION_FILT_ZETA*IDENTIFICATION_INDI_FILT_OMEGA + (u_act_dyn_estimation[2] - u_estimation[2])*IDENTIFICATION_INDI_FILT_OMEGA2;
+  udotdot_estimation[3] = -udot_estimation[3] * 2*IDENTIFICATION_FILT_ZETA*IDENTIFICATION_INDI_FILT_OMEGA + (u_act_dyn_estimation[3] - u_estimation[3])*IDENTIFICATION_INDI_FILT_OMEGA2;
+
+  //Sensor dynamics (same filter as on gyro measurements)
+  RATES_INTEGRATE(rate_estimation,ratedot_estimation,512.0);
+
+  RATES_INTEGRATE(ratedot_estimation,ratedotdot_estimation,512.0);
+
+  ratedotdot_estimation.p = -ratedot_estimation.p * 2*IDENTIFICATION_FILT_ZETA*IDENTIFICATION_INDI_FILT_OMEGA + (stateGetBodyRates_f()->p - rate_estimation.p)*IDENTIFICATION_INDI_FILT_OMEGA2;
+  ratedotdot_estimation.q = -ratedot_estimation.q * 2*IDENTIFICATION_FILT_ZETA*IDENTIFICATION_INDI_FILT_OMEGA + (stateGetBodyRates_f()->q - rate_estimation.q)*IDENTIFICATION_INDI_FILT_OMEGA2;
+  ratedotdot_estimation.r = -ratedot_estimation.r * 2*IDENTIFICATION_FILT_ZETA*IDENTIFICATION_INDI_FILT_OMEGA + (stateGetBodyRates_f()->r - rate_estimation.r)*IDENTIFICATION_INDI_FILT_OMEGA2;
+}
+
+void calc_g1_element(float du_norm, float dx_error, int8_t i, int8_t j, float mu_extra) {
+  G1_new[i][j] = G1[i][j] - du_estimation[j]*mu1*dx_error*mu_extra;
+}
+
+void calc_g2_element(float dx_error, int8_t j, float mu_extra) {
+  G2_new[j] = G2[j] - ddu_estimation[j]*mu2*dx_error*mu_extra;
+}
+
+void lms_estimation(void) {
+  dx_estimation[0] = ratedotdot_estimation.p;
+  dx_estimation[1] = ratedotdot_estimation.q;
+  dx_estimation[2] = ratedotdot_estimation.r;
+  du_estimation[0] = udot_estimation[0]/1000.0;
+  du_estimation[1] = udot_estimation[1]/1000.0;
+  du_estimation[2] = udot_estimation[2]/1000.0;
+  du_estimation[3] = udot_estimation[3]/1000.0;
+  ddu_estimation[0] = udotdot_estimation[0]/1000.0/512.0;
+  ddu_estimation[1] = udotdot_estimation[1]/1000.0/512.0;
+  ddu_estimation[2] = udotdot_estimation[2]/1000.0/512.0;
+  ddu_estimation[3] = udotdot_estimation[3]/1000.0/512.0;
+
+  //Estimation of G
+  float du_norm = du_estimation[0]*du_estimation[0] + du_estimation[1]*du_estimation[1] +du_estimation[2]*du_estimation[2] + du_estimation[3]*du_estimation[3];
+    for(int8_t i=0; i<3; i++) {
+      float mu_extra = 1.0;
+      float dx_error = G1[i][0]*du_estimation[0] + G1[i][1]*du_estimation[1] + G1[i][2]*du_estimation[2] + G1[i][3]*du_estimation[3] - dx_estimation[i];
+      dx_error_disp[i] = dx_error;
+      //if the yaw axis, also use G2
+      if(i==2) {
+        mu_extra = 0.3;
+        dx_error = dx_error + G2[0]*ddu_estimation[0] + G2[1]*ddu_estimation[1] + G2[2]*ddu_estimation[2] + G2[3]*ddu_estimation[3];
+        for(int8_t j=0; j<4; j++) {
+          calc_g2_element(dx_error,j, mu_extra);
+        }
+      }
+      for(int8_t j=0; j<4; j++) {
+        calc_g1_element(du_norm, dx_error, i, j, mu_extra);
+      }
+    }
+
+    for(int8_t j=0; j<4; j++) {
+      G2[j] = G2_new[j];
+      for(int8_t i=0; i<3; i++) {
+        G1[i][j] = G1_new[i][j];
+      }
+    }
+
+    calc_g1g2_pseudo_inv();
+}
+
+void calc_g1g2_pseudo_inv(void) {
+
+  //sum of G1 and G2
+  for(int8_t i=0; i<3; i++) {
+    for(int8_t j=0; j<4; j++) {
+      if(i<2)
+        G1G2[i][j] = G1[i][j]/1000.0;
+      else
+        G1G2[i][j] = G1[i][j]/1000.0 + G2[j]/1000.0;
+    }
+  }
+
+  //G1G2*transpose(G1G2)
+  //calculate matrix multiplication of its transpose 3x4 x 4x3
+  float element = 0;
+  for(int8_t row=0; row<3; row++) {
+    for(int8_t col=0; col<3; col++) {
+      element = 0;
+      for(int8_t i=0; i<4; i++) {
+        element = element + G1G2[row][i]*G1G2[col][i];
+      }
+      MAT33_ELMT(G1G2_trans_mult,row,col) = element;
+    }
+  }
+
+  //there are numerical errors if the scaling is not right.
+  MAT33_MULT_SCALAR(G1G2_trans_mult,100.0);
+
+  //inverse of 3x3 matrix
+  MAT33_INV(G1G2inv,G1G2_trans_mult);
+
+  //scale back
+  MAT33_MULT_SCALAR(G1G2inv,100.0);
+
+  //G1G2'*G1G2inv
+  //calculate matrix multiplication 4x3 x 3x3
+  for(int8_t row=0; row<4; row++) {
+    for(int8_t col=0; col<3; col++) {
+      element = 0;
+      for(int8_t i=0; i<3; i++) {
+        element = element + G1G2[i][row]*MAT33_ELMT(G1G2inv,col,i);
+      }
+      G1G2_pseudo_inv[row][col] = element;
+    }
   }
 }
+

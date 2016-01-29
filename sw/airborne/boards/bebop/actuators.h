@@ -60,4 +60,6 @@ extern struct ActuatorsBebop actuators_bebop;
 extern void actuators_bebop_commit(void);
 extern void actuators_bebop_init(void);
 
+extern float act_obs_rpm[4];
+
 #endif /* ACTUATORS_BEBOP_RAW_H_ */
