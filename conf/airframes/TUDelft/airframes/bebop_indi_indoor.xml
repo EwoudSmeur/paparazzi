@@ -36,7 +36,7 @@
     <subsystem name="guidance" type="indi">
       <define name="NONLINEAR_INDI" value="TRUE"/>
       <define name="OUTER_LOOP_INDI_USE_RC" value="FALSE"/>
-      <define name="OUTER_LOOP_INDI" value="FALSE"/>
+      <define name="OUTER_LOOP_INDI" value="TRUE"/>
     </subsystem>
   </firmware>
 
