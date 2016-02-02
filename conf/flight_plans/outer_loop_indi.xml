@@ -54,12 +54,12 @@ int32_t fp_counter;
       <stay wp="p1" until="stage_time>8"/>
     </block>
     <block name="stay_p1">
-      <stay wp="p1" until="stage_time>6"/>
+      <stay wp="p1" until="stage_time>13"/>
       <set value="fp_counter+1" var="fp_counter"/>
     </block>
     <block name="go_p2">
-      <exception cond="fp_counter>20" deroute="land here"/>
-      <stay wp="p2" until="stage_time>6"/>
+      <exception cond="fp_counter>10" deroute="land here"/>
+      <stay wp="p2" until="stage_time>13"/>
       <deroute block="stay_p1"/>
     </block>
     <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
