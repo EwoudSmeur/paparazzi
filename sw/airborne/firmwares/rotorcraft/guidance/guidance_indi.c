@@ -413,7 +413,7 @@ void guidance_indi_accel_offset(bool_t in_flight)
   struct FloatVect3 accel_diff_body;
   VECT3_DIFF(accel_diff_body,accel_gps_body, accel_meas_body_f);
 
-  if(in_flight) {
+  if(!GpsIsLost()) {
     VECT3_ADD_SCALED(accel_diff_body_filt, accel_diff_body_filt_d, 1.0/PERIODIC_FREQUENCY);
 
     VECT3_ADD_SCALED(accel_diff_body_filt_d, accel_diff_body_filt_dd, 1.0/PERIODIC_FREQUENCY);

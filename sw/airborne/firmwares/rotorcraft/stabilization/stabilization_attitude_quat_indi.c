@@ -118,11 +118,11 @@ float indi_u_in_estimation[4] = {0.0, 0.0, 0.0, 0.0};
 //                                {   -12.2845,  -18.0980,   -2.9966,  -488.7898},
 //                                {    10.4985,  -17.9321,    3.3776,  -488.1852}};
 // float G2[4] = {-79.2725, 75.8128,  -80.2873, 76.0685};
-float G1G2_pseudo_inv[4][4] = {{   10.0475,   15.0102,   -3.7050, -293.4546},
-                               {  -10.0178,   12.9530,    3.6735, -295.5986},
-                               {   -9.4472,  -19.2131,   -3.8656, -294.1587},
-                               {    9.4047,  -20.7342,    3.9106, -292.9080}};
-float G2[4] = {-59.3000,   66.5000,  -70.4000,   63.7000};
+float G1G2_pseudo_inv[4][4] = {{   11.6494,   15.7972,   -3.6861, -306.8446},
+                               {  -12.7131,   14.5322,    3.8301, -302.7462},
+                               {  -12.4162,  -17.8758,   -4.0093, -317.1131},
+                               {   11.0249,  -17.7113,    3.7178, -303.1488}};
+float G2[4] = {-61.2093,   65.3670,  -65.7419,   65.4516}; //G2 is scaled by 1000 to make it readable
 #else
 float G1G2_pseudo_inv[4][3] = {{  12.5000,   17.8571,   -4.0984},
 {-12.5000,   17.8571,    4.0984},
@@ -302,6 +302,7 @@ static void attitude_run_indi(int32_t indi_commands[], struct Int32Quat *att_err
   indi_u_in_estimation[2] = (float) motor_mixing.commands[2];
   indi_u_in_estimation[3] = (float) motor_mixing.commands[3];
 
+  //G2 is scaled by 1000 to make it readable
   G2_times_du = (G2[0]/1000.0*indi_du_in_actuators[0] + G2[1]/1000.0*indi_du_in_actuators[1] + G2[2]/1000.0*indi_du_in_actuators[2] + G2[3]/1000.0*indi_du_in_actuators[3]);
 
   indi_du_in_actuators[0] = (G1G2_pseudo_inv[0][0] * (angular_accel_ref.p - filtered_rate_deriv.p)) + (G1G2_pseudo_inv[0][1] * (angular_accel_ref.q - filtered_rate_deriv.q)) + (G1G2_pseudo_inv[0][2] * (angular_accel_ref.r - filtered_rate_deriv.r + G2_times_du));
