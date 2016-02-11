@@ -18,7 +18,9 @@
       <define name="RADIO_MODE" value="RADIO_GEAR"/>
     </subsystem>
 
-    <subsystem name="actuators"     type="pwm"/>
+    <subsystem name="actuators"     type="pwm">
+      <define name="SERVO_HZ" value="400"/>
+    </subsystem>
     <subsystem name="telemetry"     type="xbee_api"/>
 <!--     <subsystem name="telemetry"     type="transparent"/> -->
     <subsystem name="imu"           type="aspirin_v2.2"/>
@@ -36,11 +38,12 @@
     <load name="gps_ubx_ucenter.xml"/>
     <load name="heli_swashplate_mixing.xml"/>
     <load name="heli_throttle_curve.xml"/>
-    <load name="logger_spi_link.xml"/>
     <load name="adc_generic.xml">
       <configure name="ADC_CHANNEL_GENERIC1" value="ADC_2"/>
       <define name="ADC_CHANNEL_GENERIC_NB_SAMPLES" value="1"/>
+      <define name="ADC_TIMER_PERIOD" value="1000"/>
     </load>
+    <load name="logger_spi_link.xml"/>
   </modules>
 
   <servos driver="Pwm">

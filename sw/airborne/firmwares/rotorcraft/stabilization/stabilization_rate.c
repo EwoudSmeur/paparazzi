@@ -72,8 +72,8 @@ struct Int32Rates stabilization_rate_sum_err;
 
 struct Int32Rates stabilization_rate_fb_cmd;
 
-#define CYCLIC_SERVO_DELAY 18
-#define TAIL_SERVO_DELAY 14
+#define CYCLIC_SERVO_DELAY 10
+#define TAIL_SERVO_DELAY 6
 struct FloatRates indi_rate_inputs = {0.0, 0.0, 0.0};
 struct FloatRates indi_rate_inputs_act = {0.0, 0.0, 0.0};
 struct FloatRates indi_rate_inputs_filt = {0.0, 0.0, 0.0};
@@ -85,7 +85,7 @@ int8_t delay_pos_q  = 0;
 int8_t delay_pos_r  = 0;
 float filt_so_r = 0;
 float indi_rate_inputs_filt_sec_r = 0;
-float tail_gain = 0.5;
+float tail_gain = 7.5;
 
 #ifndef STABILIZATION_RATE_DEADBAND_P
 #define STABILIZATION_RATE_DEADBAND_P 0
@@ -272,7 +272,7 @@ void stabilization_rate_run(bool_t in_flight)
     float angular_accel_r = (filt_so_r - prev_filt_so_r)*512.0;
 
     float angular_accel_ref_r = rate_error.r*tail_gain;
-    float du_r =  350.0 * (angular_accel_ref_r - angular_accel_r);
+    float du_r =  223.0 * (angular_accel_ref_r - angular_accel_r);
 
     stabilization_cmd[COMMAND_ROLL]  = indi_rate_inputs_filt.p + rate_error.p*1200.0;
     stabilization_cmd[COMMAND_PITCH]  = indi_rate_inputs_filt.q + rate_error.q*1200.0;
@@ -284,12 +284,9 @@ void stabilization_rate_run(bool_t in_flight)
   }
 
   /* bound the result */
-//   BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
-//   BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
-//   BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_ROLL], 5000);
-  BoundAbs(stabilization_cmd[COMMAND_PITCH], 5000);
-  BoundAbs(stabilization_cmd[COMMAND_YAW], 5000);
+  BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
+  BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
+  BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
 
 }
 
