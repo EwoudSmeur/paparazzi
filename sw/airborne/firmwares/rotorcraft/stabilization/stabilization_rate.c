@@ -274,8 +274,8 @@ void stabilization_rate_run(bool_t in_flight)
     float angular_accel_ref_r = rate_error.r*tail_gain;
     float du_r =  223.0 * (angular_accel_ref_r - angular_accel_r);
 
-    stabilization_cmd[COMMAND_ROLL]  = indi_rate_inputs_filt.p + rate_error.p*1200.0;
-    stabilization_cmd[COMMAND_PITCH]  = indi_rate_inputs_filt.q + rate_error.q*1200.0;
+    stabilization_cmd[COMMAND_ROLL]  = indi_rate_inputs_filt.p + rate_error.p*1600.0;
+    stabilization_cmd[COMMAND_PITCH]  = indi_rate_inputs_filt.q + rate_error.q*1600.0;
     stabilization_cmd[COMMAND_YAW]  = indi_rate_inputs_filt_sec_r + du_r;
 
     stabilization_rate_sum_err.p = 0;
@@ -312,7 +312,7 @@ void stabilization_filter_inputs(void) {
   indi_rate_inputs_act.q = indi_rate_inputs_act.q + 0.12*(servo_delay_q[delay_pos_q] - indi_rate_inputs_act.q);
   indi_rate_inputs_act.r = indi_rate_inputs_act.r + 0.12*(servo_delay_r[delay_pos_r] - indi_rate_inputs_act.r);
 
-  float max_servo_rate = 220;
+  float max_servo_rate = 293;
   float max_servo_rate_r = 450;
 
   if( (indi_rate_inputs_act.p - indi_rate_inputs_act_prev.p) > max_servo_rate) {

@@ -48,10 +48,10 @@
 
   <servos driver="Pwm">
     <servo name="THROTTLE"   no="0" min="1000" neutral="1000" max="2000"/>
-    <servo name="BACK"      no="1" min="900" neutral="1500" max="2100"/>
-    <servo name="LEFTFRONT"  no="2" min="900"  neutral="1500" max="2100"/>
-    <servo name="RIGHTFRONT"   no="3" min="2100" neutral="1500" max="900"/>
-    <servo name="TAIL"       no="4" min="1850" neutral="1550" max="1350"/>
+    <servo name="BACK"      no="1" min="1050" neutral="1500" max="1950"/>
+    <servo name="LEFTFRONT"  no="2" min="1050"  neutral="1500" max="1950"/>
+    <servo name="RIGHTFRONT"   no="3" min="1950" neutral="1500" max="1050"/>
+    <servo name="TAIL"       no="4" min="1850" neutral="1600" max="1350"/>
   </servos>
 
   <commands>
@@ -59,7 +59,7 @@
     <axis name="ROLL"        failsafe_value="0"/>
     <axis name="PITCH"       failsafe_value="0"/>
     <axis name="YAW"         failsafe_value="0"/>
-    <axis name="FMODE"       failsafe_value="0"/>
+    <axis name="FMODE"       failsafe_value="-9600"/>
   </commands>
 
   <rc_commands>
@@ -85,12 +85,13 @@
     <set servo="BACK"        value="swashplate_mixing.commands[SW_BACK]"/>
     <set servo="LEFTFRONT"   value="swashplate_mixing.commands[SW_LEFTFRONT]"/>
     <set servo="RIGHTFRONT"  value="swashplate_mixing.commands[SW_RIGHTFRONT]"/>
-    <set servo="TAIL"        value="@YAW + throttle_curve.throttle*2800/7000"/>
+    <!--<set servo="TAIL"        value="@YAW + throttle_curve.throttle*2800/7000"/>-->
+    <set servo="TAIL"        value="@YAW"/>
   </command_laws>
 
   <heli_curves>
     <curve throttle="0,4800,7200,8400,9600" collective="-1000,750,2500,4250,6000"/>
-<!--     <curve throttle="9600,7200,9600" collective="-7500,0,7500"/> -->
+    <curve throttle="9600,7200,9600" collective="-7000,500,8000"/>
   </heli_curves>
 
   <section name="MISC">
@@ -135,12 +136,12 @@
     <define name="DEADBAND_R" value="200"/>
 
     <!-- feedback -->
-    <define name="GAIN_P" value="400"/>
-    <define name="GAIN_Q" value="400"/>
+    <define name="GAIN_P" value="533"/>
+    <define name="GAIN_Q" value="533"/>
     <define name="GAIN_R" value="1000"/>
 
-    <define name="IGAIN_P" value="75"/>
-    <define name="IGAIN_Q" value="75"/>
+    <define name="IGAIN_P" value="100"/>
+    <define name="IGAIN_Q" value="100"/>
     <define name="IGAIN_R" value="150"/>
   </section>
 
