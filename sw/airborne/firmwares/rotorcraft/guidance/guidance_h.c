@@ -76,6 +76,10 @@ PRINT_CONFIG_VAR(GUIDANCE_H_USE_SPEED_REF)
 #define GUIDANCE_INDI FALSE
 #endif
 
+#ifndef OUTER_LOOP_INDI
+#define OUTER_LOOP_INDI FALSE
+#endif
+
 struct HorizontalGuidance guidance_h;
 
 int32_t transition_percentage;
@@ -95,7 +99,7 @@ struct Int32Vect2 guidance_h_trim_att_integrator;
 struct Int32Vect2  guidance_h_cmd_earth;
 
 static void guidance_h_update_reference(void);
-#if !GUIDANCE_INDI
+#if !(GUIDANCE_INDI && OUTER_LOOP_INDI)
 static void guidance_h_traj_run(bool_t in_flight);
 #endif
 static void guidance_h_hover_enter(void);
@@ -197,7 +201,7 @@ void guidance_h_init(void)
   register_periodic_telemetry(DefaultPeriodic, "ROTORCRAFT_TUNE_HOVER", send_tune_hover);
 #endif
 
-#if GUIDANCE_INDI
+#if (GUIDANCE_INDI && OUTER_LOOP_INDI)
   guidance_indi_enter();
 #endif
 }
@@ -247,7 +251,7 @@ void guidance_h_mode_changed(uint8_t new_mode)
       break;
 
     case GUIDANCE_H_MODE_HOVER:
-#if GUIDANCE_INDI
+#if (GUIDANCE_INDI && OUTER_LOOP_INDI)
       guidance_indi_enter();
 #endif
       guidance_h_hover_enter();
@@ -375,7 +379,7 @@ void guidance_h_run(bool_t  in_flight)
       /* set psi command */
       guidance_h.sp.heading = guidance_h.rc_sp.psi;
 
-#if GUIDANCE_INDI
+#if (GUIDANCE_INDI && OUTER_LOOP_INDI)
       guidance_indi_run(in_flight, guidance_h.sp.heading);
 #else
       /* compute x,y earth commands */
@@ -406,7 +410,7 @@ void guidance_h_run(bool_t  in_flight)
         /* set psi command */
         guidance_h.sp.heading = nav_heading;
         INT32_ANGLE_NORMALIZE(guidance_h.sp.heading);
-#if GUIDANCE_INDI
+#if (GUIDANCE_INDI && OUTER_LOOP_INDI)
         guidance_indi_run(in_flight, guidance_h.sp.heading);
 #else
         /* compute x,y earth commands */
@@ -478,7 +482,7 @@ static void guidance_h_update_reference(void)
  * you get an angle of 5.6 degrees for 1m pos error */
 #define GH_GAIN_SCALE 2
 
-#if !GUIDANCE_INDI
+#if !(GUIDANCE_INDI && OUTER_LOOP_INDI)
 static void guidance_h_traj_run(bool_t in_flight)
 {
   /* maximum bank angle: default 20 deg, max 40 deg*/

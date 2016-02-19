@@ -4,12 +4,6 @@
 
   <firmware name="rotorcraft">
     <target name="ap" board="bebop"/>
-
-    <target name="nps" board="pc">
-      <subsystem name="fdm" type="jsbsim"/>
-      <subsystem name="udp"/>
-    </target>
-
     <!--define name="USE_SONAR" value="TRUE"/-->
 
   <!-- Subsystem section -->
@@ -32,6 +26,7 @@
     <subsystem name="ins" type="extended"/>
     <subsystem name="guidance" type="indi">
       <define name="NONLINEAR_INDI" value="FALSE"/>
+      <define name="OUTER_LOOP_INDI" value="FALSE"/>
       <define name="OUTER_LOOP_INDI_USE_RC" value="FALSE"/>
     </subsystem>
   </firmware>
@@ -188,11 +183,11 @@
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
-    <define name="HOVER_KP" value="283"/>
-    <define name="HOVER_KD" value="82"/>
-    <define name="HOVER_KI" value="20"/>
-    <define name="NOMINAL_HOVER_THROTTLE" value="0.655"/>
-    <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
+    <define name="HOVER_KP" value="500"/>
+    <define name="HOVER_KD" value="200"/>
+    <define name="HOVER_KI" value="60"/>
+    <define name="NOMINAL_HOVER_THROTTLE" value="0.5"/>
+    <define name="ADAPT_THROTTLE_ENABLED" value="FALSE"/>
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
@@ -209,12 +204,6 @@
   <section name="NAVIGATION" prefix="NAV_">
     <define name="CLIMB_VSPEED" value="2.5"/>
     <define name="DESCEND_VSPEED" value="-1.0"/>
-  </section>
-
-  <section name="SIMULATOR" prefix="NPS_">
-    <define name="ACTUATOR_NAMES" value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]"/>
-    <define name="JSBSIM_MODEL" value="simple_x_quad_ccw" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
   </section>
 
   <section name="AUTOPILOT">

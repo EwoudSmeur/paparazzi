@@ -56,6 +56,25 @@
   </section>
 
   <section name="sessions">
+    <session name="Fan demo">
+      <program name="Joystick">
+        <arg flag="-ac" constant="Bebop_Demo_TUBB01"/>
+        <arg flag="hobbyking.xml"/>
+      </program>
+      <program name="Data Link">
+        <arg flag="-udp"/>
+      </program>
+      <program name="Server"/>
+      <program name="GCS">
+        <arg flag="-speech"/>
+      </program>
+      <program name="NatNet">
+        <arg flag="-ac" constant="5"/>
+        <arg flag="22"/>
+        <arg flag="-tf" constant="15"/>
+      </program>
+      <program name="Messages"/>
+    </session>
     <session name="Bluegiga">
       <program name="Data Link">
         <arg flag="-udp"/>
