@@ -16,6 +16,14 @@
       <dl_setting var="indi.g2" min="0" step="0.01" max="10" module="stabilization/stabilization_indi" shortname="g2" param="STABILIZATION_INDI_G2_R" persistent="true"/>
       <dl_setting var="indi.adaptive" min="0" step="1" max="1" module="stabilization/stabilization_indi" shortname="use_adaptive" values="FALSE|TRUE" param="STABILIZATION_INDI_USE_ADAPTIVE" type="uint8" persistent="true"/>
       <dl_setting var="indi.max_rate" min="0" step="0.0001" max="80.0" module="stabilization/stabilization_indi" shortname="max_rate"/>
+
+      <dl_setting var="attitude_gain_p" min="0" step="0.01" max="80.0" module="stabilization/stabilization_indi" shortname="gain_phi"/>
+      <dl_setting var="attitude_gain_q" min="0" step="0.01" max="80.0" module="stabilization/stabilization_indi" shortname="gain_theta"/>
+      <dl_setting var="attitude_gain_r" min="0" step="0.01" max="80.0" module="stabilization/stabilization_indi" shortname="gain_psi"/>
+
+      <dl_setting var="inv_control_eff_p" min="0" step="0.01" max="5000.0" module="stabilization/stabilization_indi" shortname="inv_control_eff_p"/>
+      <dl_setting var="inv_control_eff_q" min="0" step="0.01" max="5000.0" module="stabilization/stabilization_indi" shortname="inv_control_eff_q"/>
+      <dl_setting var="inv_control_eff_r" min="0" step="0.01" max="5000.0" module="stabilization/stabilization_indi" shortname="inv_control_eff_r"/>
     </dl_settings>
 
   </dl_settings>

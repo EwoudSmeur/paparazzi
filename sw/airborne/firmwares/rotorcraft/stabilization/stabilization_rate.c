@@ -199,13 +199,13 @@ void stabilization_rate_run(bool_t in_flight)
 
   /* PI */
   stabilization_rate_fb_cmd.p = stabilization_rate_gain.p * _error.p +
-                                OFFSET_AND_ROUND2((stabilization_rate_igain.p  * stabilization_rate_sum_err.p), 10);
+                                OFFSET_AND_ROUND2((stabilization_rate_igain.p  * stabilization_rate_sum_err.p), 6);
 
   stabilization_rate_fb_cmd.q = stabilization_rate_gain.q * _error.q +
-                                OFFSET_AND_ROUND2((stabilization_rate_igain.q  * stabilization_rate_sum_err.q), 10);
+                                OFFSET_AND_ROUND2((stabilization_rate_igain.q  * stabilization_rate_sum_err.q), 6);
 
   stabilization_rate_fb_cmd.r = stabilization_rate_gain.r * _error.r +
-                                OFFSET_AND_ROUND2((stabilization_rate_igain.r  * stabilization_rate_sum_err.r), 10);
+                                OFFSET_AND_ROUND2((stabilization_rate_igain.r  * stabilization_rate_sum_err.r), 6);
 
   stabilization_cmd[COMMAND_ROLL]  = stabilization_rate_fb_cmd.p >> 11;
   stabilization_cmd[COMMAND_PITCH] = stabilization_rate_fb_cmd.q >> 11;
