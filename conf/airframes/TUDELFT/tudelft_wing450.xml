@@ -8,10 +8,10 @@
      * RC:          one Spektrum sats         http://wiki.paparazziuav.org/wiki/Subsystem/radio_control#Spektrum
 -->
 
-<airframe name="heli450">
+<airframe name="heli450_wing">
 
   <firmware name="rotorcraft">
-    <target name="ap" board="lisa_m_2.0"/>
+    <target name="ap" board="lisa_mx_2.1"/>
 
     <subsystem name="radio_control" type="spektrum">
       <define name="RADIO_KILL_SWITCH" value="RADIO_AUX1"/>
@@ -22,7 +22,7 @@
       <define name="SERVO_HZ" value="400"/>
     </subsystem>
     <subsystem name="telemetry"     type="xbee_api"/>
-    <subsystem name="imu"           type="aspirin_v2.2"/>
+    <subsystem name="imu"           type="lisa_mx_v2.1"/>
     <subsystem name="gps"           type="ublox"/>
     <subsystem name="stabilization" type="rate_indi"/>
 <!--     <subsystem name="stabilization" type="int_quat"/> -->
@@ -97,7 +97,6 @@
   </command_laws>
 
   <heli_curves>
-    <curve throttle="0,4800,7200,8400,9600" collective="0,0,0,0,0"/>
     <curve throttle="0,4800,7200,8400,9600" collective="-1000,750,2500,4250,6000"/>
     <curve throttle="9600,7200,9600" collective="-7000,500,8000"/>
   </heli_curves>
@@ -123,13 +122,10 @@
 
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
-    <define name="BODY_TO_IMU_PSI"   value="0." unit="deg"/>
+    <define name="BODY_TO_IMU_PSI"   value="-90." unit="deg"/>
   </section>
 
   <section name="AHRS" prefix="AHRS_">
-    <!--This airframe vibrates a lot, which causes accel measurements in excess of 1g continuously-->
-    <define name="GRAVITY_HEURISTIC_FACTOR" value="0"/>
-
     <!-- values used if no GPS fix, on 3D fix is update by geo_mag module -->
     <define name="H_X" value="0.3770441"/>
     <define name="H_Y" value="0.0193986"/>
@@ -230,10 +226,10 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness -->
-    <define name="G1_P" value="0.0639"/>
-    <define name="G1_Q" value="0.0361"/>
-    <define name="G1_R" value="0.0022"/>
-    <define name="G2_R" value="0.1450"/>
+    <define name="G1_P" value="0.003"/>
+    <define name="G1_Q" value="0.003"/>
+    <define name="G1_R" value="0.0045"/>
+    <define name="G2_R" value="0.0"/>
 
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="600.0"/>

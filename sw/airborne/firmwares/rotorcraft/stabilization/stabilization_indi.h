@@ -86,6 +86,13 @@ struct IndiVariables {
   struct IndiEstimation est; ///< Estimation parameters for adaptive INDI
 };
 
+extern float attitude_gain_p;
+extern float attitude_gain_q;
+extern float attitude_gain_r;
+
+extern float inv_control_eff_p;
+extern float inv_control_eff_q;
+extern float inv_control_eff_r;
 
 extern struct IndiVariables indi;
 extern void stabilization_indi_init(void);

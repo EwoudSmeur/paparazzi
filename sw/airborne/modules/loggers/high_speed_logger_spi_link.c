@@ -50,20 +50,31 @@ void high_speed_logger_spi_link_init(void)
   high_speed_logger_spi_link_transaction.after_cb      = high_speed_logger_spi_link_trans_cb;
 }
 
+#include "state.h"
+#include "modules/helicopter/throttle_curve.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
+#include "modules/adcs/adc_generic.h"
 
 void high_speed_logger_spi_link_periodic(void)
 {
   if (high_speed_logger_spi_link_ready) {
+    struct Int32Quat *att_quat = stateGetNedToBodyQuat_i();
     high_speed_logger_spi_link_ready = FALSE;
-    high_speed_logger_spi_link_data.gyro_p     = imu.gyro_unscaled.p;
-    high_speed_logger_spi_link_data.gyro_q     = imu.gyro_unscaled.q;
-    high_speed_logger_spi_link_data.gyro_r     = imu.gyro_unscaled.r;
-    high_speed_logger_spi_link_data.acc_x      = imu.accel_unscaled.x;
-    high_speed_logger_spi_link_data.acc_y      = imu.accel_unscaled.y;
-    high_speed_logger_spi_link_data.acc_z      = imu.accel_unscaled.z;
-    high_speed_logger_spi_link_data.mag_x      = imu.mag_unscaled.x;
-    high_speed_logger_spi_link_data.mag_y      = imu.mag_unscaled.y;
-    high_speed_logger_spi_link_data.mag_z      = imu.mag_unscaled.z;
+    high_speed_logger_spi_link_data.gyro_p     = imu.gyro.p;
+    high_speed_logger_spi_link_data.gyro_q     = imu.gyro.q;
+    high_speed_logger_spi_link_data.gyro_r     = imu.gyro.r;
+    high_speed_logger_spi_link_data.acc_x      = stab_att_sp_quat.qi;
+    high_speed_logger_spi_link_data.acc_y      = stab_att_sp_quat.qx;
+    high_speed_logger_spi_link_data.acc_z      = stab_att_sp_quat.qy;
+    high_speed_logger_spi_link_data.mag_x      = att_quat->qi;
+    high_speed_logger_spi_link_data.mag_y      = att_quat->qx;
+    high_speed_logger_spi_link_data.mag_z      = att_quat->qy;
+    high_speed_logger_spi_link_data.phi        = att_quat->qz;
+    high_speed_logger_spi_link_data.theta      = adc_generic_val1;
+    high_speed_logger_spi_link_data.psi        = stab_att_sp_quat.qz;
+    high_speed_logger_spi_link_data.extra1     = stabilization_cmd[COMMAND_ROLL];
+    high_speed_logger_spi_link_data.extra2     = stabilization_cmd[COMMAND_PITCH];
+    high_speed_logger_spi_link_data.extra3     = stabilization_cmd[COMMAND_YAW];
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction);
   }

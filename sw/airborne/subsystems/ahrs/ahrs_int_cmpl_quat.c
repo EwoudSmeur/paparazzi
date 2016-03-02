@@ -187,9 +187,9 @@ void ahrs_icq_propagate(struct Int32Rates *gyro, float dt)
 
   /* low pass rate */
 #ifdef AHRS_PROPAGATE_LOW_PASS_RATES
-  RATES_SMUL(ahrs_icq.imu_rate, ahrs_icq.imu_rate, 2);
+  RATES_SMUL(ahrs_icq.imu_rate, ahrs_icq.imu_rate, 19);
   RATES_ADD(ahrs_icq.imu_rate, omega);
-  RATES_SDIV(ahrs_icq.imu_rate, ahrs_icq.imu_rate, 3);
+  RATES_SDIV(ahrs_icq.imu_rate, ahrs_icq.imu_rate, 20);
 #else
   RATES_COPY(ahrs_icq.imu_rate, omega);
 #endif

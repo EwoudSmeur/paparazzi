@@ -75,6 +75,11 @@ static inline void stabilization_indi_calc_cmd(int32_t indi_commands[], struct I
 static void stabilization_indi_second_order_filter_init(struct IndiFilter *filter, float omega, float zeta, float omega_r);
 static void stabilization_indi_second_order_filter(struct IndiFilter *filter, struct FloatRates *input);
 static inline void lms_estimation(void);
+static inline void stabilization_indi_calc_cmd_heli(int32_t indi_commands[], struct Int32Quat *att_err, bool_t rate_control);
+
+float inv_control_eff_p = 1600.0;
+float inv_control_eff_q = 1000.0;
+float inv_control_eff_r = 223.0;
 
 #define INDI_EST_SCALE 0.001 //The G values are scaled to avoid numerical problems during the estimation
 struct IndiVariables indi = {
@@ -286,8 +291,13 @@ void stabilization_indi_run(bool_t enable_integrator __attribute__((unused)), bo
   int32_quat_wrap_shortest(&att_err);
   int32_quat_normalize(&att_err);
 
+#if HELICOPTER_CONTROL
+  /* compute the INDI command */
+  stabilization_indi_calc_cmd_heli(stabilization_att_indi_cmd, &att_err, rate_control);
+#else
   /* compute the INDI command */
   stabilization_indi_calc_cmd(stabilization_att_indi_cmd, &att_err, rate_control);
+#endif
 
   /* copy the INDI command */
   stabilization_cmd[COMMAND_ROLL] = stabilization_att_indi_cmd[COMMAND_ROLL];
@@ -367,4 +377,122 @@ static inline void lms_estimation(void)
     indi.g1.r = est->g1.r * INDI_EST_SCALE;
     indi.g2   = est->g2 * INDI_EST_SCALE;
   }
+}
+
+#define CYCLIC_SERVO_DELAY 10
+#define TAIL_SERVO_DELAY 6
+struct FloatRates indi_rate_inputs = {0.0, 0.0, 0.0};
+struct FloatRates indi_rate_inputs_act = {0.0, 0.0, 0.0};
+struct FloatRates indi_rate_inputs_filt = {0.0, 0.0, 0.0};
+float servo_delay_p[CYCLIC_SERVO_DELAY];
+float servo_delay_q[CYCLIC_SERVO_DELAY];
+float servo_delay_r[TAIL_SERVO_DELAY];
+int8_t delay_pos_p  = 0;
+int8_t delay_pos_q  = 0;
+int8_t delay_pos_r  = 0;
+float filt_so_r = 0;
+float indi_rate_inputs_filt_sec_r = 0;
+float tail_gain = 7.5;
+
+float attitude_gain_p = 9.0;
+float attitude_gain_q = 9.0;
+float attitude_gain_r = 15.0;
+
+void stabilization_filter_inputs(void);
+
+static inline void stabilization_indi_calc_cmd_heli(int32_t indi_commands[], struct Int32Quat *att_err, bool_t rate_control)
+{
+  struct FloatRates rate_sp = {0.0, 0.0, 0.0};
+  /* Check if we are running the rate controller and overwrite */
+  if(rate_control) {
+    rate_sp.p = radio_control.values[RADIO_ROLL] * STABILIZATION_RATE_SP_MAX_P / MAX_PPRZ;
+    rate_sp.q = radio_control.values[RADIO_PITCH] * STABILIZATION_RATE_SP_MAX_Q / MAX_PPRZ;
+    rate_sp.r = radio_control.values[RADIO_YAW] * STABILIZATION_RATE_SP_MAX_R / MAX_PPRZ;
+  }
+  else {
+    rate_sp.p = QUAT1_FLOAT_OF_BFP(att_err->qx) * attitude_gain_p;
+    rate_sp.q = QUAT1_FLOAT_OF_BFP(att_err->qy) * attitude_gain_q;
+    rate_sp.r = QUAT1_FLOAT_OF_BFP(att_err->qz) * attitude_gain_r;
+  }
+
+  //Propagate input filters
+  indi_rate_inputs.p = stabilization_cmd[COMMAND_ROLL];
+  indi_rate_inputs.q = stabilization_cmd[COMMAND_PITCH];
+  indi_rate_inputs.r = stabilization_cmd[COMMAND_YAW];
+  stabilization_filter_inputs();
+
+  struct FloatRates *body_rate_f = stateGetBodyRates_f();
+
+  struct FloatRates rate_error;
+  RATES_DIFF(rate_error, rate_sp, (*body_rate_f));
+
+  float prev_filt_so_r = filt_so_r;
+  filt_so_r *= 19;
+  filt_so_r += body_rate_f->r;
+  filt_so_r /= 20;
+
+  float angular_accel_r = (filt_so_r - prev_filt_so_r)*512.0;
+
+  float angular_accel_ref_r = rate_error.r*tail_gain;
+  float du_r =  inv_control_eff_r * (angular_accel_ref_r - angular_accel_r);
+
+  /*  INDI feedback */
+  indi_commands[COMMAND_ROLL]  = indi_rate_inputs_filt.p + rate_error.p*inv_control_eff_p;
+  indi_commands[COMMAND_PITCH]  = indi_rate_inputs_filt.q + rate_error.q*inv_control_eff_q;
+  indi_commands[COMMAND_YAW]  = indi_rate_inputs_filt_sec_r + du_r;
+}
+
+void stabilization_filter_inputs(void) {
+  servo_delay_p[delay_pos_p] =  indi_rate_inputs.p;
+  servo_delay_q[delay_pos_q] =  indi_rate_inputs.q;
+  servo_delay_r[delay_pos_r] =  indi_rate_inputs.r;
+
+  delay_pos_p += 1;
+  if(delay_pos_p == CYCLIC_SERVO_DELAY)
+    delay_pos_p = 0;
+
+  delay_pos_q += 1;
+  if(delay_pos_q == CYCLIC_SERVO_DELAY)
+    delay_pos_q = 0;
+
+  delay_pos_r += 1;
+  if(delay_pos_r == TAIL_SERVO_DELAY)
+    delay_pos_r = 0;
+
+  struct FloatRates indi_rate_inputs_act_prev = {indi_rate_inputs_act.p, indi_rate_inputs_act.q, indi_rate_inputs_act.r};
+  indi_rate_inputs_act.p = indi_rate_inputs_act.p + 0.12*(servo_delay_p[delay_pos_p] - indi_rate_inputs_act.p);
+  indi_rate_inputs_act.q = indi_rate_inputs_act.q + 0.12*(servo_delay_q[delay_pos_q] - indi_rate_inputs_act.q);
+  indi_rate_inputs_act.r = indi_rate_inputs_act.r + 0.12*(servo_delay_r[delay_pos_r] - indi_rate_inputs_act.r);
+
+  float max_servo_rate = 293;
+  float max_servo_rate_r = 450;
+
+  if( (indi_rate_inputs_act.p - indi_rate_inputs_act_prev.p) > max_servo_rate) {
+    indi_rate_inputs_act.p = indi_rate_inputs_act_prev.p + max_servo_rate;
+  }
+  else if( (indi_rate_inputs_act.p-indi_rate_inputs_act_prev.p) < -max_servo_rate) {
+    indi_rate_inputs_act.p = indi_rate_inputs_act_prev.p - max_servo_rate;
+  }
+
+  if( (indi_rate_inputs_act.q - indi_rate_inputs_act_prev.q) > max_servo_rate) {
+    indi_rate_inputs_act.q = indi_rate_inputs_act_prev.q + max_servo_rate;
+  }
+  else if( (indi_rate_inputs_act.q-indi_rate_inputs_act_prev.q) < -max_servo_rate) {
+    indi_rate_inputs_act.q = indi_rate_inputs_act_prev.q - max_servo_rate;
+  }
+
+  if( (indi_rate_inputs_act.r - indi_rate_inputs_act_prev.r) > max_servo_rate_r) {
+    indi_rate_inputs_act.r = indi_rate_inputs_act_prev.r + max_servo_rate_r;
+  }
+  else if( (indi_rate_inputs_act.r-indi_rate_inputs_act_prev.r) < -max_servo_rate_r) {
+    indi_rate_inputs_act.r = indi_rate_inputs_act_prev.r - max_servo_rate_r;
+  }
+
+  RATES_SMUL(indi_rate_inputs_filt, indi_rate_inputs_filt, 19);
+  RATES_ADD(indi_rate_inputs_filt, indi_rate_inputs_act);
+  RATES_SDIV(indi_rate_inputs_filt, indi_rate_inputs_filt, 20);
+
+  indi_rate_inputs_filt_sec_r *= 19;
+  indi_rate_inputs_filt_sec_r += indi_rate_inputs_filt.r;
+  indi_rate_inputs_filt_sec_r /= 20;
 }
