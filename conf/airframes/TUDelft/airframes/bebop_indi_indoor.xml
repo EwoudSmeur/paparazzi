@@ -26,7 +26,7 @@
     <subsystem name="ins" type="extended"/>
     <subsystem name="guidance" type="indi">
       <define name="NONLINEAR_INDI" value="FALSE"/>
-      <define name="OUTER_LOOP_INDI" value="FALSE"/>
+      <define name="OUTER_LOOP_INDI" value="FALSE"/> <!-- change for demo-->
       <define name="OUTER_LOOP_INDI_USE_RC" value="FALSE"/>
     </subsystem>
   </firmware>
@@ -46,6 +46,19 @@
     <axis name="YAW" failsafe_value="0"/>
     <axis name="THRUST" failsafe_value="6000"/>
   </commands>
+
+  <section name="gyro_scaling">
+    <define name="BEBOP_GYRO_RANGE" value="MPU60X0_GYRO_RANGE_2000"/>
+    <define name="IMU_GYRO_P_SENS" value="4.359"/>
+    <define name="IMU_GYRO_Q_SENS" value="4.359"/>
+    <define name="IMU_GYRO_R_SENS" value="4.359"/>
+    <define name="IMU_GYRO_P_SENS_NUM" value="4359"/>
+    <define name="IMU_GYRO_Q_SENS_NUM" value="4359"/>
+    <define name="IMU_GYRO_R_SENS_NUM" value="4359"/>
+    <define name="IMU_GYRO_P_SENS_DEN" value="1000"/>
+    <define name="IMU_GYRO_Q_SENS_DEN" value="1000"/>
+    <define name="IMU_GYRO_R_SENS_DEN" value="1000"/>
+  </section>
 
   <servos driver="Default">
     <servo name="TOP_RIGHT" no="0" min="3000" neutral="3000" max="12000"/>
@@ -208,7 +221,8 @@
 
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
-    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
+    <define name="MODE_MANUAL" value="AP_MODE_FLIP"/>
+    <!-- <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/> -->
     <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
 

@@ -12,6 +12,7 @@
     <waypoint name="TD"  x="0.0" y="0.0"/>
     <waypoint x="0.0" y="0.0" name="p1"/>
     <waypoint x="1.0" y="0.0" name="p2"/>
+    <waypoint x="0.0" y="1.0" name="flipPoint"/>
     <waypoint lat="51.9906213" lon="4.3768628" name="FA1"/>
     <waypoint lat="51.9905874" lon="4.3767766" name="FA2"/>
     <waypoint lat="51.9906409" lon="4.3767226" name="FA3"/>
@@ -59,6 +60,10 @@
     <block name="go_p2">
       <stay wp="p2" until="stage_time>6"/>
       <deroute block="stay_p1"/>
+    </block>
+
+    <block name = "go_flip">
+	<stay wp="flipPoint"/>
     </block>
     <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
       <call fun="NavSetWaypointHere(WP_TD)"/>
