@@ -79,7 +79,11 @@ static inline void stabilization_indi_calc_cmd_heli(int32_t indi_commands[], str
 
 float inv_control_eff_p = 1600.0;
 float inv_control_eff_q = 1000.0;
+#if WINGED_HELI
+float inv_control_eff_r = 500.0;
+#else
 float inv_control_eff_r = 223.0;
+#endif
 
 #define INDI_EST_SCALE 0.001 //The G values are scaled to avoid numerical problems during the estimation
 struct IndiVariables indi = {
@@ -384,6 +388,7 @@ static inline void lms_estimation(void)
 struct FloatRates indi_rate_inputs = {0.0, 0.0, 0.0};
 struct FloatRates indi_rate_inputs_act = {0.0, 0.0, 0.0};
 struct FloatRates indi_rate_inputs_filt = {0.0, 0.0, 0.0};
+struct FloatRates indi_rate_filt_so = {0.0, 0.0, 0.0};
 float servo_delay_p[CYCLIC_SERVO_DELAY];
 float servo_delay_q[CYCLIC_SERVO_DELAY];
 float servo_delay_r[TAIL_SERVO_DELAY];
@@ -391,7 +396,7 @@ int8_t delay_pos_p  = 0;
 int8_t delay_pos_q  = 0;
 int8_t delay_pos_r  = 0;
 float filt_so_r = 0;
-float indi_rate_inputs_filt_sec_r = 0;
+struct FloatRates indi_rate_inputs_filt_sec = {0.0, 0.0, 0.0};
 float tail_gain = 7.5;
 
 float attitude_gain_p = 9.0;
@@ -426,6 +431,34 @@ static inline void stabilization_indi_calc_cmd_heli(int32_t indi_commands[], str
   struct FloatRates rate_error;
   RATES_DIFF(rate_error, rate_sp, (*body_rate_f));
 
+#if WINGED_HELI
+  struct FloatRates indi_rate_filt_so_prev = {indi_rate_filt_so.p, indi_rate_filt_so.q, indi_rate_filt_so.r};
+  RATES_SMUL(indi_rate_filt_so, indi_rate_filt_so, 19);
+  RATES_ADD(indi_rate_filt_so, *body_rate_f);
+  RATES_SDIV(indi_rate_filt_so, indi_rate_filt_so, 20);
+
+  struct FloatRates angular_accel;
+  RATES_DIFF(angular_accel, indi_rate_filt_so, indi_rate_filt_so_prev);
+  RATES_SMUL(angular_accel, angular_accel, 512.0);
+
+  struct FloatRates angular_accel_ref;
+  angular_accel_ref.p = rate_error.p * 5.0;
+  angular_accel_ref.q = rate_error.q * 5.0;
+  angular_accel_ref.r = rate_error.r * tail_gain;
+
+  struct FloatRates rate_error_sec;
+  RATES_DIFF(rate_error_sec, rate_sp, indi_rate_filt_so);
+
+  struct FloatRates du_winged_heli;
+  du_winged_heli.p =  rate_error_sec.p*1300.0 + 344.0 * (angular_accel_ref.q - angular_accel.q);
+  du_winged_heli.q = -rate_error_sec.p*300.0 + 772.0 * (angular_accel_ref.q - angular_accel.q);
+  du_winged_heli.r = inv_control_eff_r * (angular_accel_ref.r - angular_accel.r);
+
+  /*  INDI feedback */
+  indi_commands[COMMAND_ROLL]  = indi_rate_inputs_filt_sec.p  + du_winged_heli.p;
+  indi_commands[COMMAND_PITCH]  = indi_rate_inputs_filt_sec.q + du_winged_heli.q;
+  indi_commands[COMMAND_YAW]  = indi_rate_inputs_filt_sec.r   + du_winged_heli.r;
+#else
   float prev_filt_so_r = filt_so_r;
   filt_so_r *= 19;
   filt_so_r += body_rate_f->r;
@@ -439,7 +472,8 @@ static inline void stabilization_indi_calc_cmd_heli(int32_t indi_commands[], str
   /*  INDI feedback */
   indi_commands[COMMAND_ROLL]  = indi_rate_inputs_filt.p + rate_error.p*inv_control_eff_p;
   indi_commands[COMMAND_PITCH]  = indi_rate_inputs_filt.q + rate_error.q*inv_control_eff_q;
-  indi_commands[COMMAND_YAW]  = indi_rate_inputs_filt_sec_r + du_r;
+  indi_commands[COMMAND_YAW]  = indi_rate_inputs_filt_sec.r + du_r;
+#endif
 }
 
 void stabilization_filter_inputs(void) {
@@ -492,7 +526,11 @@ void stabilization_filter_inputs(void) {
   RATES_ADD(indi_rate_inputs_filt, indi_rate_inputs_act);
   RATES_SDIV(indi_rate_inputs_filt, indi_rate_inputs_filt, 20);
 
-  indi_rate_inputs_filt_sec_r *= 19;
-  indi_rate_inputs_filt_sec_r += indi_rate_inputs_filt.r;
-  indi_rate_inputs_filt_sec_r /= 20;
+  RATES_SMUL(indi_rate_inputs_filt_sec, indi_rate_inputs_filt_sec, 19);
+  RATES_ADD(indi_rate_inputs_filt_sec, indi_rate_inputs_filt);
+  RATES_SDIV(indi_rate_inputs_filt_sec, indi_rate_inputs_filt_sec, 20);
+
+//   indi_rate_inputs_filt_sec_r *= 19;
+//   indi_rate_inputs_filt_sec_r += indi_rate_inputs_filt.r;
+//   indi_rate_inputs_filt_sec_r /= 20;
 }

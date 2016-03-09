@@ -37,6 +37,7 @@
     <configure name="BMP_PORT" value="/dev/ttyACM0" />
 
     <define name="HELICOPTER_CONTROL" value="TRUE"/>
+    <define name="WINGED_HELI" value="FALSE"/>
   </firmware>
 
   <modules>
