@@ -480,6 +480,15 @@ void nav_home(void)
   nav_run();
 }
 
+/** Set manual roll, pitch and yaw without stabilization */
+void nav_set_manual(float roll, float pitch, float yaw)
+{
+  horizontal_mode = HORIZONTAL_MODE_MANUAL;
+  nav_roll = roll * MAX_PPRZ;
+  nav_pitch = pitch * MAX_PPRZ;
+  nav_heading = yaw * MAX_PPRZ;
+}
+
 /** Returns squared horizontal distance to given point */
 float get_dist2_to_point(struct EnuCoor_i *p)
 {

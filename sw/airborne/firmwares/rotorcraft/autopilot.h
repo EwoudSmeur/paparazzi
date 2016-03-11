@@ -118,6 +118,7 @@ extern uint16_t autopilot_flight_time;
     commands[COMMAND_PITCH] = _cmd[COMMAND_PITCH];              \
     commands[COMMAND_YAW] = _cmd[COMMAND_YAW];                  \
     commands[COMMAND_THRUST] = _cmd[COMMAND_THRUST];            \
+    commands[COMMAND_FMODE] = _cmd[COMMAND_FMODE];            \
   }
 #else
 
