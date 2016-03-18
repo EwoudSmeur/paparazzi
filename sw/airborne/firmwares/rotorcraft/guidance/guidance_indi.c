@@ -178,9 +178,10 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
   T_in = T_filt -500.0*euler_cmd.z;
   Bound(T_in, 0.0, 9600.0);
 
-  if(radio_control.values[RADIO_THROTTLE]<300) {
-    T_in = 0;
-  }
+#warning removed throttle limiting
+//  if(radio_control.values[RADIO_THROTTLE]<300) {
+//    T_in = 0;
+//  }
 
   stabilization_cmd[COMMAND_THRUST] = T_in;
 
