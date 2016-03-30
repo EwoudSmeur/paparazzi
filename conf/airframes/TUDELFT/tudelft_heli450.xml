@@ -231,6 +231,11 @@
     <define name="G1_R" value="0.0022"/>
     <define name="G2_R" value="0.1450"/>
 
+<!--     heli control effectiveness -->
+    <define name="INV_EFF_P" value="1600.0"/>
+    <define name="INV_EFF_Q" value="1000.0"/>
+    <define name="INV_EFF_R" value="223.0"/>
+
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="600.0"/>
     <define name="REF_ERR_Q" value="600.0"/>

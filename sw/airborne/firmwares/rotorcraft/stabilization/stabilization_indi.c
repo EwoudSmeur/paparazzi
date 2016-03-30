@@ -77,13 +77,9 @@ static void stabilization_indi_second_order_filter(struct IndiFilter *filter, st
 static inline void lms_estimation(void);
 static inline void stabilization_indi_calc_cmd_heli(int32_t indi_commands[], struct Int32Quat *att_err, bool_t rate_control);
 
-float inv_control_eff_p = 1600.0;
-float inv_control_eff_q = 1000.0;
-#if WINGED_HELI
-float inv_control_eff_r = 500.0;
-#else
-float inv_control_eff_r = 223.0;
-#endif
+float inv_control_eff_p = STABILIZATION_INDI_INV_EFF_P;
+float inv_control_eff_q = STABILIZATION_INDI_INV_EFF_Q;
+float inv_control_eff_r = STABILIZATION_INDI_INV_EFF_R;
 
 #define INDI_EST_SCALE 0.001 //The G values are scaled to avoid numerical problems during the estimation
 struct IndiVariables indi = {

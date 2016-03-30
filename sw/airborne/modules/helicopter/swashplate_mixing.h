@@ -35,6 +35,7 @@
 #define MECH 0
 #define H120 1
 #define HR120 2
+#define HR120_SIDEWAYS 3
 
 /**
  * MECH (front/right/coll), H120 (front/rightback/leftback), HR120 (back/leftfront/rightfront)
@@ -65,6 +66,15 @@
 #define SW_MIXING_ROLL_COEF   {  0,  0.866, -0.866 }
 #define SW_MIXING_PITCH_COEF  { -1,  0.5,    0.5   }
 #define SW_MIXING_COLL_COEF   {  1,  1,      1     }
+
+#elif SW_MIXING_TYPE == HR120_SIDEWAYS
+#define SW_NB 3
+#define SW_BACK       0
+#define SW_LEFTFRONT  1
+#define SW_RIGHTFRONT 2
+#define SW_MIXING_ROLL_COEF   {  1, -0.5,    -0.5   }
+#define SW_MIXING_PITCH_COEF  {  0,  0.866, -0.866 }
+#define SW_MIXING_COLL_COEF   {  1,  1,       1     }
 #endif
 
 /* Swashplate mixing structure */
