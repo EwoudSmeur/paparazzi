@@ -711,6 +711,7 @@ void autopilot_on_rc_frame(void)
 #ifdef SetCommandsFromRC
     if (autopilot_mode != AP_MODE_NAV) {
       SetCommandsFromRC(commands, radio_control.values);
+      stabilization_cmd[COMMAND_FMODE] = commands[COMMAND_FMODE];
     }
 #endif
 

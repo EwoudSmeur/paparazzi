@@ -78,6 +78,7 @@
   </command_laws>
 
   <heli_curves>
+    <curve throttle="0,4800,7200,8400,9600" collective="0,0,0,0,0"/>
     <curve throttle="0,4800,7200,8400,9600" collective="-1000,750,2500,4250,6000"/>
     <curve throttle="9600,7200,9600" collective="-7500,0,7500"/>
   </heli_curves>
