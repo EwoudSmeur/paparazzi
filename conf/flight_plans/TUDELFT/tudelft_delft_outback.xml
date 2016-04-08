@@ -1,6 +1,6 @@
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<flight_plan alt="4" ground_alt="0" lat0="51 59 27.6" lon0="4 22 42.0" max_dist_from_home="60" name="Delft Basic" security_height="2">
+<flight_plan alt="8" ground_alt="0" lat0="51 59 27.6" lon0="4 22 42.0" max_dist_from_home="60" name="Delft Basic" security_height="2">
   <header>
 #include "autopilot.h"
 </header>
@@ -42,7 +42,8 @@
       <manual pitch="0" roll="0" yaw="0" throttle="0.3" until="FALSE" vmode="throttle"/>
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
-      <exception cond="stateGetPositionEnu_f()->z > 2.0" deroute="Standby"/>
+      <exception cond="stateGetPositionEnu_f()->z > 5.0" deroute="Standby"/>
+      <call fun="nav_throttle_curve_set(1)"/>
       <call fun="NavSetWaypointHere(WP_CLIMB)"/>
       <stay climb="nav_climb_vspeed" vmode="climb" wp="CLIMB"/>
     </block>
