@@ -402,7 +402,7 @@ else {
   Bound(u_in.r, -half_thrust, half_thrust);
 
   //Don't increment if thrust is off
-  if (stabilization_cmd[COMMAND_THRUST] < 300) {
+  if(radio_control.values[RADIO_THROTTLE]<300) {
     indi_u_in_actuators[0] = 0;
     indi_u_in_actuators[1] = 0;
     indi_u_in_actuators[2] = 0;

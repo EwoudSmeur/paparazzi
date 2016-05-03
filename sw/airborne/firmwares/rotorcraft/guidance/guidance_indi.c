@@ -42,8 +42,16 @@
 #include "stabilization/stabilization_attitude_ref_quat_int.h"
 #include "subsystems/datalink/downlink.h"
 
-float guidance_indi_pos_gain = 0.7;
-float guidance_indi_speed_gain = 1.5;
+#ifndef INDI_POS_GAIN
+#error You must define the P gain
+#endif
+#ifndef INDI_SPEED_GAIN
+#error You must define the D gain
+#endif
+
+float guidance_indi_pos_gain = INDI_POS_GAIN;
+float guidance_indi_speed_gain = INDI_SPEED_GAIN;
+
 float guidance_indi_pos_gain_vertical = 0.5;
 float guidance_indi_speed_gain_vertical = 3.0;
 struct FloatVect3 sp_accel = {0.0,0.0,0.0};
@@ -116,6 +124,12 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
   float speed_sp_x = pos_x_err*guidance_indi_pos_gain;
   float speed_sp_y = pos_y_err*guidance_indi_pos_gain;
 
+  float norm_speed = sqrtf(speed_sp_x*speed_sp_x + speed_sp_y*speed_sp_y);
+  if(norm_speed >10.0) {
+    speed_sp_x = speed_sp_x/norm_speed * 10.0;
+    speed_sp_y = speed_sp_y/norm_speed * 10.0;
+  }
+
   struct FloatEulers *state_eulers = stateGetNedToBodyEulers_f();
 
 #if !OUTER_LOOP_INDI_USE_RC
@@ -127,10 +141,19 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
 #else
   //rotate rc commands to ned axes
   float psi = state_eulers->psi;
+//   float rc_x = -(radio_control.values[RADIO_PITCH]/9600.0)*8.0;
+//   float rc_y = (radio_control.values[RADIO_ROLL]/9600.0)*8.0;
+//   sp_accel.x = cosf(psi) * rc_x - sinf(psi) * rc_y;
+//   sp_accel.y = sinf(psi) * rc_x + cosf(psi) * rc_y;
+
+  //for rc speed horizontal
   float rc_x = -(radio_control.values[RADIO_PITCH]/9600.0)*8.0;
   float rc_y = (radio_control.values[RADIO_ROLL]/9600.0)*8.0;
-  sp_accel.x = cosf(psi) * rc_x - sinf(psi) * rc_y;
-  sp_accel.y = sinf(psi) * rc_x + cosf(psi) * rc_y;
+  float sp_speedx = cosf(psi) * rc_x - sinf(psi) * rc_y;
+  float sp_speedy = sinf(psi) * rc_x + cosf(psi) * rc_y;
+  sp_accel.x = (sp_speedx - stateGetSpeedNed_f()->x)*guidance_indi_speed_gain;
+  sp_accel.y = (sp_speedy - stateGetSpeedNed_f()->y)*guidance_indi_speed_gain;
+  //for rc speed horizontal
 
   float vertical_velocity_sp = -(radio_control.values[RADIO_THROTTLE]-4500.0)/4500.0*2.0;
   //   sp_accel.z = -(radio_control.values[RADIO_THROTTLE]-4500.0)/4500.0*2.0;

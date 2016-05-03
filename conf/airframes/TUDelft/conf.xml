@@ -154,6 +154,17 @@
    gui_color="blue"
   />
   <aircraft
+   name="Smeur_Outdeur"
+   ac_id="22"
+   airframe="airframes/TUDelft/airframes/bebop_indi_outdoor.xml"
+   radio="radios/dummy.xml"
+   telemetry="telemetry/default_rotorcraft.xml"
+   flight_plan="flight_plans/Tudelft/delft_basic.xml"
+   settings="settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml [settings/control/stabilization_att_indi.xml]"
+   settings_modules="modules/gps_ubx_ucenter.xml"
+   gui_color="red"
+  />
+  <aircraft
    name="bebop_flip"
    ac_id="3"
    airframe="airframes/TUDelft/airframes/bebop_flip.xml"
