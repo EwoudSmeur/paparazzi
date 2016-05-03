@@ -255,13 +255,13 @@ void ins_int_propagate(struct Int32Vect3 *accel, float dt)
   /* untilt accels */
   struct Int32Vect3 accel_meas_body;
   struct Int32RMat *body_to_imu_rmat = orientationGetRMat_i(&imu.body_to_imu);
-//   int32_rmat_transp_vmult(&accel_meas_body, body_to_imu_rmat, accel);
+  int32_rmat_transp_vmult(&accel_meas_body, body_to_imu_rmat, accel);
 
-  struct Int32Vect3 accel_unbiased;
-  accel_unbiased.x = accel->x + ACCEL_BFP_OF_REAL(accel_diff_body_filt.x);
-  accel_unbiased.y = accel->y + ACCEL_BFP_OF_REAL(accel_diff_body_filt.y);
-  accel_unbiased.z = accel->z + ACCEL_BFP_OF_REAL(accel_diff_body_filt.z);
-  int32_rmat_transp_vmult(&accel_meas_body, body_to_imu_rmat, &accel_unbiased);
+//   struct Int32Vect3 accel_unbiased;
+//   accel_unbiased.x = accel->x + ACCEL_BFP_OF_REAL(accel_diff_body_filt.x);
+//   accel_unbiased.y = accel->y + ACCEL_BFP_OF_REAL(accel_diff_body_filt.y);
+//   accel_unbiased.z = accel->z + ACCEL_BFP_OF_REAL(accel_diff_body_filt.z);
+//   int32_rmat_transp_vmult(&accel_meas_body, body_to_imu_rmat, &accel_unbiased);
 
   struct Int32Vect3 accel_meas_ltp;
   int32_rmat_transp_vmult(&accel_meas_ltp, stateGetNedToBodyRMat_i(), &accel_meas_body);
