@@ -77,6 +77,8 @@ PRINT_CONFIG_VAR(GUIDANCE_H_USE_SPEED_REF)
 #define GUIDANCE_INDI FALSE
 #endif
 
+#include "nn.h"
+
 struct HorizontalGuidance guidance_h;
 
 int32_t transition_percentage;
@@ -103,6 +105,9 @@ static void guidance_h_hover_enter(void);
 static void guidance_h_nav_enter(void);
 static inline void transition_run(void);
 static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool in_flight);
+
+network thrust_n;
+network dtheta_n;
 
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
@@ -206,6 +211,12 @@ void guidance_h_init(void)
 #if HYBRID_NAVIGATION
   guidance_hybrid_init();
 #endif
+
+  char* thrust_filename = "thrust.params";
+  char* dtheta_filename = "dtheta.params";
+  // Load networks
+  nn_read(thrust_filename, &thrust_n);
+  nn_read(dtheta_filename, &dtheta_n);
 }
 
 
@@ -364,6 +375,18 @@ void guidance_h_read_rc(bool  in_flight)
 
 void guidance_h_run(bool  in_flight)
 {
+    double input[] = {13.0,0.0,0.0,0.0,0.0};
+    double thrust_output[1];
+    double dtheta_output[1];
+
+    // Go to 0,0 with 0 velocity and theta = 0
+    // Go to x,y?  Just do input[0] -= x, input[1] -= y
+    nn(input, thrust_output, thrust_n);
+//     nn(input, dtheta_output, dtheta_n);
+
+    printf("%.2lf\t %.2lf\t ",thrust_output[0], dtheta_output[0]);
+    printf("\n");
+
   switch (guidance_h.mode) {
 
     case GUIDANCE_H_MODE_RC_DIRECT:

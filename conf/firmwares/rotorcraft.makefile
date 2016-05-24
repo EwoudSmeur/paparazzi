@@ -107,6 +107,7 @@ $(TARGET).srcs += $(SRC_FIRMWARE)/guidance/guidance_v.c
 $(TARGET).srcs += $(SRC_FIRMWARE)/guidance/guidance_v_ref.c
 $(TARGET).srcs += $(SRC_FIRMWARE)/guidance/guidance_v_adapt.c
 $(TARGET).srcs += $(SRC_FIRMWARE)/guidance/guidance_flip.c
+$(TARGET).srcs += $(SRC_FIRMWARE)/guidance/nn.c
 
 include $(CFG_ROTORCRAFT)/navigation.makefile
 else
