@@ -1,6 +1,6 @@
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <string.h> 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include "nn.h"
 
@@ -112,8 +112,8 @@ int nn_read(char* nn_filename,network* n)
     fscanf(nn_w_file, "%d%c", &nn_num_layers, &nn_a);
     n->num_layers = nn_num_layers;
 
-    n->weights = malloc(sizeof(n->weights) * nn_num_layers);
-    n->biases = malloc(sizeof(n->biases) * nn_num_layers);
+    n->weights = malloc(sizeof(double **) * nn_num_layers);
+    n->biases = malloc(sizeof(double **) * nn_num_layers);
 
     for(int l=0; l < 2 * nn_num_layers; l++)
     {
@@ -148,22 +148,22 @@ int nn_read(char* nn_filename,network* n)
             n->output_len = columns;
 
         //Allocate memory and read this matrix
-        store_to[(int)(l/2)] = malloc(rows * sizeof store_to[(int)(l/2)]);
+        store_to[(int)(l/2)] = malloc(rows * sizeof(double *));
         double w;
         for(int r=0; r < rows; r++)
         {
-            store_to[l/2][r] = malloc( columns * sizeof(store_to[l/2][r]));
+            store_to[l/2][r] = malloc( columns * sizeof(double));
             for(int c=0; c < columns; c++)
             {
-                fscanf(nn_w_file, "%lf\t,", &w);
+                fscanf(nn_w_file, "%lf\t", &w);
                 store_to[l/2][r][c] = w;
             }
             fscanf(nn_w_file, "\n", NULL);
         }
     }
 
-    n->norms = malloc(sizeof(n->norms) * (n->input_len+n->output_len));
-    n->minmax = malloc(sizeof(n->minmax) *  n->output_len );
+    n->norms = malloc(sizeof(double *) * (n->input_len+n->output_len));
+    n->minmax = malloc(sizeof(double *) *  n->output_len );
 
     fscanf(nn_w_file, "%c\n", &nn_a);
     if(nn_a!='I')
@@ -175,7 +175,7 @@ int nn_read(char* nn_filename,network* n)
     {
         double mean=0;
         double std=0;
-        n->norms[i] = malloc(2 * sizeof (n->norms)[i]);
+        n->norms[i] = malloc(2 * sizeof (double));
         fscanf(nn_w_file, "%lf\t", &mean);
         n->norms[i][0] = mean;
         fscanf(nn_w_file, "%lf\n", &std);
@@ -192,7 +192,7 @@ int nn_read(char* nn_filename,network* n)
     {
         double mean=0;
         double std=0;
-        n->norms[i] = malloc(2 * sizeof (n->norms)[i]);
+        n->norms[i] = malloc(2 * sizeof (double));
         fscanf(nn_w_file, "%lf\t", &mean);
         n->norms[i][0] = mean;
         fscanf(nn_w_file, "%lf\n", &std);
@@ -209,7 +209,7 @@ int nn_read(char* nn_filename,network* n)
     {
         double min=0;
         double max=0;
-        n->minmax[i] = malloc(2 * sizeof (n->minmax)[i]);
+        n->minmax[i] = malloc(2 * sizeof (double));
         fscanf(nn_w_file, "%lf\t", &min);
         n->minmax[i][0] = min;
         fscanf(nn_w_file, "%lf\n", &max);
