@@ -29,7 +29,9 @@
       <define name="SERVO_HZ" value="400"/>
     </module>
 
-    <module name="telemetry"     type="transparent"/>
+    <module name="telemetry"     type="transparent">
+      <configure name="MODEM_BAUD" value="B115200"/>
+    </module>
     <module name="imu"           type="elle0"/>
     <module name="gps"           type="ublox"/>
     <module name="stabilization" type="int_quat"/>
@@ -48,13 +50,15 @@
     <module name="gps" type="ubx_ucenter"/>
     <module name="geo_mag"/>
     <module name="air_data"/>
+    <module name="kiss_telemetry"/>
   </modules>
 
+  <!-- 28Mhz * 42us -->
   <servos driver="Pwm">
-    <servo name="FR"   no="0" min="1000" neutral="1100" max="2000"/>
-    <servo name="BR"    no="1" min="1000" neutral="1100" max="2000"/>
-    <servo name="BL"   no="2" min="1000" neutral="1100" max="2000"/>
-    <servo name="FL"    no="3" min="1000" neutral="1100" max="2000"/>
+    <servo name="FR"   no="0" min="1176" neutral="1235" max="2352"/>
+    <servo name="BR"   no="1" min="1176" neutral="1235" max="2352"/>
+    <servo name="BL"   no="2" min="1176" neutral="1235" max="2352"/>
+    <servo name="FL"   no="3" min="1176" neutral="1235" max="2352"/>
   </servos>
 
   <commands>

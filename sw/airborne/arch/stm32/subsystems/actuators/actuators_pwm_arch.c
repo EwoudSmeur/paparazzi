@@ -186,7 +186,7 @@ void actuators_pwm_commit(void)
   timer_set_oc_value(PWM_SERVO_11_TIMER, PWM_SERVO_11_OC, actuators_pwm_values[PWM_SERVO_11]);
 #endif
 
-#if PWM_ONESHOT
+//#if PWM_ONESHOT
 #if PWM_USE_TIM1
   timer_set_counter(TIM1, 0xFFFE);
 #endif
@@ -218,5 +218,5 @@ void actuators_pwm_commit(void)
 #if PWM_USE_TIM12
   timer_set_counter(TIM12, 0xFFFE);
 #endif
-#endif
+//#endif
 }
