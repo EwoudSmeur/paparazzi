@@ -192,16 +192,16 @@ void main_init(void)
 #endif
 
   // register the timers for the periodic functions
-  main_periodic_tid = sys_time_register_timer((1. / PERIODIC_FREQUENCY), NULL);
+  main_periodic_tid = sys_time_register_timer((1. / PERIODIC_FREQUENCY), 0, NULL);
 #if PERIODIC_FREQUENCY != MODULES_FREQUENCY
-  modules_tid = sys_time_register_timer(1. / MODULES_FREQUENCY, NULL);
+  modules_tid = sys_time_register_timer(1. / MODULES_FREQUENCY, (1. / PERIODIC_FREQUENCY)/2, NULL);
 #endif
-  radio_control_tid = sys_time_register_timer((1. / 60.), NULL);
-  failsafe_tid = sys_time_register_timer(0.05, NULL);
-  electrical_tid = sys_time_register_timer(0.1, NULL);
-  telemetry_tid = sys_time_register_timer((1. / TELEMETRY_FREQUENCY), NULL);
+  radio_control_tid = sys_time_register_timer((1. / 60.), 0, NULL);
+  failsafe_tid = sys_time_register_timer(0.05, 0, NULL);
+  electrical_tid = sys_time_register_timer(0.1, 0, NULL);
+  telemetry_tid = sys_time_register_timer((1. / TELEMETRY_FREQUENCY), 0, NULL);
 #if USE_BARO_BOARD
-  baro_tid = sys_time_register_timer(1. / BARO_PERIODIC_FREQUENCY, NULL);
+  baro_tid = sys_time_register_timer(1. / BARO_PERIODIC_FREQUENCY, 0, NULL);
 #endif
 
 #if USE_IMU

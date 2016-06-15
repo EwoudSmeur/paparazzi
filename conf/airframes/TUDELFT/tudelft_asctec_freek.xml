@@ -21,7 +21,6 @@
     <module name="motor_mixing"/>
     <module name="actuators"     type="pwm">
       <define name="SERVO_HZ" value="400"/>
-      <define name="PWM_BASE_FREQ" value="28000000"/>
     </module>
     <module name="telemetry"     type="xbee_api"/>
     <module name="imu"           type="lisa_mx_v2.1"/>
@@ -41,10 +40,10 @@
   </modules>
 
   <servos driver="Pwm">
-    <servo name="BACK_RIGHT"    no="0" min="3500" neutral="3700" max="7000"/>
-    <servo name="BACK_LEFT"     no="0" min="3500" neutral="3700" max="7000"/>
-    <servo name="FRONT_LEFT"    no="0" min="3500" neutral="3700" max="7000"/>
-    <servo name="FRONT_RIGHT"   no="0" min="3500" neutral="3700" max="7000"/>
+    <servo name="BACK_RIGHT"    no="0" min="1176" neutral="1235" max="2352"/>
+    <servo name="BACK_LEFT"     no="0" min="1176" neutral="1235" max="2352"/>
+    <servo name="FRONT_LEFT"    no="0" min="1176" neutral="1235" max="2352"/>
+    <servo name="FRONT_RIGHT"   no="0" min="1176" neutral="1235" max="2352"/>
   </servos>
 
   <commands>
