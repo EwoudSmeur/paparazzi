@@ -8,6 +8,8 @@
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
       <module name="udp"/>
+<!--       <define name="STABILIZATION_INDI_G2_R" value="0.0"/> -->
+     <define name="NPS_GPS_DT" value="0.002"/>
     </target>
 
     <!--define name="USE_SONAR" value="TRUE"/-->
@@ -26,16 +28,16 @@
       <define name="AHRS_USE_GPS_HEADING" value="FALSE"/>
     </module>
     <module name="ins" type="extended"/>
-    <module name="guidance" type="indi"/>
+<!--     <module name="guidance" type="indi"/> -->
   </firmware>
 
   <modules main_freq="512">
     <module name="geo_mag"/>
     <module name="air_data"/>
     <module name="send_imu_mag_current"/>
-    <!--module name="logger_file">
+    <module name="logger_file">
       <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
-    </module-->
+    </module>
   </modules>
 
   <commands>
@@ -134,6 +136,11 @@
     <define name="G1_R" value="0.0022"/>
     <define name="G2_R" value="0.1450"/>
 
+<!--     For simulation -->
+<!--    <define name="G1_P" value="0.005"/>
+    <define name="G1_Q" value="0.005"/>
+    <define name="G1_R" value="0.015"/>-->
+
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="600.0"/>
     <define name="REF_ERR_Q" value="600.0"/>
@@ -152,6 +159,10 @@
     <define name="FILT_ZETA_R" value="0.55"/>
 
     <!-- first order actuator dynamics -->
+<!--    <define name="ACT_DYN_P" value="0.8"/>
+    <define name="ACT_DYN_Q" value="0.8"/>
+    <define name="ACT_DYN_R" value="0.8"/>-->
+
     <define name="ACT_DYN_P" value="0.1"/>
     <define name="ACT_DYN_Q" value="0.1"/>
     <define name="ACT_DYN_R" value="0.1"/>

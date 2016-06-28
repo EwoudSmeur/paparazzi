@@ -75,6 +75,8 @@ void file_logger_stop(void)
   }
 }
 
+#include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
+
 /** Log the values to a csv file */
 void file_logger_periodic(void)
 {
@@ -84,7 +86,7 @@ void file_logger_periodic(void)
   static uint32_t counter;
   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
 
-  fprintf(file_logger, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+  fprintf(file_logger, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
           counter,
           imu.gyro_unscaled.p,
           imu.gyro_unscaled.q,
@@ -102,7 +104,11 @@ void file_logger_periodic(void)
           quat->qi,
           quat->qx,
           quat->qy,
-          quat->qz
+          quat->qz,
+          stab_att_sp_quat.qi,
+          stab_att_sp_quat.qx,
+          stab_att_sp_quat.qy,
+          stab_att_sp_quat.qz
          );
   counter++;
 }

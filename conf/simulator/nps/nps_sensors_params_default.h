@@ -158,6 +158,8 @@
 
 #endif /* GPS_PERFECT */
 
+#ifndef NPS_GPS_DT
 #define NPS_GPS_DT                           (1./4.)
+#endif
 
 #endif /* NPS_SENSORS_PARAMS_H */
