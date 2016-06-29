@@ -20,7 +20,8 @@
     <module name="motor_mixing"/>
     <module name="actuators" type="bebop"/>
     <module name="imu" type="bebop"/>
-    <module name="gps" type="furuno"/>
+<!--     <module name="gps" type="furuno"/> -->
+    <module name="gps" type="datalink"/>
     <module name="stabilization" type="indi"/>
     <module name="stabilization" type="rate_indi"/>
     <module name="ahrs" type="int_cmpl_quat">
@@ -99,6 +100,10 @@
   <section name="INS" prefix="INS_">
     <define name="SONAR_MAX_RANGE" value="2.2"/>
     <define name="SONAR_UPDATE_ON_AGL" value="TRUE"/>
+
+    <!-- Use GPS altitude measurments and set the R gain -->
+    <define name="USE_GPS_ALT" value="1"/>
+    <define name="VFF_R_GPS" value="0.01"/>
   </section>
 
   <section name="RC_SETPOINT" prefix="STABILIZATION_ATTITUDE_">
