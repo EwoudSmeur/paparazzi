@@ -205,6 +205,9 @@ void stabilization_indi_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
   quat_from_earth_cmd_i(&stab_att_sp_quat, cmd, heading);
 }
 
+#include "firmwares/rotorcraft/autopilot.h"
+#include "firmwares/rotorcraft/guidance/guidance_h.h"
+
 static inline void stabilization_indi_calc_cmd(int32_t indi_commands[], struct Int32Quat *att_err, bool rate_control)
 {
   /* Propagate the second order filter on the gyroscopes */
@@ -244,6 +247,9 @@ static inline void stabilization_indi_calc_cmd(int32_t indi_commands[], struct I
     indi.angular_accel_ref.q =  indi.reference_acceleration.rate_q * ((float)radio_control.values[RADIO_PITCH] / MAX_PPRZ * indi.max_rate - body_rates->q);
     indi.angular_accel_ref.r =  indi.reference_acceleration.rate_r * ((float)radio_control.values[RADIO_YAW]   / MAX_PPRZ * indi.max_rate - body_rates->r);
   }
+
+  if(autopilot_mode == AP_MODE_NAV)
+    indi.angular_accel_ref.q =  indi.reference_acceleration.rate_q * (-dtheta_out - body_rates->q);
 
   //Increment in angular acceleration requires increment in control input
   //G1 is the control effectiveness. In the yaw axis, we need something additional: G2.

@@ -84,6 +84,9 @@ struct HorizontalGuidance guidance_h;
 int32_t transition_percentage;
 int32_t transition_theta_offset;
 
+float dtheta_out = 0.0;
+float thrust_out = 0.0;
+
 double nn_theta = 0.0;
 /*
  * internal variables
@@ -464,32 +467,46 @@ void guidance_h_run(bool  in_flight)
         /* compute x,y earth commands */
         guidance_h_traj_run(in_flight);
 
-      // input = x vx z vz theta
-      double input[5];
-      input[0] = stateGetPositionNed_f()->x - POS_FLOAT_OF_BFP(guidance_h.sp.pos.x);
-      input[1] = stateGetSpeedNed_f()->x;
-      input[2] = stateGetPositionNed_f()->z*0;
-      input[3] = stateGetSpeedNed_f()->z;
-//       input[4] = stateGetNedToBodyEulers_f()->theta;
-      input[4] = nn_theta; //without prediction
-      double thrust_output[1];
-      static double dtheta_output[1];
+        // input = x vx z vz theta
+        double input[5];
+        input[0] = (stateGetPositionNed_f()->x - POS_FLOAT_OF_BFP(guidance_h.sp.pos.x));
+        input[1] = stateGetSpeedNed_f()->x;
+        input[2] = -(stateGetPositionNed_f()->z - POS_FLOAT_OF_BFP(guidance_v_z_ref));
+        input[3] = -stateGetSpeedNed_f()->z;
+  //       input[4] = stateGetNedToBodyEulers_f()->theta;
+        input[4] = nn_theta; //without prediction
+        double thrust_output[1];
+        static double dtheta_output[1];
 
-      //with prediction
-//       input[4] = nn_theta  + dtheta_output[0]/512.0*5.0;
+        //with prediction
+  //       input[4] = nn_theta  + dtheta_output[0]/512.0*5.0;
 
-      // Go to 0,0 with 0 velocity and theta = 0
-      // Go to x,y?  Just do input[0] -= x, input[1] -= y
-      nn(input, thrust_output, thrust_n);
-      nn(input, dtheta_output, dtheta_n);
+        // Go to 0,0 with 0 velocity and theta = 0
+        // Go to x,y?  Just do input[0] -= x, input[1] -= y
+        nn(input, thrust_output, thrust_n);
+        nn(input, dtheta_output, dtheta_n);
 
-      if(in_flight)
-        nn_theta = nn_theta + dtheta_output[0]/512.0;
-      Bound(nn_theta, -0.5, 0.5);
-      guidance_h_cmd_earth.x = ANGLE_BFP_OF_REAL(nn_theta);
+        dtheta_out = dtheta_output[0];
+        thrust_out = thrust_output[0];
 
-      printf("%.2lf\t %.2lf\t %.2d\t %.2lf\t",thrust_output[0], dtheta_output[0], guidance_h_cmd_earth.x, nn_theta);
-      printf("\n");
+//         stabilization_cmd[COMMAND_THRUST] = thrust_output[0]/7.0*9600;
+
+//         float thrust_pp = thrust_output[0]/4.0;
+//         Bound(thrust_pp, 0.07,1.8);
+//         float rpm_cmd = (0.0023 + sqrt((-0.0023)*(-0.0023) - 4.0*0.000070884*(0.08-thrust_pp)))/(2*0.000070884);
+//         stabilization_cmd[COMMAND_THRUST] = rpm_cmd/200.0*9600;
+//
+//         Bound(stabilization_cmd[COMMAND_THRUST], 0, 9600);
+
+        if(in_flight)
+        {
+          nn_theta = nn_theta + dtheta_output[0]/512.0;
+        }
+        Bound(nn_theta, -0.5, 0.5);
+        guidance_h_cmd_earth.x = ANGLE_BFP_OF_REAL(nn_theta);
+
+//       printf("%.2lf\t %.2lf\t %.2d\t %.2lf\t",thrust_output[0], dtheta_output[0], guidance_h_cmd_earth.x, nn_theta);
+//       printf("\n");
 
         /* set final attitude setpoint */
         stabilization_attitude_set_earth_cmd_i(&guidance_h_cmd_earth,

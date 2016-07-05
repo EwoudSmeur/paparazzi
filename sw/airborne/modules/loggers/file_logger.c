@@ -76,6 +76,8 @@ void file_logger_stop(void)
 }
 
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
+#include "firmwares/rotorcraft/guidance/guidance_h.h"
+#include "firmwares/rotorcraft/guidance/guidance_v.h"
 
 /** Log the values to a csv file */
 void file_logger_periodic(void)
@@ -85,18 +87,17 @@ void file_logger_periodic(void)
   }
   static uint32_t counter;
   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
+  struct NedCoor_f *speed = stateGetSpeedNed_f();
+  float z_ref = POS_FLOAT_OF_BFP(guidance_v_z_ref);
 
-  fprintf(file_logger, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+  fprintf(file_logger, "%d, %d,%d,%d, %d,%d,%d, %d,%d,%d,%d, %d,%d,%d,%d, %d,%d,%d,%d, %f,%f, %f,%f,%f, %f,%f,%f, %d,%d,%f\n",
           counter,
-          imu.gyro_unscaled.p,
-          imu.gyro_unscaled.q,
-          imu.gyro_unscaled.r,
-          imu.accel_unscaled.x,
-          imu.accel_unscaled.y,
-          imu.accel_unscaled.z,
-          imu.mag_unscaled.x,
-          imu.mag_unscaled.y,
-          imu.mag_unscaled.z,
+          imu.gyro.p,
+          imu.gyro.q,
+          imu.gyro.r,
+          imu.accel.x,
+          imu.accel.y,
+          imu.accel.z,
           stabilization_cmd[COMMAND_THRUST],
           stabilization_cmd[COMMAND_ROLL],
           stabilization_cmd[COMMAND_PITCH],
@@ -108,7 +109,18 @@ void file_logger_periodic(void)
           stab_att_sp_quat.qi,
           stab_att_sp_quat.qx,
           stab_att_sp_quat.qy,
-          stab_att_sp_quat.qz
+          stab_att_sp_quat.qz,
+          dtheta_out,
+          thrust_out,
+          stateGetPositionNed_f()->x,
+          stateGetPositionNed_f()->y,
+          stateGetPositionNed_f()->z,
+          speed->x,
+          speed->y,
+          speed->z,
+          guidance_h.ref.pos.x,
+          guidance_h.ref.pos.y,
+          z_ref
          );
   counter++;
 }
