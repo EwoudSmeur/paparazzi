@@ -491,12 +491,12 @@ void guidance_h_run(bool  in_flight)
 
 //         stabilization_cmd[COMMAND_THRUST] = thrust_output[0]/7.0*9600;
 
-//         float thrust_pp = thrust_output[0]/4.0;
-//         Bound(thrust_pp, 0.07,1.8);
-//         float rpm_cmd = (0.0023 + sqrt((-0.0023)*(-0.0023) - 4.0*0.000070884*(0.08-thrust_pp)))/(2*0.000070884);
-//         stabilization_cmd[COMMAND_THRUST] = rpm_cmd/200.0*9600;
-//
-//         Bound(stabilization_cmd[COMMAND_THRUST], 0, 9600);
+        float thrust_pp = thrust_output[0]/4.0;
+        Bound(thrust_pp, 0.07,1.8);
+        float rpm_cmd = (0.0023 + sqrt((-0.0023)*(-0.0023) - 4.0*0.000070884*(0.08-thrust_pp)))/(2*0.000070884);
+        stabilization_cmd[COMMAND_THRUST] = rpm_cmd/200.0*9600;
+
+        Bound(stabilization_cmd[COMMAND_THRUST], 0, 9600);
 
         if(in_flight)
         {

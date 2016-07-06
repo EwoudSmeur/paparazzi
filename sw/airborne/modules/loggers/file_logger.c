@@ -118,8 +118,8 @@ void file_logger_periodic(void)
           speed->x,
           speed->y,
           speed->z,
-          guidance_h.ref.pos.x,
-          guidance_h.ref.pos.y,
+          guidance_h.sp.pos.x,
+          guidance_h.sp.pos.y,
           z_ref
          );
   counter++;
