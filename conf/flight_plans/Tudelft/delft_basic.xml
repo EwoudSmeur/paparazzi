@@ -6,7 +6,7 @@
 </header>
   <waypoints>
     <waypoint name="HOME" x="0.0" y="0.0"/>
-    <waypoint name="CLIMB" x="0.0" y="5.0"/>
+    <waypoint name="CLIMB" x="0.0" y="0.0"/>
     <waypoint name="STDBY" x="0.0" y="0.0"/>
     <waypoint name="p1" x="0.0" y="10."/>
     <waypoint name="p2" x="5.0" y="0.0"/>
@@ -17,8 +17,10 @@
       <call fun="NavKillThrottle()"/>
       <while cond="!GpsFixValid()"/>
     </block>
-    <block name="Geo init">
+    <block name="Wait Geo init">
       <while cond="LessThan(NavBlockTime(), 10)"/>
+    </block>
+    <block name="Geo init">
       <call fun="NavSetGroundReferenceHere()"/>
     </block>
     <block name="Holding point">
@@ -26,29 +28,16 @@
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
     <block name="Start Engine">
+      <call fun="NavSetGroundReferenceHere()"/>
       <call fun="NavResurrect()"/>
-      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+      <attitude pitch="0" roll="0" throttle="0" vmode="throttle" until="TRUE"/>
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
       <exception cond="stateGetPositionEnu_f()->z > 2.0" deroute="Standby"/>
-      <call fun="NavSetWaypointHere(WP_CLIMB)"/>
       <stay climb="nav_climb_vspeed" vmode="climb" wp="CLIMB"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
-      <stay wp="STDBY"/>
-    </block>
-    <block name="stay_p1">
-      <stay wp="p1"/>
-    </block>
-    <block name="go_p2">
-      <go wp="p2"/>
-      <deroute block="stay_p1"/>
-    </block>
-    <block name="line_p1_p2">
-      <go from="p1" hmode="route" wp="p2"/>
-      <stay until="stage_time>10" wp="p2"/>
-      <go from="p2" hmode="route" wp="p1"/>
-      <deroute block="stay_p1"/>
+      <stay wp="STDBY" until="stage_time>10"/>
     </block>
     <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
       <call fun="NavSetWaypointHere(WP_TD)"/>
@@ -63,6 +52,7 @@
       <stay climb="nav_descend_vspeed" vmode="climb" wp="TD"/>
     </block>
     <block name="landed">
+      <call fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
   </blocks>

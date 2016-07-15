@@ -88,6 +88,10 @@
     <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
+
+    <define name="ACCEL_X_NEUTRAL" value="67"/>
+    <define name="ACCEL_Y_NEUTRAL" value="44"/>
+    <define name="ACCEL_Z_NEUTRAL" value="374"/>
   </section>
 
   <!-- local magnetic field -->

@@ -138,6 +138,8 @@ void guidance_indi_run(bool_t in_flight, int32_t heading) {
 
   float altitude_sp = POS_FLOAT_OF_BFP(guidance_v_z_ref);
   float vertical_velocity_sp = guidance_indi_pos_gain_vertical*(altitude_sp - stateGetPositionNed_f()->z);
+
+  Bound(vertical_velocity_sp, -2.0, 2.0);
 #else
   //rotate rc commands to ned axes
   float psi = state_eulers->psi;
