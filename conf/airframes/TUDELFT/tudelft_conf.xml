@@ -423,9 +423,9 @@
    airframe="airframes/examples/quadshot_asp21_spektrum.xml"
    radio="radios/cockpitSX.xml"
    telemetry="telemetry/default_rotorcraft.xml"
-   flight_plan="flight_plans/TUDELFT/tudelft_delft_basic.xml"
+   flight_plan="flight_plans/quadshot_delft.xml"
    settings="settings/rotorcraft_basic.xml"
-   settings_modules="modules/gps_ubx_ucenter.xml modules/gps.xml"
+   settings_modules="modules/gps_ubx_ucenter.xml modules/imu_common.xml modules/gps.xml"
    gui_color="blue"
   />
   <aircraft

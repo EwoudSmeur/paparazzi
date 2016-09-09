@@ -33,40 +33,33 @@
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
     <block name="Start Engine">
-      <set value="FALSE" var="force_forward_flight"/>
       <call fun="NavResurrect()"/>
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
       <exception cond="stateGetPositionEnu_f()->z > 5.0" deroute="Climb"/>
       <call fun="NavSetWaypointHere(WP_STDBY)"/>
-      <set value="FALSE" var="force_forward_flight"/>
       <attitude pitch="0" roll="0" throttle="0.5" until="FALSE" vmode="throttle"/>
     </block>
     <block name="Climb">
       <exception cond="stateGetPositionEnu_f()->z > 20.0" deroute="Standby"/>
       <call fun="NavSetWaypointHere(WP_STDBY)"/>
-      <set value="FALSE" var="force_forward_flight"/>
       <stay climb="2" vmode="climb" wp="STDBY"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <exception cond="radio_control.status > RC_OK" deroute="land"/>
-      <set value="FALSE" var="force_forward_flight"/>
       <stay wp="STDBY"/>
     </block>
     <block name="stay_p1">
       <exception cond="radio_control.status > RC_OK" deroute="land"/>
-      <set value="FALSE" var="force_forward_flight"/>
       <stay wp="p1"/>
     </block>
     <block name="go_p2_p1">
       <exception cond="radio_control.status > RC_OK" deroute="land"/>
-      <set value="FALSE" var="force_forward_flight"/>
       <go wp="p2"/>
       <deroute block="stay_p1"/>
     </block>
     <block name="pylon_racing">
       <exception cond="radio_control.status > RC_OK" deroute="land"/>
-      <set value="FALSE" var="force_forward_flight"/>
       <go wp="p2"/>
       <go wp="p3"/>
       <go wp="p4"/>
@@ -75,20 +68,16 @@
     </block>
     <block name="pylon_racing_forward">
       <exception cond="radio_control.status > RC_OK" deroute="land"/>
-      <set value="TRUE" var="force_forward_flight"/>
       <go wp="p2"/>
       <go wp="p3"/>
       <go wp="p4"/>
-      <set value="FALSE" var="force_forward_flight"/>
       <go wp="p1"/>
       <deroute block="stay_p1"/>
     </block>
     <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
-      <set value="FALSE" var="force_forward_flight"/>
       <call fun="NavSetWaypointHere(WP_STDBY)"/>
     </block>
     <block name="land">
-      <set value="FALSE" var="force_forward_flight"/>
       <go wp="STDBY"/>
     </block>
     <block name="descent">
