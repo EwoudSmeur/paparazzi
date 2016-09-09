@@ -348,16 +348,17 @@ void guidance_hybrid_determine_wind_estimate(void)
 
 void guidance_hybrid_set_cmd_i(struct Int32Eulers *sp_cmd)
 {
-  /// @todo calc sp_quat in fixed-point
+  // create a quaternion with just the roll and pitch command
+  struct FloatQuat q_p;
+  struct FloatQuat q_r;
+  struct FloatEulers pitch_cmd = {0.0, ANGLE_FLOAT_OF_BFP(sp_cmd->theta), 0.0};
+  struct FloatEulers roll_cmd = {ANGLE_FLOAT_OF_BFP(sp_cmd->phi), 0.0, 0.0};
+  float_quat_of_eulers(&q_p, &pitch_cmd);
+  float_quat_of_eulers(&q_r, &roll_cmd);
 
-  /* orientation vector describing simultaneous rotation of roll/pitch */
-  struct FloatVect3 ov;
-  ov.x = ANGLE_FLOAT_OF_BFP(sp_cmd->phi);
-  ov.y = ANGLE_FLOAT_OF_BFP(sp_cmd->theta);
-  ov.z = 0.0;
-  /* quaternion from that orientation vector */
   struct FloatQuat q_rp;
-  float_quat_of_orientation_vect(&q_rp, &ov);
+  float_quat_comp(&q_rp, &q_r, &q_p);
+
   struct Int32Quat q_rp_i;
   QUAT_BFP_OF_REAL(q_rp_i, q_rp);
 
