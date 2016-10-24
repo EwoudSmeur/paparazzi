@@ -235,10 +235,10 @@ struct FloatEulers calc_euler_cmd_nl(struct FloatVect3 input_accel) {
     Tm = -float_vect3_norm(&input_accel); //linear thrust/acceleration assumption
 
   uint16_t rpm_filt[4];
-  rpm_filt[0] =(uint16_t) (u_actuators[0]/9000.0*9600.0+3000.0);
-  rpm_filt[1] =(uint16_t) (u_actuators[1]/9000.0*9600.0+3000.0);
-  rpm_filt[2] =(uint16_t) (u_actuators[2]/9000.0*9600.0+3000.0);
-  rpm_filt[3] =(uint16_t) (u_actuators[3]/9000.0*9600.0+3000.0);
+  rpm_filt[0] =(uint16_t) (u_actuators[0]*9000.0/9600.0+3000.0);
+  rpm_filt[1] =(uint16_t) (u_actuators[1]*9000.0/9600.0+3000.0);
+  rpm_filt[2] =(uint16_t) (u_actuators[2]*9000.0/9600.0+3000.0);
+  rpm_filt[3] =(uint16_t) (u_actuators[3]*9000.0/9600.0+3000.0);
   euler_cmd.z = Tm-(-calcthrust(rpm_filt)/0.395);
 //   T_in = Tm*-500.0;
 //   Bound(T_in, 0.0, 9600.0);
@@ -277,10 +277,10 @@ struct FloatVect3 calc_input_accel(struct FloatEulers *eulers) {
 //   float Tm = T_filt/-500.0; //linear thrust/acceleration assumption
 
   uint16_t rpm_filt[4];
-  rpm_filt[0] =(uint16_t) (u_actuators[0]/9000.0*9600.0+3000.0);
-  rpm_filt[1] =(uint16_t) (u_actuators[1]/9000.0*9600.0+3000.0);
-  rpm_filt[2] =(uint16_t) (u_actuators[2]/9000.0*9600.0+3000.0);
-  rpm_filt[3] =(uint16_t) (u_actuators[3]/9000.0*9600.0+3000.0);
+  rpm_filt[0] =(uint16_t) (u_actuators[0]*9000.0/9600.0+3000.0);
+  rpm_filt[1] =(uint16_t) (u_actuators[1]*9000.0/9600.0+3000.0);
+  rpm_filt[2] =(uint16_t) (u_actuators[2]*9000.0/9600.0+3000.0);
+  rpm_filt[3] =(uint16_t) (u_actuators[3]*9000.0/9600.0+3000.0);
   float Tm = -calcthrust(rpm_filt)/0.395;
 
   struct FloatVect3 accel_input0;
