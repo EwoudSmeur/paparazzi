@@ -157,7 +157,7 @@ let parse_element = fun prefix s ->
 
 let print_reverse_servo_table = fun driver servos ->
   let d = match driver with "Default" -> "" | _ -> "_"^(String.uppercase driver) in
-  printf "static inline int get_servo_min%s(int _idx) {\n" d;
+  printf "static inline int get_servo_min(int _idx) {\n";
   printf "  switch (_idx) {\n";
   List.iter (fun c ->
     let name = ExtXml.attrib c "name" in
@@ -166,7 +166,7 @@ let print_reverse_servo_table = fun driver servos ->
   printf "    default: return 0;\n";
   printf "  };\n";
   printf "}\n\n";
-  printf "static inline int get_servo_max%s(int _idx) {\n" d;
+  printf "static inline int get_servo_max(int _idx) {\n";
   printf "  switch (_idx) {\n";
   List.iter (fun c ->
     let name = ExtXml.attrib c "name" in

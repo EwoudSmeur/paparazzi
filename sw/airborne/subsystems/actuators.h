@@ -48,6 +48,7 @@ extern bool   actuators_delay_done;
  * Temporary storage (for debugging purpose, downlinked via telemetry)
  * */
 extern int16_t actuators[ACTUATORS_NB];
+extern int16_t actuators_pprz[ACTUATORS_NB];
 
 /** Set actuators.
  * @param _n actuators name as given in airframe file, servos section

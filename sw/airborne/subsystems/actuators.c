@@ -31,6 +31,7 @@
 #if ACTUATORS_NB
 
 int16_t actuators[ACTUATORS_NB];
+int16_t actuators_pprz[ACTUATORS_NB];
 
 uint32_t actuators_delay_time;
 bool   actuators_delay_done;

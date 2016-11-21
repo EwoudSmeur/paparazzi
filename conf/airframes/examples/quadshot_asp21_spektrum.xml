@@ -26,36 +26,10 @@
   </commands>
 
   <command_laws>
-    <call fun="motor_mixing_run(autopilot_motors_on,FALSE,values)"/>
-    <set servo="A1" value="motor_mixing.commands[0]"/>
-    <set servo="A2"  value="motor_mixing.commands[1]"/>
-    <set servo="B1" value="motor_mixing.commands[2]"/>
-    <set servo="B2"  value="motor_mixing.commands[3]"/>
-
- <!-- Mode dependent actuator laws for the elevons. The elevons act different in rc attitude flight mode-->
- <!-- First the correct feedback is stored in variables -->
-    <let var="aileron_feedback_left"  value="-@YAW"/>
-    <let var="aileron_feedback_right" value="-@YAW"/>
-
-    <let var="elevator_feedback_left"  value="-@PITCH"/>
-    <let var="elevator_feedback_right" value="+@PITCH"/>
-
- <!-- Here the gains are defined for the two feedback cases, hover and forward-->
-    <let var="hover_left"  value="15*$aileron_feedback_left"/>
-    <let var="hover_right" value="15*$aileron_feedback_right"/>
-
-<!--     if using INDI -->
-<!--    <let var="forward_left"  value="aileron_gain*$aileron_feedback_left+elevator_gain*$elevator_feedback_left"/>
-    <let var="forward_right" value="aileron_gain*$aileron_feedback_right+elevator_gain*$elevator_feedback_right"/>-->
-
-<!--     if using PID with gain scheduling -->
-    <let var="forward_left"  value="5*$aileron_feedback_left + 4*$elevator_feedback_left"/>
-    <let var="forward_right" value="5*$aileron_feedback_right + 4*$elevator_feedback_right"/>
-
-    <!-- This statement tells the autopilot to use the hover feedback if in mode attitude direct and to use the forward feedback in all other cases-->
-    <set servo="ELEVON_LEFT"    value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? $hover_left  : $forward_left" />
-    <set servo="ELEVON_RIGHT"   value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? $hover_right  : $forward_right" />
-<!--     <set servo="ELEVON_RIGHT"   value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? 9000 : -9000" /> -->
+    <set servo="A1" value="actuators[0]"/>
+    <set servo="A2" value="actuators[1]"/>
+    <set servo="B1" value="actuators[2]"/>
+    <set servo="B2" value="actuators[3]"/>
   </command_laws>
 
   <section name="MIXING" prefix="MOTOR_MIXING_">
@@ -210,34 +184,31 @@
   </section>
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
-    <!-- setpoints -->
-    <define name="SP_MAX_PHI" value="60." unit="deg"/>
-    <define name="SP_MAX_THETA" value="60." unit="deg"/>
-    <define name="SP_MAX_R" value="180." unit="deg/s"/>
-    <define name="DEADBAND_R" value="250"/>
-    <define name="DEADBAND_A" value="250"/>
-    <define name="SP_PSI_DELTA_LIMIT" value="90" unit="deg"/>
     <!-- control effectiveness -->
-    <define name="G1_P" value="0.025"/>
-    <define name="G1_Q" value="0.0833"/>
-    <define name="G1_R" value="0.00588"/>
-    <define name="G2_R" value="0.0"/>
+    <define name="G1_ROLL" value="{20 , -20, -20 , 20 }"/>
+    <define name="G1_PITCH" value="{14 , 14, -14 , -14 }"/>
+    <define name="G1_YAW" value="{-1, 1, -1, 1}"/>
+    <define name="G1_THRUST" value="{-.4, -.4, -.4, -.4}"/>
+    <!--<define name="G1_THRUST" value="{-400, -400, -400, -400}"/>-->
+    <!--Counter torque effect of spinning up a rotor-->
+    <define name="G2" value="{-61.2093,   65.3670,  -65.7419,   65.4516}"/>
+
     <!-- reference acceleration for attitude control -->
-    <define name="REF_ERR_P" value="70.0"/>
-    <define name="REF_ERR_Q" value="45.0"/>
-    <define name="REF_ERR_R" value="70.0"/>
-    <define name="REF_RATE_P" value="9.0"/>
-    <define name="REF_RATE_Q" value="16.0"/>
-    <define name="REF_RATE_R" value="12.0"/>
-    <!-- second order filter parameters -->
-    <define name="FILT_CUTOFF" value="8.0"/>
-    <define name="FILT_CUTOFF_R" value="3.2"/>
+    <define name="REF_ERR_P" value="600.0"/>
+    <define name="REF_ERR_Q" value="600.0"/>
+    <define name="REF_ERR_R" value="600.0"/>
+    <define name="REF_RATE_P" value="28.0"/>
+    <define name="REF_RATE_Q" value="28.0"/>
+    <define name="REF_RATE_R" value="28.0"/>
+
+    <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
+    <define name="FILT_CUTOFF" value="5.0"/>
+
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN_P" value="0.03"/>
-    <define name="ACT_DYN_Q" value="0.03"/>
-    <define name="ACT_DYN_R" value="0.03"/>
-        <!-- Adaptive Learning Rate -->
-    <define name="USE_ADAPTIVE" value="FALSE"/>
+    <define name="ACT_DYN" value="0.1"/>
+
+    <!-- Adaptive Learning Rate -->
+    <define name="USE_ADAPTIVE" value="TRUE"/>
     <define name="ADAPTIVE_MU" value="0.0001"/>
   </section>
 
@@ -337,13 +308,9 @@
   </modules>
 
   <firmware name="rotorcraft">
-    <target name="ap" board="lisa_m_2.0">
-    <module name="radio_control" type="spektrum">
-      <define name="RADIO_KILL_SWITCH" value="5"/>
-      <!-- Put the mode on channel AUX1-->
-      <define name="RADIO_MODE" value="6"/>
-<!--       <configure name="USE_SECONDARY_SPEKTRUM_RECEIVER" value="1"/> -->
-    </module>
+    <!--<target name="ap" board="lisa_m_2.0">-->
+    <target name="ap" board="lisa_mx_2.1">
+    <module name="radio_control" type="datalink"/>
 
     <!-- ONLY if flashing via JTAG cable -->
     <configure name="FLASH_MODE"   value="SWD"/>
@@ -358,18 +325,20 @@
       <configure name="LISA_M_BARO" value="BARO_BOARD_BMP085"/>
     </target>
 
-    <module name="motor_mixing"/>
+    <!--<module name="motor_mixing"/>-->
+    <module name="sys_mon"/>
     <module name="actuators"     type="pwm">
       <define name="SERVO_HZ" value="400"/>
       <define name="USE_SERVOS_7AND8"/>
     </module>
 
-    <module name="telemetry"     type="xbee_api"/>
-<!--    <module name="telemetry"     type="transparent"/> -->
-    <module name="imu"           type="aspirin_v2.1"/>
+    <!--<module name="telemetry"     type="xbee_api"/>-->
+    <module name="telemetry"     type="transparent"/> 
+    <!--<module name="imu"           type="aspirin_v2.1"/>-->
+    <module name="imu"           type="lisa_mx_v2.1"/>
     <module name="gps"           type="ublox"/>
 <!--     <module name="stabilization" type="int_quat"/> -->
-    <module name="stabilization" type="indi_simple"/>
+    <module name="stabilization" type="indi"/>
     <module name="guidance"      type="hybrid"/>
 
     <module name="ahrs"          type="int_cmpl_quat">
