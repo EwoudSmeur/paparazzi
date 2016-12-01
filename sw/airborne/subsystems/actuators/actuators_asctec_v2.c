@@ -34,17 +34,25 @@
 PRINT_CONFIG_VAR(ACTUATORS_ASCTEC_V2_I2C_DEV)
 
 struct ActuatorsAsctecV2 actuators_asctec_v2;
+static uint8_t len_w;
+uint8_t data_in[2] = {0,0};
 
 void actuators_asctec_v2_init(void)
 {
   actuators_asctec_v2.cmd = NONE;
   actuators_asctec_v2.cur_addr = FRONT;
   actuators_asctec_v2.new_addr = FRONT;
+  //write
   actuators_asctec_v2.i2c_trans.status = I2CTransSuccess;
   actuators_asctec_v2.i2c_trans.type = I2CTransTx;
   actuators_asctec_v2.i2c_trans.slave_addr = ACTUATORS_ASCTEC_V2_SLAVE_ADDR;
   actuators_asctec_v2.i2c_trans.len_w = 5;
   actuators_asctec_v2.nb_err = 0;
+  //read
+  actuators_asctec_v2.i2c_read.status = I2CTransSuccess;
+  actuators_asctec_v2.i2c_read.type = I2CTransRx;
+  actuators_asctec_v2.i2c_read.slave_addr = ACTUATORS_ASCTEC_V2_SLAVE_ADDR;
+  actuators_asctec_v2.i2c_read.len_r = 5;
 }
 
 
@@ -83,6 +91,7 @@ void actuators_asctec_v2_set(void)
   actuators_asctec_v2.i2c_trans.buf[2] = 0;
   actuators_asctec_v2.i2c_trans.buf[3] = 0;
   actuators_asctec_v2.i2c_trans.buf[4] = 0xAA;
+  len_w = 5;
 #else
   switch (actuators_asctec_v2.cmd) {
     case TEST:
@@ -90,14 +99,14 @@ void actuators_asctec_v2_set(void)
       actuators_asctec_v2.i2c_trans.buf[1] = actuators_asctec_v2.cur_addr;
       actuators_asctec_v2.i2c_trans.buf[2] = 0;
       actuators_asctec_v2.i2c_trans.buf[3] = 231 + actuators_asctec_v2.cur_addr;
-      actuators_asctec_v2.i2c_trans.len_w = 4;
+      len_w = 4;
       break;
     case REVERSE:
       actuators_asctec_v2.i2c_trans.buf[0] = 254;
       actuators_asctec_v2.i2c_trans.buf[1] = actuators_asctec_v2.cur_addr;
       actuators_asctec_v2.i2c_trans.buf[2] = 0;
       actuators_asctec_v2.i2c_trans.buf[3] = 234 + actuators_asctec_v2.cur_addr;
-      actuators_asctec_v2.i2c_trans.len_w = 4;
+      len_w = 4;
       break;
     case SET_ADDR:
       actuators_asctec_v2.i2c_trans.buf[0] = 250;
@@ -106,7 +115,7 @@ void actuators_asctec_v2_set(void)
       actuators_asctec_v2.i2c_trans.buf[3] = 230 + actuators_asctec_v2.cur_addr +
                                              actuators_asctec_v2.new_addr;
       actuators_asctec_v2.cur_addr = actuators_asctec_v2.new_addr;
-      actuators_asctec_v2.i2c_trans.len_w = 4;
+      len_w = 4;
       break;
     case NONE:
       actuators_asctec_v2.i2c_trans.buf[0] = actuators_asctec_v2.cmds[SERVO_FRONT];
@@ -117,7 +126,7 @@ void actuators_asctec_v2_set(void)
                                              actuators_asctec_v2.i2c_trans.buf[1] +
                                              actuators_asctec_v2.i2c_trans.buf[2] +
                                              actuators_asctec_v2.i2c_trans.buf[3];
-      actuators_asctec_v2.i2c_trans.len_w = 5;
+      len_w = 5;
       break;
     default:
       break;
@@ -125,8 +134,14 @@ void actuators_asctec_v2_set(void)
   actuators_asctec_v2.cmd = NONE;
 #endif
 
-  actuators_asctec_v2.i2c_trans.type = I2CTransTx;   // Can be reset I2C driver
-  i2c_submit(&ACTUATORS_ASCTEC_V2_I2C_DEV, &actuators_asctec_v2.i2c_trans);
+  i2c_transmit(&ACTUATORS_ASCTEC_V2_I2C_DEV, &actuators_asctec_v2.i2c_trans, ACTUATORS_ASCTEC_V2_SLAVE_ADDR, len_w);
 
+  // process previous read
+  data_in[0] = actuators_asctec_v2.i2c_read.buf[0];
+  /*data_in[1] = actuators_asctec_v2.i2c_read.buf[1];*/
+  uint8_t motor_num = 3;
+  uint8_t read_addr = ((motor_num+3)<<1)|0x01;
+  data_in[1] = read_addr;
+  /*i2c_receive(&ACTUATORS_ASCTEC_V2_I2C_DEV, &actuators_asctec_v2.i2c_read, read_addr, 3);*/
 }
 

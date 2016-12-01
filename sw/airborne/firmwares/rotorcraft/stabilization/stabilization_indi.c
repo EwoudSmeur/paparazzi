@@ -145,11 +145,11 @@ static void send_indi_g(struct transport_tx *trans, struct link_device *dev)
   bla[1] = actuators_pprz[0];
   bla[2] = actuators_pprz[1];
   bla[3] = actuators_pprz[2];
-  pprz_msg_send_INDI_G(trans, dev, AC_ID, INDI_NUM_ACT, indi_du,
-                                          INDI_NUM_ACT, indi_v,
-                                          INDI_NUM_ACT, u_min,
-                                          INDI_NUM_ACT, u_max,
-                                          INDI_NUM_ACT, bla);
+  pprz_msg_send_INDI_G(trans, dev, AC_ID, INDI_NUM_ACT, g1[0],
+                                          INDI_NUM_ACT, g1[1],
+                                          INDI_NUM_ACT, g1[2],
+                                          INDI_NUM_ACT, g1[3],
+                                          INDI_NUM_ACT, g2);
 }
 #endif
 
@@ -201,7 +201,6 @@ void stabilization_indi_enter(void)
 
   // reset filters
   init_filters();
-
 
   float_vect_zero(actuator_state, INDI_NUM_ACT);
   float_vect_zero(indi_u, INDI_NUM_ACT);
@@ -293,13 +292,21 @@ void stabilization_indi_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
  */
 static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_control, bool in_flight)
 {
+  struct FloatRates rate_ref;
+  rate_ref.p = reference_acceleration.err_p * QUAT1_FLOAT_OF_BFP(att_err->qx)
+    /reference_acceleration.rate_p;
+  rate_ref.q = reference_acceleration.err_q * QUAT1_FLOAT_OF_BFP(att_err->qy)
+    /reference_acceleration.rate_q;
+  rate_ref.r = reference_acceleration.err_r * QUAT1_FLOAT_OF_BFP(att_err->qz)
+    /reference_acceleration.rate_r;
+
+  /*BoundAbs(rate_ref.p, 5.0);*/
+  /*BoundAbs(rate_ref.q, 5.0);*/
+
   //calculate the virtual control (reference acceleration) based on a PD controller
-  angular_accel_ref.p = reference_acceleration.err_p * QUAT1_FLOAT_OF_BFP(att_err->qx)
-                        - reference_acceleration.rate_p * stateGetBodyRates_f()->p;
-  angular_accel_ref.q = reference_acceleration.err_q * QUAT1_FLOAT_OF_BFP(att_err->qy)
-                        - reference_acceleration.rate_q * stateGetBodyRates_f()->q;
-  angular_accel_ref.r = reference_acceleration.err_r * QUAT1_FLOAT_OF_BFP(att_err->qz)
-                        - reference_acceleration.rate_r * stateGetBodyRates_f()->r;
+  angular_accel_ref.p = (rate_ref.p - stateGetBodyRates_f()->p) * reference_acceleration.rate_p;
+  angular_accel_ref.q = (rate_ref.q - stateGetBodyRates_f()->q) * reference_acceleration.rate_q;
+  angular_accel_ref.r = (rate_ref.r - stateGetBodyRates_f()->r) * reference_acceleration.rate_r;
 
   g2_times_du = 0.0;
   for(uint8_t i=0; i<INDI_NUM_ACT; i++) {
@@ -324,9 +331,6 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     float wls_temp_thrust = stabilization_cmd[COMMAND_THRUST]
       - (actuator_state[0] + actuator_state[1] + actuator_state[2] +actuator_state[3])/4;
     wls_temp_thrust *= -1.0/1000.0;
-
-    if(stabilization_cmd[COMMAND_THRUST] < 3000)
-      g2_times_du = 0;
 
     // The control objective in array format
     indi_v[0] = (angular_accel_ref.p - angular_acceleration[0]);
@@ -382,7 +386,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
 
   if(radio_control.values[RADIO_THROTTLE] < 400) {
     float_vect_zero(indi_u, INDI_NUM_ACT);
-    /*float_vect_zero(indi_du, INDI_NUM_ACT);*/
+    float_vect_zero(indi_du, INDI_NUM_ACT);
   }
 
   // Propagate actuator filters

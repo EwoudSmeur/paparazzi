@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include "std.h"
 
+void print_shebang(int printloc, int n_u, int n_v, float* u, float** B, float* v, float* umin, float* umax);
 void print_in_and_outputs(int n_c, int n_free, float** A_free_ptr, float* d, float* p_free);
 // provide loop feedback
 #define WLS_VERBOSE FALSE
@@ -71,8 +72,9 @@ void qr_solve_wrapper(int m, int n, float** A, float* b, float* x) {
  * @param W_init
  * @param Wv Weighting on different control objectives
  * @param Wu Weighting on different controls
- * @param up Preferred control vector (neutral value)
- * @param gamma_sq Preference of satisfying control objective over preferred control vector
+ * @param up Preferred control vector
+ * @param gamma_sq Preference of satisfying control objective over desired
+ * control vector (sqare root of gamma)
  * @param imax Max number of iterations
  *
  * @return Number of iterations, -1 upon failure
@@ -110,13 +112,16 @@ int wls_alloc(float* u, float* v, float* umin, float* umax, float** B,
   int n_infeasible = 0;
   float lambda[n_u];
   float W[n_u];
-  // This array is longer than n_free
-  float p_free_save[n_u];
 
+  // Initialize u and the working set, if provided from input
   if (!u_guess) {
-    for (int i = 0; i < n_u; i++) u[i] = (umax[i] + umin[i]) * 0.5;
+    for (int i = 0; i < n_u; i++) {
+      u[i] = (umax[i] + umin[i]) * 0.5;
+    }
   } else {
-    for (int i = 0; i < n_u; i++) u[i] = u_guess[i];
+    for (int i = 0; i < n_u; i++) {
+      u[i] = u_guess[i];
+    }
   }
   W_init ? memcpy(W, W_init, n_u * sizeof(float))
     : memset(W, 0, n_u * sizeof(float));
@@ -174,25 +179,29 @@ int wls_alloc(float* u, float* v, float* umin, float* umax, float** B,
 #endif
 
     if (!n_free) {
+      /*if( (u[0]>9500) || (u[1]>9500) || (u[2]>9500) || (u[3]>9500))*/
+        /*print_shebang(0, n_u, n_v, u, B, v, umin, umax);*/
       // No free variables left, all actuators saturated
       return iter;
     }
 
-    // use a solver to find solution to A_free*p_free = d
+    // use a solver to find the solution to A_free*p_free = d
     qr_solve_wrapper(n_c, n_free, A_free_ptr, d, p_free);
-    RunOnceEvery(512, print_in_and_outputs(n_c, n_free, A_free_ptr, d, p_free););
+    /*print_in_and_outputs(n_c, n_free, A_free_ptr, d, p_free);*/
+    /*RunOnceEvery(512, print_in_and_outputs(n_c, n_free, A_free_ptr, d, p_free););*/
     for (int i = 0; i < n_free; i++) {
       p[free_index[i]] = p_free[i];
       u_opt[free_index[i]] += p_free[i];
-      p_free_save[i] = p_free[i];
     }
     // check limits
     n_infeasible = 0;
     for (int i = 0; i < n_u; i++) {
-      if (u_opt[i] > umax[i] || u_opt[i] < umin[i]) {
+      if (u_opt[i] >= (umax[i] + 1.0) || u_opt[i] <= (umin[i] - 1.0)) {
         infeasible_index[n_infeasible++] = i;
       }
     }
+    /*if(n_infeasible != 0)*/
+      /*printf("u_opt = %f, %f, %f, %f\n", u_opt[0], u_opt[1], u_opt[2], u_opt[3]);*/
     if (n_infeasible == 0) {
       // all variables are within limits
       memcpy(u, u_opt, n_u * sizeof(float));
@@ -201,7 +210,7 @@ int wls_alloc(float* u, float* v, float* umin, float* umax, float** B,
       // d = d + A_free*p_free; lambda = A*d;
       for (int i = 0; i < n_c; i++) {
         for (int k = 0; k < n_free; k++) {
-          d[i] += A_free[i][k] * p_free_save[k];
+          d[i] += A_free[i][k] * p_free[k];
         }
         for (int k = 0; k < n_u; k++) {
           lambda[k] += A[i][k] * d[i];
@@ -224,6 +233,8 @@ int wls_alloc(float* u, float* v, float* umin, float* umax, float** B,
         }
       }
       if (break_flag) {
+        /*if( (u[0]>9500) || (u[1]>9500) || (u[2]>9500) || (u[3]>9500))*/
+          /*print_shebang(1, n_u, n_v, u, B, v, umin, umax);*/
         // if solution is found, return number of iterations
         return iter;
       }
@@ -250,7 +261,7 @@ int wls_alloc(float* u, float* v, float* umin, float* umax, float** B,
       // update d = d-alpha*A*p_free
       for (int i = 0; i < n_c; i++) {
         for (int k = 0; k < n_free; k++) {
-          d[i] -= A_free[i][k] * alpha * p_free_save[k];
+          d[i] -= A_free[i][k] * alpha * p_free[k];
         }
       }
       // get rid of a free index
@@ -266,7 +277,6 @@ int wls_alloc(float* u, float* v, float* umin, float* umax, float** B,
   return -1;
 }
 
-#include <stdio.h>
 void print_in_and_outputs(int n_c, int n_free, float** A_free_ptr, float* d, float* p_free) {
 
   printf("n_c = %d n_free = %d\n", n_c, n_free);
@@ -289,4 +299,40 @@ void print_in_and_outputs(int n_c, int n_free, float** A_free_ptr, float* d, flo
     printf("%f ", p_free[j]);
   }
   printf("\n\n");
+}
+
+void print_shebang(int printloc, int n_u, int n_v, float* u, float** B, float* v, float* umin, float* umax) {
+  printf("n_u = %d n_v = %d printloc = %d\n", n_u, n_v, printloc);
+
+  printf("B =\n");
+  for(int i = 0; i < n_v; i++) {
+    for (int j = 0; j < n_u; j++) {
+      printf("%f ", B[i][j]);
+    }
+    printf("\n");
+  }
+
+  printf("v = ");
+  for (int j = 0; j < n_v; j++) {
+    printf("%f ", v[j]);
+  }
+
+  printf("\nu = ");
+  for (int j = 0; j < n_u; j++) {
+    printf("%f ", u[j]);
+  }
+  printf("\n");
+
+  printf("\numin = ");
+  for (int j = 0; j < n_u; j++) {
+    printf("%f ", umin[j]);
+  }
+  printf("\n");
+
+  printf("\numax = ");
+  for (int j = 0; j < n_u; j++) {
+    printf("%f ", umax[j]);
+  }
+  printf("\n\n");
+
 }

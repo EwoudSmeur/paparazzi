@@ -43,10 +43,10 @@
   </modules>
 
   <servos driver="Asctec_v2">
-    <servo name="FRONT"   no="0" min="0" neutral="3" max="200"/>
-    <servo name="RIGHT"   no="1" min="0" neutral="3" max="200"/>
-    <servo name="BACK"    no="2" min="0" neutral="3" max="200"/>
-    <servo name="LEFT"    no="3" min="0" neutral="3" max="200"/>
+    <servo name="FRONT"   no="0" min="0" neutral="3" max="130"/>
+    <servo name="RIGHT"   no="1" min="0" neutral="3" max="130"/>
+    <servo name="BACK"    no="2" min="0" neutral="3" max="130"/>
+    <servo name="LEFT"    no="3" min="0" neutral="3" max="130"/>
   </servos>
 
   <commands>
@@ -134,11 +134,10 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness -->
-    <define name="G1_ROLL" value="{20 , -20, -20 , 20 }"/>
-    <define name="G1_PITCH" value="{20 , 20, -20 , -20 }"/>
-    <define name="G1_YAW" value="{4, -4, 4, -4}"/>
+    <define name="G1_ROLL" value="{15 , -15, -15 , 15 }"/>
+    <define name="G1_PITCH" value="{14 , 14, -14 , -14 }"/>
+    <define name="G1_YAW" value="{2, -2, 2, -2}"/>
     <define name="G1_THRUST" value="{-.6, -.6, -.6, -.6}"/>
-    <!--<define name="G1_THRUST" value="{-400, -400, -400, -400}"/>-->
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{50,   -50,  50,   -50}"/>
 
@@ -151,7 +150,7 @@
     <define name="REF_RATE_R" value="28.0"/>
 
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
-    <define name="FILT_CUTOFF" value="5.0"/>
+    <define name="FILT_CUTOFF" value="8.0"/>
 
     <!-- first order actuator dynamics -->
     <define name="ACT_DYN" value="0.2"/>
@@ -194,9 +193,8 @@
   </section>
 
   <section name="BAT">
-    <define name="CATASTROPHIC_BAT_LEVEL" value="9.3" unit="V"/>
     <define name="CRITIC_BAT_LEVEL" value="9.6" unit="V"/>
-    <define name="LOW_BAT_LEVEL" value="10.1" unit="V"/>
+    <define name="LOW_BAT_LEVEL" value="10.8" unit="V"/>
     <define name="MAX_BAT_LEVEL" value="12.4" unit="V"/>
   </section>
 

@@ -48,9 +48,11 @@ struct ActuatorsAsctecV2 {
   enum actuators_asctec_v2_addr new_addr;
   int32_t cmds[4];
   struct i2c_transaction i2c_trans;
+  struct i2c_transaction i2c_read;
   volatile uint32_t nb_err;
 };
 
+extern uint8_t data_in[2];
 
 extern struct ActuatorsAsctecV2 actuators_asctec_v2;
 
