@@ -25,6 +25,7 @@
 
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_common_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_quat_int.h"
+#include "filters/low_pass_filter.h"
 
 extern struct Int32Quat   stab_att_sp_quat;  ///< with #INT32_QUAT_FRAC
 extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
@@ -39,6 +40,10 @@ struct ReferenceSystem {
 };
 
 extern struct ReferenceSystem reference_acceleration;
+extern Butterworth2LowPass actuator_lowpass_filters[4];
+extern float indi_u[4];
+extern float act_obs[4];
+extern struct FloatRates angular_accel_ref;
 
 extern void stabilization_indi_init(void);
 extern void stabilization_indi_enter(void);

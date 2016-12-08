@@ -351,7 +351,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   }
 
   //Don't increment if thrust is off
-  if(!in_flight) {
+  if(radio_control.values[RADIO_THROTTLE] < 500) {
     float_vect_zero(indi_u, INDI_NUM_ACT);
   }
   else if(indi_use_adaptive) {

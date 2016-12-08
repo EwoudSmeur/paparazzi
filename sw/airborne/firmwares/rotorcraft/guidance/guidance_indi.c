@@ -44,6 +44,7 @@
 #include "stdio.h"
 #include "filters/low_pass_filter.h"
 #include "subsystems/abi.h"
+#include "subsystems/datalink/telemetry.h"
 
 // The acceleration reference is calculated with these gains. If you use GPS,
 // they are probably limited by the update rate of your GPS. The default
@@ -60,6 +61,13 @@ float guidance_indi_speed_gain = GUIDANCE_INDI_SPEED_GAIN;
 #else
 float guidance_indi_speed_gain = 1.8;
 #endif
+
+static float calcthrust(uint16_t *rpm);
+static struct FloatVect3 calc_euler_cmd_nl(struct FloatVect3 input_accel);
+static struct FloatVect3 calc_input_accel(struct FloatEulers *eulers);
+
+bool back_forth_maneuver = false;
+uint32_t maneuver_counter = 0;
 
 struct FloatVect3 sp_accel = {0.0,0.0,0.0};
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
@@ -144,7 +152,25 @@ void guidance_indi_run(bool in_flight, int32_t heading) {
   sp_accel.y = (speed_sp_y - stateGetSpeedNed_f()->y) * guidance_indi_speed_gain;
   sp_accel.z = (speed_sp_z - stateGetSpeedNed_f()->z) * guidance_indi_speed_gain;
 
-#ifdef GUIDANCE_INDI_RC_DEBUG
+  static int32_t counter = 0;
+  if(back_forth_maneuver) {
+  sp_accel.x = 0.0;
+  sp_accel.z = 0.0;
+
+    if(counter < 256) {
+      sp_accel.y = 4.0;
+    } else if(counter < 512) {
+      sp_accel.y = -4.0;
+    } else {
+      back_forth_maneuver = false;
+    }
+    counter += 1;
+  } else {
+    counter = 0;
+  }
+
+
+#if GUIDANCE_INDI_RC_DEBUG
   //for rc control horizontal, rotate from body axes to NED
   float psi = stateGetNedToBodyEulers_f()->psi;
   float rc_x = -(radio_control.values[RADIO_PITCH]/9600.0)*8.0;
@@ -164,9 +190,9 @@ void guidance_indi_run(bool in_flight, int32_t heading) {
   struct FloatVect3 a_diff = { sp_accel.x - filt_accel_ned[0].o[0], sp_accel.y -filt_accel_ned[1].o[0], sp_accel.z -filt_accel_ned[2].o[0]};
 
   //Bound the acceleration error so that the linearization still holds
-  Bound(a_diff.x, -6.0, 6.0);
-  Bound(a_diff.y, -6.0, 6.0);
-  Bound(a_diff.z, -9.0, 9.0);
+  BoundAbs(a_diff.x, 9.0);
+  BoundAbs(a_diff.y, 9.0);
+  BoundAbs(a_diff.z, 9.0);
 
   //If the thrust to specific force ratio has been defined, include vertical control
   //else ignore the vertical acceleration error
@@ -176,6 +202,26 @@ void guidance_indi_run(bool in_flight, int32_t heading) {
 #endif
 #endif
 
+#if NONLINEAR_INDI_GUIDANCE
+  struct FloatEulers filt_state_eulers;
+  filt_state_eulers.phi = roll_filt.o[0];
+  filt_state_eulers.theta = pitch_filt.o[0];
+  filt_state_eulers.psi = stateGetNedToBodyEulers_f()->psi; //TODO this should be filtered as well i guess?
+
+  // Calculate the current acceleration due to inputs
+  struct FloatVect3 input_accel0 = calc_input_accel(&filt_state_eulers);
+
+  // Calculate the new required acceleration due to input with the acceleration increment
+  struct FloatVect3 input_accel;
+  VECT3_SUM(input_accel, input_accel0, a_diff);
+
+  // Calculate the new input to achieve the acceleration input_accel
+  struct FloatVect3 output_cmd = calc_euler_cmd_nl(input_accel);
+
+  guidance_euler_cmd.phi = output_cmd.x;
+  guidance_euler_cmd.theta = output_cmd.y;
+  AbiSendMsgTHRUST(THRUST_INCREMENT_ID, output_cmd.z);
+#else
   //Calculate roll,pitch and thrust command
   MAT33_VECT3_MUL(euler_cmd, Ga_inv, a_diff);
 
@@ -183,6 +229,8 @@ void guidance_indi_run(bool in_flight, int32_t heading) {
 
   guidance_euler_cmd.phi = roll_filt.o[0] + euler_cmd.x;
   guidance_euler_cmd.theta = pitch_filt.o[0] + euler_cmd.y;
+#endif
+
   //zero psi command, because a roll/pitch quat will be constructed later
   guidance_euler_cmd.psi = 0;
 
@@ -241,10 +289,10 @@ void guidance_indi_propagate_filters(void) {
 }
 
 /**
- * @param Gmat array to write the matrix to [3x3]
- *
  * Calculate the matrix of partial derivatives of the roll, pitch and thrust
- * w.r.t. the NED accelerations
+ * wrt the NED accelerations
+ *
+ * @param Gmat array to write the matrix to [3x3]
  */
 void guidance_indi_calcG(struct FloatMat33 *Gmat) {
 
@@ -313,4 +361,99 @@ void stabilization_attitude_set_setpoint_rp_quat_f(struct FloatEulers* indi_rp_c
   }
 
   QUAT_BFP_OF_REAL(stab_att_sp_quat,q_sp);
+}
+
+
+/**
+ * @brief calculates the inputs for an acceleration vector
+ *
+ * @param input_accel Required acceleration
+ *
+ * @return Input vector
+ */
+struct FloatVect3 calc_euler_cmd_nl(struct FloatVect3 input_accel) {
+
+  struct FloatVect3 output;
+
+  // The required thrust is the norm of the acceleration vector
+  // Make sure that the thrust is not (close to) zero
+  float Tm;
+  float input_accel_norm = float_vect3_norm(&input_accel);
+  if(input_accel_norm < 0.5)
+    Tm = -0.5;
+  else
+    Tm = -input_accel_norm;
+
+  // Calculate the required change in thrust
+  uint16_t rpm_filt[4];
+  rpm_filt[0] =(uint16_t) (actuator_lowpass_filters[0].o[0]*9000.0/9600.0+3000.0);
+  rpm_filt[1] =(uint16_t) (actuator_lowpass_filters[1].o[0]*9000.0/9600.0+3000.0);
+  rpm_filt[2] =(uint16_t) (actuator_lowpass_filters[2].o[0]*9000.0/9600.0+3000.0);
+  rpm_filt[3] =(uint16_t) (actuator_lowpass_filters[3].o[0]*9000.0/9600.0+3000.0);
+  output.z = Tm-(-calcthrust(rpm_filt)/0.395);
+
+  // pre-calculate sin(psi) and cos(psi)
+  float psi = stateGetNedToBodyEulers_f()->psi;
+  float spsi = sinf(psi);
+  float cpsi = cosf(psi);
+
+  // Calculate required roll
+  float temp = (spsi*input_accel.x-cpsi*input_accel.y)/Tm;
+  BoundAbs(temp, 1.0);
+  output.x = asinf(temp);
+
+  // Calculate required pitch
+  temp = (spsi*input_accel.y + cpsi*input_accel.x)/Tm/cosf(output.x);
+  BoundAbs(temp, 1.0);
+  output.y = asinf(temp);
+
+  return output;
+}
+
+/**
+ * @brief Calculates acceleration vector for these inputs
+ *
+ * Using this acceleration vector, we can calculate how much we should increment
+ *
+ * @param eulers The attitude
+ *
+ * @return The resultant acceleration
+ */
+struct FloatVect3 calc_input_accel(struct FloatEulers *eulers) {
+
+  // First calculate the thrust magnitude
+  uint16_t rpm_filt[4];
+  rpm_filt[0] =(uint16_t) (actuator_lowpass_filters[0].o[0]*9000.0/9600.0+3000.0);
+  rpm_filt[1] =(uint16_t) (actuator_lowpass_filters[1].o[0]*9000.0/9600.0+3000.0);
+  rpm_filt[2] =(uint16_t) (actuator_lowpass_filters[2].o[0]*9000.0/9600.0+3000.0);
+  rpm_filt[3] =(uint16_t) (actuator_lowpass_filters[3].o[0]*9000.0/9600.0+3000.0);
+  float Tm = -calcthrust(rpm_filt)/0.395;
+
+  // Calculate the thrust vector
+  struct FloatVect3 accel_input0;
+  accel_input0.x = (sinf(eulers->phi)*sinf(eulers->psi) + cosf(eulers->phi)*cosf(eulers->psi)*sinf(eulers->theta))*Tm;
+  accel_input0.y = (cosf(eulers->phi)*sinf(eulers->psi)*sinf(eulers->theta) - cosf(eulers->psi)*sinf(eulers->phi))*Tm;
+  accel_input0.z = cosf(eulers->phi)*cosf(eulers->theta)*Tm;
+
+  return accel_input0;
+}
+
+/**
+ * @brief Calculates the thrust based on rpm for bebop1
+ * Using a second order fit
+ *
+ * @param rpm array with rpm of each rotor
+ *
+ * @return Calculated thrust
+ */
+float calcthrust(uint16_t *rpm){
+  float thrust = 0;
+  float rps = 0;
+  for(int i=0; i<4; i++) {
+    // go to rounds per second instead of rpm
+    rps = rpm[i]/60.0;
+    // Second order function of rps
+    thrust = thrust + 0.08 -0.002283*rps + 7.088e-5 * rps * rps;
+  }
+  return thrust;
 }
