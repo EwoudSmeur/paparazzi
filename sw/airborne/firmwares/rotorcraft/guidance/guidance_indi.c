@@ -386,10 +386,11 @@ struct FloatVect3 calc_euler_cmd_nl(struct FloatVect3 input_accel) {
 
   // Calculate the required change in thrust
   uint16_t rpm_filt[4];
-  rpm_filt[0] =(uint16_t) (actuator_lowpass_filters[0].o[0]*9000.0/9600.0+3000.0);
-  rpm_filt[1] =(uint16_t) (actuator_lowpass_filters[1].o[0]*9000.0/9600.0+3000.0);
-  rpm_filt[2] =(uint16_t) (actuator_lowpass_filters[2].o[0]*9000.0/9600.0+3000.0);
-  rpm_filt[3] =(uint16_t) (actuator_lowpass_filters[3].o[0]*9000.0/9600.0+3000.0);
+  int8_t i = 0;
+  for(i=0; i<4; i++) {
+    float scaling = get_servo_max(i)-get_servo_min(i);
+    rpm_filt[i] =(uint16_t) (actuator_lowpass_filters[i].o[0]*scaling/MAX_PPRZ+get_servo_min(i));
+  }
   output.z = Tm-(-calcthrust(rpm_filt)/0.395);
 
   // pre-calculate sin(psi) and cos(psi)
@@ -423,10 +424,11 @@ struct FloatVect3 calc_input_accel(struct FloatEulers *eulers) {
 
   // First calculate the thrust magnitude
   uint16_t rpm_filt[4];
-  rpm_filt[0] =(uint16_t) (actuator_lowpass_filters[0].o[0]*9000.0/9600.0+3000.0);
-  rpm_filt[1] =(uint16_t) (actuator_lowpass_filters[1].o[0]*9000.0/9600.0+3000.0);
-  rpm_filt[2] =(uint16_t) (actuator_lowpass_filters[2].o[0]*9000.0/9600.0+3000.0);
-  rpm_filt[3] =(uint16_t) (actuator_lowpass_filters[3].o[0]*9000.0/9600.0+3000.0);
+  int8_t i = 0;
+  for(i=0; i<4; i++) {
+    float scaling = get_servo_max(i)-get_servo_min(i);
+    rpm_filt[i] =(uint16_t) (actuator_lowpass_filters[i].o[0]*scaling/MAX_PPRZ+get_servo_min(i));
+  }
   float Tm = -calcthrust(rpm_filt)/0.395;
 
   // Calculate the thrust vector
@@ -453,7 +455,7 @@ float calcthrust(uint16_t *rpm){
     // go to rounds per second instead of rpm
     rps = rpm[i]/60.0;
     // Second order function of rps
-    thrust = thrust + 0.08 -0.002283*rps + 7.088e-5 * rps * rps;
+    thrust = thrust + 0.03166 -0.001013*rps + 6.7705e-05 * rps * rps;
   }
   return thrust;
 }
