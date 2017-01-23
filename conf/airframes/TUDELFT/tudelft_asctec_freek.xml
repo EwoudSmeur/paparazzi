@@ -11,9 +11,6 @@
 
   <firmware name="rotorcraft">
     <target name="ap" board="lisa_mx_2.1"/>
-    <target name="nps" board="pc">
-      <module name="fdm" type="jsbsim"/>
-    </target>
     <configure name="USE_MAGNETOMETER" value="0"/>
 
     <module name="radio_control" type="spektrum">
@@ -22,7 +19,6 @@
     </module>
 
     <module name="motor_mixing"/>
-    <module name="actuators"     type="asctec_v2"/>
     <module name="actuators"     type="pwm"/>
     <module name="telemetry"     type="xbee_api"/>
     <module name="imu"           type="lisa_mx_v2.1"/>
@@ -37,20 +33,15 @@
   <modules>
     <module name="geo_mag"/>
     <module name="air_data"/>
-    <module name="switch" type="servo"/>
     <module name="gps" type="ubx_ucenter"/>
     <module name="logger_spi_link"/>
   </modules>
 
-  <servos driver="Asctec_v2">
-    <servo name="FRONT"   no="0" min="0" neutral="3" max="200"/>
-    <servo name="BACK"    no="1" min="0" neutral="3" max="200"/>
-    <servo name="LEFT"    no="2" min="0" neutral="3" max="200"/>
-    <servo name="RIGHT"   no="3" min="0" neutral="3" max="200"/>
-  </servos>
-
   <servos driver="Pwm">
-     <servo name="DROP" no="4" min="1100" neutral="1500" max="2100"/>
+    <servo name="BACK_RIGHT"   no="0" min="1000" neutral="1050" max="2000"/>
+    <servo name="BACK_LEFT"    no="1" min="1000" neutral="1050" max="2000"/>
+    <servo name="FRONT_LEFT"    no="2" min="1000" neutral="1050" max="2000"/>
+    <servo name="FRONT_RIGHT"   no="3" min="1000" neutral="1050" max="2000"/>
   </servos>
 
   <commands>
@@ -66,20 +57,12 @@
     <define name="REVERSE" value="TRUE"/>
   </section>
 
-  <section name="SWITCH_SERVO">
-    <define name="SWITCH_SERVO_SERVO" value="DROP"/>
-    <define name="SWITCH_SERVO_ON_VALUE" value="SERVO_DROP_MIN"/>
-    <define name="SWITCH_SERVO_OFF_VALUE" value="SERVO_DROP_MAX"/>
-    <define name="DropOpen()" value="SwitchServoOn()"/>
-    <define name="DropClose()" value="SwitchServoOff()"/>
-  </section>
-
   <command_laws>
-    <call fun="motor_mixing_run(autopilot_get_motors_on(),FALSE,values)"/>
-    <set servo="FRONT"   value="motor_mixing.commands[MOTOR_FRONT_LEFT]"/>
-    <set servo="BACK"   value="motor_mixing.commands[MOTOR_FRONT_RIGHT]"/>
-    <set servo="LEFT"    value="motor_mixing.commands[MOTOR_BACK_RIGHT]"/>
-    <set servo="RIGHT"    value="motor_mixing.commands[MOTOR_BACK_LEFT]"/>
+    <call fun="motor_mixing_run(autopilot_motors_on,FALSE,values)"/>
+    <set servo="FRONT_LEFT"   value="motor_mixing.commands[MOTOR_FRONT_LEFT]"/>
+    <set servo="FRONT_RIGHT"   value="motor_mixing.commands[MOTOR_FRONT_RIGHT]"/>
+    <set servo="BACK_RIGHT"    value="motor_mixing.commands[MOTOR_BACK_RIGHT]"/>
+    <set servo="BACK_LEFT"    value="motor_mixing.commands[MOTOR_BACK_LEFT]"/>
   </command_laws>
 
   <section name="MISC">
@@ -113,8 +96,6 @@
     <define name="H_Z" value="0.9259921"/>
   </section>
 
-
-
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
     <!-- setpoints -->
     <define name="SP_MAX_PHI" value="65." unit="deg"/>
@@ -137,20 +118,20 @@
     <define name="REF_MAX_RDOT" value="RadOfDeg(1800.)"/>
 
     <!-- feedback -->
-    <define name="PHI_PGAIN" value="900"/>
-    <define name="PHI_DGAIN" value="200"/>
+    <define name="PHI_PGAIN" value="450"/>
+    <define name="PHI_DGAIN" value="150"/>
     <define name="PHI_IGAIN" value="200"/>
-    <define name="THETA_PGAIN" value="900"/>
-    <define name="THETA_DGAIN" value="200"/>
+    <define name="THETA_PGAIN" value="450"/>
+    <define name="THETA_DGAIN" value="150"/>
     <define name="THETA_IGAIN" value="200"/>
-    <define name="PSI_PGAIN" value="900"/>
+    <define name="PSI_PGAIN" value="1600"/>
     <define name="PSI_DGAIN" value="200"/>
     <define name="PSI_IGAIN" value="10"/>
 
     <!-- feedforward -->
-    <define name="PHI_DDGAIN" value=" 200"/>
-    <define name="THETA_DDGAIN" value=" 200"/>
-    <define name="PSI_DDGAIN" value=" 200"/>
+    <define name="PHI_DDGAIN" value="0"/>
+    <define name="THETA_DDGAIN" value="0"/>
+    <define name="PSI_DDGAIN" value="0"/>
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
@@ -170,14 +151,6 @@
     <define name="IGAIN" value="20"/>
   </section>
 
-  <section name="SIMULATOR" prefix="NPS_">
-    <define name="ACTUATOR_NAMES"  value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]"/>
-    <define name="JSBSIM_MODEL" value="simple_x_quad" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
-    <!-- mode switch on joystick channel 5 (axis numbering starting at zero) -->
-    <define name="JS_AXIS_MODE" value="4"/>
-  </section>
-
   <section name="AUTOPILOT">
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1"  value="AP_MODE_HOVER_Z_HOLD"/>
@@ -185,9 +158,9 @@
   </section>
 
   <section name="BAT">
-    <define name="CATASTROPHIC_BAT_LEVEL" value="9.3" unit="V"/>
-    <define name="CRITIC_BAT_LEVEL" value="9.6" unit="V"/>
-    <define name="LOW_BAT_LEVEL" value="10.1" unit="V"/>
+    <define name="CATASTROPHIC_BAT_LEVEL" value="9.9" unit="V"/>
+    <define name="CRITIC_BAT_LEVEL" value="10.5" unit="V"/>
+    <define name="LOW_BAT_LEVEL" value="10.9" unit="V"/>
     <define name="MAX_BAT_LEVEL" value="12.4" unit="V"/>
   </section>
 
