@@ -186,4 +186,37 @@ void actuators_pwm_commit(void)
   timer_set_oc_value(PWM_SERVO_11_TIMER, PWM_SERVO_11_OC, actuators_pwm_values[PWM_SERVO_11]);
 #endif
 
+#if PWM_ONESHOT
+#if PWM_USE_TIM1
+  timer_set_counter(TIM1, 0xFFFE);
+#endif
+
+#if PWM_USE_TIM2
+  timer_set_counter(TIM2, 0xFFFE);
+#endif
+
+#if PWM_USE_TIM3
+  timer_set_counter(TIM3, 0xFFFE);
+#endif
+
+#if PWM_USE_TIM4
+  timer_set_counter(TIM4, 0xFFFE);
+#endif
+
+#if PWM_USE_TIM5
+  timer_set_counter(TIM5, 0xFFFE);
+#endif
+
+#if PWM_USE_TIM8
+  timer_set_counter(TIM8, 0xFFFE);
+#endif
+
+#if PWM_USE_TIM9
+  timer_set_counter(TIM9, 0xFFFE);
+#endif
+
+#if PWM_USE_TIM12
+  timer_set_counter(TIM12, 0xFFFE);
+#endif
+#endif
 }
