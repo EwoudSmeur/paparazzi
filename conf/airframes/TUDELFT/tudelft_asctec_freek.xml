@@ -19,7 +19,10 @@
     </module>
 
     <module name="motor_mixing"/>
-    <module name="actuators"     type="pwm"/>
+    <module name="actuators"     type="pwm">
+      <define name="SERVO_HZ" value="400"/>
+      <define name="PWM_BASE_FREQ" value="28000000"/>
+    </module>
     <module name="telemetry"     type="xbee_api"/>
     <module name="imu"           type="lisa_mx_v2.1"/>
     <module name="gps"           type="ublox">
@@ -38,10 +41,10 @@
   </modules>
 
   <servos driver="Pwm">
-    <servo name="BACK_RIGHT"   no="0" min="1000" neutral="1050" max="2000"/>
-    <servo name="BACK_LEFT"    no="1" min="1000" neutral="1050" max="2000"/>
-    <servo name="FRONT_LEFT"    no="2" min="1000" neutral="1050" max="2000"/>
-    <servo name="FRONT_RIGHT"   no="3" min="1000" neutral="1050" max="2000"/>
+    <servo name="BACK_RIGHT"    no="0" min="3500" neutral="3700" max="7000"/>
+    <servo name="BACK_LEFT"     no="0" min="3500" neutral="3700" max="7000"/>
+    <servo name="FRONT_LEFT"    no="0" min="3500" neutral="3700" max="7000"/>
+    <servo name="FRONT_RIGHT"   no="0" min="3500" neutral="3700" max="7000"/>
   </servos>
 
   <commands>
@@ -94,6 +97,8 @@
     <define name="H_X" value="0.3770441"/>
     <define name="H_Y" value="0.0193986"/>
     <define name="H_Z" value="0.9259921"/>
+
+    <define name="GRAVITY_HEURISTIC_FACTOR" value="0"/>
   </section>
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">

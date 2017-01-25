@@ -83,7 +83,7 @@ void set_servo_timer(uint32_t timer, uint32_t freq, uint8_t channels_mask)
 
   timer_continuous_mode(timer);
 
-  timer_set_period(timer, (PWM_BASE_FREQ / freq) - 1);
+  timer_set_period(timer, 0xFFFF);
 
   /* Disable outputs and configure channel if needed. */
   if (bit_is_set(channels_mask, 0)) {
