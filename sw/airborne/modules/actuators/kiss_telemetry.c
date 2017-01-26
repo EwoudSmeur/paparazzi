@@ -34,6 +34,8 @@
 static struct kiss_telemetry_t kiss_telemetry;
 static uint8_t update_crc8(uint8_t crc, uint8_t crc_seed);
 
+float rpm_feedback_log = 0.0;
+
 void kiss_telemetry_init(void) {
   kiss_telemetry.dev = &((KISS_TELEMETRY_DEV).device);
   kiss_telemetry.servo_idx = 0;
@@ -42,7 +44,6 @@ void kiss_telemetry_init(void) {
 
 void kiss_telemetry_periodic(void) {
   uint32_t cnt;
-
   /* Check if we are allowed to send the pulse */
 #if PWM_USE_TIM1
   cnt = timer_get_counter(TIM1);
@@ -95,7 +96,7 @@ void kiss_telemetry_periodic(void) {
 
   ActuatorPwmSet(kiss_telemetry.servo_idx, 840);
   ActuatorsPwmCommit();
-  kiss_telemetry.servo_idx = (kiss_telemetry.servo_idx + 1) % 4;
+  /*kiss_telemetry.servo_idx = (kiss_telemetry.servo_idx + 1) % 4;*/
 }
 
 void kiss_telemetry_event(void) {
@@ -122,8 +123,11 @@ void kiss_telemetry_event(void) {
           float motor_volts = ((kiss_telemetry.buffer[1] << 8) + kiss_telemetry.buffer[2]) / 100.0;
           float energy = (kiss_telemetry.energy[0] + kiss_telemetry.energy[1] + kiss_telemetry.energy[2] + kiss_telemetry.energy[3]) / 1000.0;
 
-          pprz_msg_send_ESC(&(DefaultChannel).trans_tx, &(DefaultDevice).device, AC_ID,
-            &amps, &bat_volts, &power, &rpm, &motor_volts, &energy, &kiss_telemetry.servo_idx);
+          RunOnceEvery(PERIODIC_FREQUENCY,
+            pprz_msg_send_ESC(&(DefaultChannel).trans_tx, &(DefaultDevice).device, AC_ID,
+              &amps, &bat_volts, &power, &rpm, &motor_volts, &energy, &kiss_telemetry.servo_idx);
+          );
+          rpm_feedback_log = rpm;
         }
         kiss_telemetry.buf_idx = 0;
         kiss_telemetry.crc = 0;

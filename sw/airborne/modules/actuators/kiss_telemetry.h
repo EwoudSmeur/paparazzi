@@ -46,6 +46,8 @@ struct kiss_message_t {
   uint8_t crc;
 };
 
+extern float rpm_feedback_log;
+
 extern void kiss_telemetry_init(void);
 extern void kiss_telemetry_periodic(void);
 extern void kiss_telemetry_event(void);
