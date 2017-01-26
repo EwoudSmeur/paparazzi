@@ -8,12 +8,12 @@
     <file name="kiss_telemetry.h"/>
   </header>
   <init fun="kiss_telemetry_init()"/>
-  <periodic fun="kiss_telemetry_periodic()" freq="10" autorun="TRUE"/>
+  <periodic fun="kiss_telemetry_periodic()" freq="512" autorun="TRUE"/>
   <event fun="kiss_telemetry_event()"/>
   <makefile>
     <file name="kiss_telemetry.c"/>
 
-    <configure name="KISS_TELEMETRY_DEV" default="UART4" case="upper|lower"/>
+    <configure name="KISS_TELEMETRY_DEV" default="UART3" case="upper|lower"/>
     <define name="USE_$(KISS_TELEMETRY_DEV_UPPER)"/>
     <define name="$(KISS_TELEMETRY_DEV_UPPER)_BAUD" value="B115200"/>
     <define name="KISS_TELEMETRY_DEV" value="$(KISS_TELEMETRY_DEV_LOWER)"/>

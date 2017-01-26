@@ -21,13 +21,12 @@
     <module name="motor_mixing"/>
     <module name="actuators"     type="pwm">
       <define name="SERVO_HZ" value="400"/>
+      <define name="PWM_BASE_FREQ" value="28000000"/>
     </module>
     <module name="telemetry"     type="xbee_api"/>
     <module name="imu"           type="lisa_mx_v2.1"/>
-    <module name="gps"           type="ublox">
-      <define name="USE_PIKSI_EXT_ANTENNA" value="TRUE"/>
-    </module>
-    <module name="stabilization" type="int_quat"/>
+    <module name="gps"           type="datalink"/>
+    <module name="stabilization" type="indi"/>
     <module name="ahrs"          type="int_cmpl_quat"/>
     <module name="ins" type="hff"/>
   </firmware>
@@ -35,15 +34,16 @@
   <modules>
     <module name="geo_mag"/>
     <module name="air_data"/>
-    <module name="gps" type="ubx_ucenter"/>
+    <!--<module name="gps" type="ubx_ucenter"/>-->
     <module name="logger_spi_link"/>
+    <module name="kiss_telemetry"/>
   </modules>
 
   <servos driver="Pwm">
     <servo name="BACK_RIGHT"    no="0" min="1176" neutral="1235" max="2352"/>
-    <servo name="BACK_LEFT"     no="0" min="1176" neutral="1235" max="2352"/>
-    <servo name="FRONT_LEFT"    no="0" min="1176" neutral="1235" max="2352"/>
-    <servo name="FRONT_RIGHT"   no="0" min="1176" neutral="1235" max="2352"/>
+    <servo name="BACK_LEFT"     no="1" min="1176" neutral="1235" max="2352"/>
+    <servo name="FRONT_LEFT"    no="2" min="1176" neutral="1235" max="2352"/>
+    <servo name="FRONT_RIGHT"   no="3" min="1176" neutral="1235" max="2352"/>
   </servos>
 
   <commands>
@@ -60,11 +60,10 @@
   </section>
 
   <command_laws>
-    <call fun="motor_mixing_run(autopilot_motors_on,FALSE,values)"/>
-    <set servo="FRONT_LEFT"   value="motor_mixing.commands[MOTOR_FRONT_LEFT]"/>
-    <set servo="FRONT_RIGHT"   value="motor_mixing.commands[MOTOR_FRONT_RIGHT]"/>
-    <set servo="BACK_RIGHT"    value="motor_mixing.commands[MOTOR_BACK_RIGHT]"/>
-    <set servo="BACK_LEFT"    value="motor_mixing.commands[MOTOR_BACK_LEFT]"/>
+    <set servo="FRONT_LEFT"   value="autopilot_motors_on ? actuators_pprz[0] : -MAX_PPRZ"/>
+    <set servo="FRONT_RIGHT"  value="autopilot_motors_on ? actuators_pprz[1] : -MAX_PPRZ"/>
+    <set servo="BACK_RIGHT"   value="autopilot_motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <set servo="BACK_LEFT"    value="autopilot_motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
   </command_laws>
 
   <section name="MISC">
@@ -136,6 +135,37 @@
     <define name="PHI_DDGAIN" value="0"/>
     <define name="THETA_DDGAIN" value="0"/>
     <define name="PSI_DDGAIN" value="0"/>
+  </section>
+
+  <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
+    <!-- control effectiveness -->
+    <define name="G1_ROLL" value="{20 , -20, -20 , 20 }"/>
+    <define name="G1_PITCH" value="{18 , 18, -18 , -18 }"/>
+    <define name="G1_YAW" value="{2, -2, 2, -2}"/>
+    <define name="G1_THRUST" value="{-.7, -.7, -.7, -.7}"/>
+    <!--Counter torque effect of spinning up a rotor-->
+    <define name="G2" value="{75,   -75,  75,   -75}"/>
+
+    <!-- reference acceleration for attitude control -->
+    <define name="REF_ERR_P" value="380.0"/>
+    <define name="REF_ERR_Q" value="380.0"/>
+    <define name="REF_ERR_R" value="380.0"/>
+    <define name="REF_RATE_P" value="21.0"/>
+    <define name="REF_RATE_Q" value="21.0"/>
+    <define name="REF_RATE_R" value="21.0"/>
+
+    <!--Maxium yaw rate, to avoid instability-->
+    <define name="MAX_R" value="120.0" unit="deg/s"/>
+
+    <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
+    <define name="FILT_CUTOFF" value="5.0"/>
+
+    <!-- first order actuator dynamics -->
+    <define name="ACT_DYN" value="0.06"/>
+
+    <!-- Adaptive Learning Rate -->
+    <define name="USE_ADAPTIVE" value="FALSE"/>
+    <define name="ADAPTIVE_MU" value="0.0001"/>
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">

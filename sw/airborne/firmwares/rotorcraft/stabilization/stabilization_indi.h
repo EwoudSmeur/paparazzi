@@ -33,6 +33,7 @@ extern float indi_v[];
 extern float indi_du[];
 
 extern bool indi_use_adaptive;
+
 struct ReferenceSystem {
   float err_p;
   float err_q;
