@@ -21,15 +21,13 @@
       <define name="RADIO_MODE" value="RADIO_GEAR"/>
     </module>
 
-    <module name="motor_mixing"/>
     <module name="actuators"     type="asctec_v2"/>
-    <module name="actuators"     type="pwm"/>
     <module name="telemetry"     type="xbee_api"/>
     <module name="imu"           type="lisa_mx_v2.1"/>
     <module name="gps"           type="ublox">
       <define name="USE_PIKSI_EXT_ANTENNA" value="TRUE"/>
     </module>
-    <module name="stabilization" type="indi_simple"/>
+    <module name="stabilization" type="indi"/>
     <module name="ahrs"          type="int_cmpl_quat"/>
     <module name="ins" type="hff"/>
   </firmware>
@@ -37,7 +35,6 @@
   <modules>
     <module name="geo_mag"/>
     <module name="air_data"/>
-    <module name="switch" type="servo"/>
     <module name="gps" type="ubx_ucenter"/>
     <module name="logger_spi_link">
       <configure name="HS_LOG_SPI_DEV" value="SPI1"/>
@@ -46,14 +43,10 @@
   </modules>
 
   <servos driver="Asctec_v2">
-    <servo name="FRONT"   no="0" min="0" neutral="3" max="200"/>
-    <servo name="RIGHT"   no="1" min="0" neutral="3" max="200"/>
-    <servo name="BACK"    no="2" min="0" neutral="3" max="200"/>
-    <servo name="LEFT"    no="3" min="0" neutral="3" max="200"/>
-  </servos>
-
-  <servos driver="Pwm">
-     <servo name="DROP" no="4" min="1100" neutral="1500" max="2100"/>
+    <servo name="FRONT"   no="0" min="0" neutral="3" max="130"/>
+    <servo name="RIGHT"   no="1" min="0" neutral="3" max="130"/>
+    <servo name="BACK"    no="2" min="0" neutral="3" max="130"/>
+    <servo name="LEFT"    no="3" min="0" neutral="3" max="130"/>
   </servos>
 
   <commands>
@@ -63,26 +56,11 @@
     <axis name="THRUST" failsafe_value="0"/>
   </commands>
 
-  <section name="MIXING" prefix="MOTOR_MIXING_">
-    <!-- front left (CW), front right (CCW), back right (CW), back left (CCW) -->
-    <define name="TYPE" value="QUAD_X"/>
-    <define name="REVERSE" value="TRUE"/>
-  </section>
-
-  <section name="SWITCH_SERVO">
-    <define name="SWITCH_SERVO_SERVO" value="DROP"/>
-    <define name="SWITCH_SERVO_ON_VALUE" value="SERVO_DROP_MIN"/>
-    <define name="SWITCH_SERVO_OFF_VALUE" value="SERVO_DROP_MAX"/>
-    <define name="DropOpen()" value="SwitchServoOn()"/>
-    <define name="DropClose()" value="SwitchServoOff()"/>
-  </section>
-
   <command_laws>
-    <call fun="motor_mixing_run(autopilot_get_motors_on(),FALSE,values)"/>
-    <set servo="FRONT"   value="motor_mixing.commands[MOTOR_FRONT_LEFT]"/>
-    <set servo="RIGHT"   value="motor_mixing.commands[MOTOR_FRONT_RIGHT]"/>
-    <set servo="BACK"    value="motor_mixing.commands[MOTOR_BACK_RIGHT]"/>
-    <set servo="LEFT"    value="motor_mixing.commands[MOTOR_BACK_LEFT]"/>
+    <set servo="FRONT"   value="autopilot_motors_on ? actuators_pprz[0] : -MAX_PPRZ"/>
+    <set servo="RIGHT"   value="autopilot_motors_on ? actuators_pprz[1] : -MAX_PPRZ"/>
+    <set servo="BACK"    value="autopilot_motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <set servo="LEFT"    value="autopilot_motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
   </command_laws>
 
   <section name="MISC">
@@ -156,32 +134,32 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness -->
-    <define name="G1_P" value="0.073"/>
-    <define name="G1_Q" value="0.073"/>
-    <define name="G1_R" value="0.0045"/>
-    <define name="G2_R" value="0.2"/>
+    <define name="G1_ROLL" value="{15 , -15, -15 , 15 }"/>
+    <define name="G1_PITCH" value="{14 , 14, -14 , -14 }"/>
+    <define name="G1_YAW" value="{2, -2, 2, -2}"/>
+    <define name="G1_THRUST" value="{-.6, -.6, -.6, -.6}"/>
+    <!--Counter torque effect of spinning up a rotor-->
+    <define name="G2" value="{50,   -50,  50,   -50}"/>
 
     <!-- reference acceleration for attitude control -->
-    <define name="REF_ERR_P" value="900.0"/>
-    <define name="REF_ERR_Q" value="900.0"/>
+    <define name="REF_ERR_P" value="600.0"/>
+    <define name="REF_ERR_Q" value="600.0"/>
     <define name="REF_ERR_R" value="600.0"/>
-    <define name="REF_RATE_P" value="33.0"/>
-    <define name="REF_RATE_Q" value="33.0"/>
+    <define name="REF_RATE_P" value="28.0"/>
+    <define name="REF_RATE_Q" value="28.0"/>
     <define name="REF_RATE_R" value="28.0"/>
 
-    <!-- second order filter parameters -->
+    <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
     <define name="FILT_CUTOFF" value="8.0"/>
-    <define name="FILT_CUTOFF_R" value="3.2"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN_P" value="0.15"/>
-    <define name="ACT_DYN_Q" value="0.15"/>
-    <define name="ACT_DYN_R" value="0.15"/>
+    <define name="ACT_DYN" value="0.2"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
     <define name="ADAPTIVE_MU" value="0.0001"/>
   </section>
+
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
     <define name="HOVER_KP"    value="150"/>
@@ -215,9 +193,8 @@
   </section>
 
   <section name="BAT">
-    <define name="CATASTROPHIC_BAT_LEVEL" value="9.3" unit="V"/>
     <define name="CRITIC_BAT_LEVEL" value="9.6" unit="V"/>
-    <define name="LOW_BAT_LEVEL" value="10.1" unit="V"/>
+    <define name="LOW_BAT_LEVEL" value="10.8" unit="V"/>
     <define name="MAX_BAT_LEVEL" value="12.4" unit="V"/>
   </section>
 
