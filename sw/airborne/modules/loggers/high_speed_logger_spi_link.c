@@ -51,7 +51,8 @@ void high_speed_logger_spi_link_init(void)
   high_speed_logger_spi_link_transaction.after_cb      = high_speed_logger_spi_link_trans_cb;
 }
 
-
+#include "subsystems/actuators.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 void high_speed_logger_spi_link_periodic(void)
 {
   // Static counter to identify missing samples
@@ -66,15 +67,20 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data.id = counter;
 
     high_speed_logger_spi_link_ready = false;
-    high_speed_logger_spi_link_data.gyro_p     = imu.gyro_unscaled.p;
-    high_speed_logger_spi_link_data.gyro_q     = imu.gyro_unscaled.q;
-    high_speed_logger_spi_link_data.gyro_r     = imu.gyro_unscaled.r;
-    high_speed_logger_spi_link_data.acc_x      = imu.accel_unscaled.x;
-    high_speed_logger_spi_link_data.acc_y      = imu.accel_unscaled.y;
-    high_speed_logger_spi_link_data.acc_z      = imu.accel_unscaled.z;
-    high_speed_logger_spi_link_data.mag_x      = imu.mag_unscaled.x;
-    high_speed_logger_spi_link_data.mag_y      = imu.mag_unscaled.y;
-    high_speed_logger_spi_link_data.mag_z      = imu.mag_unscaled.z;
+    high_speed_logger_spi_link_data.gyro_p     = imu.gyro.p;
+    high_speed_logger_spi_link_data.gyro_q     = imu.gyro.q;
+    high_speed_logger_spi_link_data.gyro_r     = imu.gyro.r;
+    high_speed_logger_spi_link_data.acc_x      = actuators_pprz[0];
+    high_speed_logger_spi_link_data.acc_y      = actuators_pprz[1];
+    high_speed_logger_spi_link_data.acc_z      = actuators_pprz[2];
+    high_speed_logger_spi_link_data.mag_x      = actuators_pprz[3];
+    high_speed_logger_spi_link_data.mag_y      = indi_v[0];
+    high_speed_logger_spi_link_data.mag_z      = indi_v[1];
+    high_speed_logger_spi_link_data.phi        = indi_v[2];
+    high_speed_logger_spi_link_data.theta      = indi_v[3];
+    high_speed_logger_spi_link_data.extra1     = indi_du[0];
+    high_speed_logger_spi_link_data.extra2     = indi_du[1];
+    high_speed_logger_spi_link_data.extra3     = indi_du[2];
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction);
   }
