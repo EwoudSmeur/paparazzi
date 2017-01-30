@@ -30,9 +30,10 @@
     <module name="guidance" type="indi">
       <define name="GUIDANCE_INDI_THRUST_DYNAMICS" value="0.1"/>
       <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
-      <define name="NONLINEAR_INDI_GUIDANCE" value="TRUE"/>
+      <define name="NONLINEAR_INDI_GUIDANCE" value="FALSE"/>
       <define name="GUIDANCE_INDI_POS_GAIN" value="1.6"/>
       <define name="GUIDANCE_INDI_SPEED_GAIN" value="1.8"/>
+      <define name="ATTITUDE_STEP_RESPONSE" value="FALSE"/>
     </module>
   </firmware>
 
@@ -158,7 +159,7 @@
     <define name="ACT_DYN" value="0.1"/>
 
     <!-- Adaptive Learning Rate -->
-    <define name="USE_ADAPTIVE" value="FALSE"/>
+    <define name="USE_ADAPTIVE" value="TRUE"/>
     <define name="ADAPTIVE_MU" value="0.0001"/>
   </section>
 

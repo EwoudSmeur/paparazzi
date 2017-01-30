@@ -305,7 +305,14 @@ void guidance_indi_calcG(struct FloatMat33 *Gmat) {
   float spsi = sinf(euler->psi);
   float cpsi = cosf(euler->psi);
   //minus gravity is a guesstimate of the thrust force, thrust measurement would be better
-  float T = -9.81;
+
+  uint16_t rpm_filt[4];
+  int8_t i = 0;
+  for(i=0; i<4; i++) {
+    float scaling = get_servo_max(i)-get_servo_min(i);
+    rpm_filt[i] =(uint16_t) (actuator_lowpass_filters[i].o[0]*scaling/MAX_PPRZ+get_servo_min(i));
+  }
+  float T = -calcthrust(rpm_filt)/0.395;
 
   RMAT_ELMT(*Gmat, 0, 0) = (cphi*spsi - sphi*cpsi*stheta)*T;
   RMAT_ELMT(*Gmat, 1, 0) = (-sphi*spsi*stheta - cpsi*cphi)*T;
@@ -446,7 +453,7 @@ struct FloatVect3 calc_input_accel(struct FloatEulers *eulers) {
  *
  * @param rpm array with rpm of each rotor
  *
- * @return Calculated thrust
+ * @return Calculated thrust (positive)
  */
 float calcthrust(uint16_t *rpm){
   float thrust = 0;

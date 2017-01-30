@@ -43,6 +43,8 @@
 #include "subsystems/abi.h"
 #include "filters/low_pass_filter.h"
 
+#include "subsystems/radio_control.h"
+
 static void lms_estimation(void);
 static void get_actuator_state(void);
 static void calc_g1_element(float dx_error, int8_t i, int8_t j, float mu_extra);
@@ -127,6 +129,9 @@ Butterworth2LowPass estimation_output_lowpass_filters[3];
 Butterworth2LowPass acceleration_lowpass_filter;
 
 struct FloatVect3 body_accel_f;
+
+struct FloatQuat quat_saved;
+int32_t step_timer = 0;
 
 void init_filters(void);
 
@@ -390,6 +395,43 @@ void stabilization_indi_run(bool in_flight, bool rate_control)
     estimation_rate_d[i] = (estimation_output_lowpass_filters[i].o[0] - estimation_output_lowpass_filters[i].o[1]) *PERIODIC_FREQUENCY;
     estimation_rate_dd[i] = (estimation_rate_d[i] - estimation_rate_d_prev) * PERIODIC_FREQUENCY;
   }
+
+#if ATTITUDE_STEP_RESPONSE
+#warning "Using step input on auto1!!! Only for testing/experiment!!"
+  struct FloatQuat q_sp;
+  if((radio_control.values[RADIO_MODE] > -4000) && (step_timer < 440)) {
+    //doublet input
+    if(step_timer < 100) {
+      struct FloatEulers rotation_eulers = {0, 0, 0};
+      struct FloatQuat rotation_quat;
+      float_quat_of_eulers(&rotation_quat, &rotation_eulers);
+      float_quat_comp(&q_sp, &quat_saved, &rotation_quat);
+      float_quat_normalize(&q_sp);
+    }
+    if(step_timer < 270) {
+      struct FloatEulers rotation_eulers = {0.4363, 0, 0};
+      struct FloatQuat rotation_quat;
+      float_quat_of_eulers(&rotation_quat, &rotation_eulers);
+      float_quat_comp(&q_sp, &quat_saved, &rotation_quat);
+      float_quat_normalize(&q_sp);
+    }
+    else {
+      struct FloatEulers rotation_eulers = {-0.4363, 0, 0};
+      struct FloatQuat rotation_quat;
+      float_quat_of_eulers(&rotation_quat, &rotation_eulers);
+      float_quat_comp(&q_sp, &quat_saved, &rotation_quat);
+      float_quat_normalize(&q_sp);
+    }
+    step_timer = step_timer + 1;
+    QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
+  }
+  else if(radio_control.values[RADIO_MODE] < -4000) {
+    //normal flying
+    step_timer = 0;
+    QUAT_FLOAT_OF_BFP(q_sp, stab_att_sp_quat);
+    QUAT_COPY(quat_saved,q_sp);
+}
+#endif
 
   /* attitude error                          */
   struct Int32Quat att_err;
