@@ -45,12 +45,6 @@
 #include "wls/wls_alloc.h"
 #include <stdio.h>
 
-float u_min[4];
-float u_max[4];
-float indi_v[4];
-float* Bwls[4];
-int num_iter = 0;
-
 static void lms_estimation(void);
 static void get_actuator_state(void);
 static void calc_g1_element(float dx_error, int8_t i, int8_t j, float mu_extra);
@@ -69,7 +63,11 @@ struct ReferenceSystem reference_acceleration = {
 };
 
 //only 4 actuators supported for now
+#ifndef STABILIZATION_INDI_NUM_ACT
 #define INDI_NUM_ACT 4
+#else
+#define INDI_NUM_ACT STABILIZATION_INDI_NUM_ACT
+#endif
 // outputs: roll, pitch, yaw, thrust
 #define INDI_OUTPUTS 4
 // Factor that the estimated G matrix is allowed to deviate from initial one
@@ -82,6 +80,12 @@ bool indi_use_adaptive = true;
 #else
 bool indi_use_adaptive = false;
 #endif
+
+float u_min[INDI_NUM_ACT];
+float u_max[INDI_NUM_ACT];
+float indi_v[INDI_OUTPUTS];
+float* Bwls[INDI_OUTPUTS];
+int num_iter = 0;
 
 // variables needed for control
 float actuator_state_filt_vect[INDI_NUM_ACT];
@@ -101,8 +105,8 @@ float estimation_rate_d[INDI_NUM_ACT];
 float estimation_rate_dd[INDI_NUM_ACT];
 float du_estimation[INDI_NUM_ACT];
 float ddu_estimation[INDI_NUM_ACT];
-float mu1[4] = {0.00001, 0.00001, 0.000003, 0.000002};
-float mu2 = 0.002;
+float mu1[4] = {0.00001, 0.00001, 0.000003, 0.000002}; //for each output
+float mu2 = 0.002; //for the yaw
 
 // other variables
 float act_obs[INDI_NUM_ACT];
@@ -135,6 +139,8 @@ Butterworth2LowPass estimation_output_lowpass_filters[3];
 Butterworth2LowPass acceleration_lowpass_filter;
 
 struct FloatVect3 body_accel_f;
+
+int32_t delta_action = 0;
 
 void init_filters(void);
 
@@ -325,8 +331,11 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     static float Wv[INDI_OUTPUTS] = {1000, 1000, 1, 100};
 
     // incremental thrust
-    float wls_temp_thrust = stabilization_cmd[COMMAND_THRUST]
-      - (actuator_state[0] + actuator_state[1] + actuator_state[2] +actuator_state[3])/4;
+    float wls_temp_thrust = stabilization_cmd[COMMAND_THRUST];
+    for(i=0; i<INDI_NUM_ACT; i++) {
+      wls_temp_thrust -= actuator_state[i]/INDI_NUM_ACT;
+    }
+
     wls_temp_thrust *= -1.0/1000.0;
 
     // The control objective in array format
@@ -373,6 +382,23 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     float indi_cmd_scaling = stabilization_cmd[COMMAND_THRUST] / avg_u_in;
     float_vect_smul(indi_u, indi_u, indi_cmd_scaling, INDI_NUM_ACT);
   }
+
+  static int32_t delta_counter = 0;
+  static int32_t total_action = 0;
+
+  total_action = radio_control.values[RADIO_THROTTLE];
+
+  if((delta_action != 0) && (delta_counter < 256)) {
+    delta_counter += 1;
+    total_action += delta_action;
+  } else {
+    delta_counter = 0;
+    delta_action = 0;
+  }
+
+  /*for(i=0; i<INDI_NUM_ACT; i++) {*/
+    /*indi_u[i] = total_action;*/
+  /*}*/
 
   // Bound the inputs to the actuators
   for(i=0; i<INDI_NUM_ACT; i++) {

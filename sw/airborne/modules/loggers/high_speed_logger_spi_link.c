@@ -76,10 +76,10 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data.gyro_p     = rates->p;
     high_speed_logger_spi_link_data.gyro_q     = rates->q;
     high_speed_logger_spi_link_data.gyro_r     = rates->r;
-    high_speed_logger_spi_link_data.acc_x      = stabilization_cmd[COMMAND_THRUST];
-    high_speed_logger_spi_link_data.acc_y      = stabilization_cmd[COMMAND_ROLL];
-    high_speed_logger_spi_link_data.acc_z      = stabilization_cmd[COMMAND_PITCH];
-    high_speed_logger_spi_link_data.mag_x      = stabilization_cmd[COMMAND_YAW];
+    high_speed_logger_spi_link_data.acc_x      = actuators_pprz[0];
+    high_speed_logger_spi_link_data.acc_y      = actuators_pprz[1];
+    high_speed_logger_spi_link_data.acc_z      = actuators_pprz[2];
+    /*high_speed_logger_spi_link_data.mag_x      = actuators_pprz[3];*/
     high_speed_logger_spi_link_data.mag_y      = rpm_feedback_log;
     high_speed_logger_spi_link_data.mag_z      = actuators_pprz[0];
 
