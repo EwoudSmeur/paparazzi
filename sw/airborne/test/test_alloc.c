@@ -43,4 +43,11 @@ int main(int argc, char **argv)
   int num_iter =
     wls_alloc(indi_du,indi_v,u_min,u_max,Bwls,INDI_NUM_ACT,INDI_OUTPUTS,0,0,Wv,0,0,10000,10);
   printf("du = %f, %f, %f, %f\n", indi_du[0],indi_du[1],indi_du[2],indi_du[3]);
+
+  float v_out[4];
+  for(int i=0; i<4; i++) {
+    v_out[i] = g1g2[i][0]*indi_du[0] + g1g2[i][1]*indi_du[1] + g1g2[i][2]*indi_du[2] + g1g2[i][3]*indi_du[3];
+  }
+  printf("v_in = %f, %f, %f, %f\n", indi_v[0],indi_v[1],indi_v[2],indi_v[3]);
+  printf("v_out = %f, %f, %f, %f\n", v_out[0],v_out[1],v_out[2],v_out[3]);
 }

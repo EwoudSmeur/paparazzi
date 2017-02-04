@@ -43,7 +43,7 @@
     <servo name="BACK_RIGHT"    no="0" min="1176" neutral="1235" max="2352"/>
     <servo name="BACK_LEFT"     no="1" min="1176" neutral="1235" max="2352"/>
     <servo name="FRONT_LEFT"    no="2" min="1176" neutral="1235" max="2352"/>
-    <!--<servo name="FRONT_RIGHT"   no="3" min="1176" neutral="1235" max="2352"/>-->
+    <servo name="FRONT_RIGHT"   no="3" min="1176" neutral="1235" max="2352"/>
   </servos>
 
   <commands>
@@ -61,9 +61,13 @@
 
   <command_laws>
     <set servo="FRONT_LEFT"   value="autopilot_motors_on ? actuators_pprz[0] : -MAX_PPRZ"/>
-    <!--<set servo="FRONT_RIGHT"  value="autopilot_motors_on ? actuators_pprz[1] : -MAX_PPRZ"/>-->
+    <set servo="FRONT_RIGHT"  value="autopilot_motors_on ? actuators_pprz[1] : -MAX_PPRZ"/>
     <set servo="BACK_RIGHT"   value="autopilot_motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
     <set servo="BACK_LEFT"    value="autopilot_motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
+    <!--<set servo="FRONT_LEFT"   value="-MAX_PPRZ"/>-->
+    <!--<set servo="FRONT_RIGHT"  value="-MAX_PPRZ"/>-->
+    <!--<set servo="BACK_RIGHT"   value="-MAX_PPRZ"/>-->
+    <!--<set servo="BACK_LEFT"    value="-MAX_PPRZ"/>-->
   </command_laws>
 
   <section name="MISC">
@@ -139,19 +143,21 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness -->
-    <!--<define name="G1_ROLL" value="{20 , -20, -20 , 20 }"/>-->
-    <!--<define name="G1_PITCH" value="{18 , 18, -18 , -18 }"/>-->
-    <!--<define name="G1_YAW" value="{2, -2, 2, -2}"/>-->
-    <!--<define name="G1_THRUST" value="{-.7, -.7, -.7, -.7}"/>-->
+    <define name="G1_ROLL" value="{20 , -20, -20 , 20 }"/>
+    <define name="G1_PITCH" value="{18 , 18, -18 , -18 }"/>
+    <define name="G1_YAW" value="{2, -2, 2, -2}"/>
+    <define name="G1_THRUST" value="{-.7, -.7, -.7, -.7}"/>
     <!--Counter torque effect of spinning up a rotor-->
-    <!--<define name="G2" value="{75,   -75,  75,   -75}"/>-->
-    <define name="NUM_ACT" value="3"/>
-    <define name="G1_ROLL" value="{20 , -20, -20}"/>
-    <define name="G1_PITCH" value="{18 , 18, -18}"/>
-    <define name="G1_YAW" value="{2, -2, 2}"/>
-    <define name="G1_THRUST" value="{-.7, -.7, -.7}"/>
+    <define name="G2" value="{75,   -75,  75,   -75}"/>
+    <define name="NUM_ACT" value="4"/>
+
+    <!--<define name="NUM_ACT" value="3"/>-->
+    <!--<define name="G1_ROLL" value="{20 , -20, -20}"/>-->
+    <!--<define name="G1_PITCH" value="{18 , 18, -18}"/>-->
+    <!--<define name="G1_YAW" value="{2, -2, 2}"/>-->
+    <!--<define name="G1_THRUST" value="{-.7, -.7, -.7}"/>-->
     <!--Counter torque effect of spinning up a rotor-->
-    <define name="G2" value="{75,   -75,  75}"/>
+    <!--<define name="G2" value="{75,   -75,  75}"/>-->
 
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="380.0"/>

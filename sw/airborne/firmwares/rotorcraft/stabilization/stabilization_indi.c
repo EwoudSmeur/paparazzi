@@ -142,15 +142,20 @@ struct FloatVect3 body_accel_f;
 
 int32_t delta_action = 0;
 
+float v_out[INDI_NUM_ACT];
+float v_out_tot[INDI_NUM_ACT];
+
+float yaw_accel_bound = 5.0;
+
 void init_filters(void);
 
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
 static void send_indi_g(struct transport_tx *trans, struct link_device *dev)
 {
-  pprz_msg_send_INDI_G(trans, dev, AC_ID, INDI_NUM_ACT, g1_est[0],
-                                          INDI_NUM_ACT, g1_est[1],
-                                          INDI_NUM_ACT, g1_est[2],
+  pprz_msg_send_INDI_G(trans, dev, AC_ID, INDI_NUM_ACT, indi_v,
+                                          INDI_NUM_ACT, v_out,
+                                          INDI_NUM_ACT, v_out_tot,
                                           INDI_NUM_ACT, g1_est[3],
                                           INDI_NUM_ACT, g2_est);
 }
@@ -311,6 +316,8 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   angular_accel_ref.q = (rate_ref.q - stateGetBodyRates_f()->q) * reference_acceleration.rate_q;
   angular_accel_ref.r = (rate_ref.r - stateGetBodyRates_f()->r) * reference_acceleration.rate_r;
 
+  BoundAbs(angular_accel_ref.r, yaw_accel_bound);
+
   g2_times_du = 0.0;
   int8_t i;
   for(i=0; i<INDI_NUM_ACT; i++) {
@@ -349,6 +356,10 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     num_iter =
       wls_alloc(indi_du,indi_v,u_min,u_max,Bwls,INDI_NUM_ACT,INDI_OUTPUTS,0,0,Wv,0,0,10000,10);
 
+    for(i=0; i<INDI_OUTPUTS; i++) {
+      v_out[i] = g1g2[i][0]*indi_du[0] + g1g2[i][1]*indi_du[1] + g1g2[i][2]*indi_du[2] + g1g2[i][3]*indi_du[3];
+      v_out_tot[i] = g1g2[i][0]*indi_u[0] + g1g2[i][1]*indi_u[1] + g1g2[i][2]*indi_u[2] + g1g2[i][3]*indi_u[3];
+    }
     // Add the increments to the actuators
     float_vect_sum(indi_u, actuator_state_filt_vect, indi_du, INDI_NUM_ACT);
   } else

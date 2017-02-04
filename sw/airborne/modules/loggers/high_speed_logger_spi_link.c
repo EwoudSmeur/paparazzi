@@ -71,6 +71,7 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data.id = counter;
 
     struct Int32Rates *rates = stateGetBodyRates_i();
+    struct Int32Quat *att_quat = stateGetNedToBodyQuat_i();
 
     high_speed_logger_spi_link_ready = false;
     high_speed_logger_spi_link_data.gyro_p     = rates->p;
@@ -79,9 +80,15 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data.acc_x      = actuators_pprz[0];
     high_speed_logger_spi_link_data.acc_y      = actuators_pprz[1];
     high_speed_logger_spi_link_data.acc_z      = actuators_pprz[2];
-    /*high_speed_logger_spi_link_data.mag_x      = actuators_pprz[3];*/
+    high_speed_logger_spi_link_data.mag_x      = actuators_pprz[3];
     high_speed_logger_spi_link_data.mag_y      = rpm_feedback_log;
-    high_speed_logger_spi_link_data.mag_z      = actuators_pprz[0];
+    high_speed_logger_spi_link_data.mag_z      = att_quat->qi;
+    high_speed_logger_spi_link_data.phi        = att_quat->qx;
+    high_speed_logger_spi_link_data.theta      = att_quat->qy;
+    high_speed_logger_spi_link_data.psi        = att_quat->qz;
+    high_speed_logger_spi_link_data.extra1     = att_quat->qi;
+    high_speed_logger_spi_link_data.extra2     = att_quat->qi;
+    high_speed_logger_spi_link_data.extra3     = att_quat->qi;
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction);
   }

@@ -54,6 +54,7 @@ extern void stabilization_indi_run(bool in_flight, bool rate_control);
 extern void stabilization_indi_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn);
 
 extern int32_t delta_action;
+extern float yaw_accel_bound;
 
 #endif /* STABILIZATION_INDI */
 
