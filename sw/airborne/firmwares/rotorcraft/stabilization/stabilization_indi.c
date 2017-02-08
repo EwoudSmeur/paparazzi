@@ -360,12 +360,13 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     // Add the increments to the actuators without the thrust
     float_vect_sum(indi_u, actuator_state_filt_vect, indi_du, INDI_NUM_ACT);
 
+#warning the vertical control is hacked!
     // Calculate the average of the actuators as a measure for the thrust
     float avg_u_in = 0;
-    for(i=0; i<INDI_NUM_ACT; i++) {
+    for(i=2; i<INDI_NUM_ACT; i++) {
       avg_u_in += indi_u[i];
     }
-    avg_u_in /= INDI_NUM_ACT;
+    avg_u_in /= 2;
 
     // Make sure the thrust is bounded
     Bound(stabilization_cmd[COMMAND_THRUST],0, MAX_PPRZ);
@@ -376,8 +377,10 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     }
 
     // Rescale the command to the actuators to get the desired thrust
-    float indi_cmd_scaling = stabilization_cmd[COMMAND_THRUST] / avg_u_in;
-    float_vect_smul(indi_u, indi_u, indi_cmd_scaling, INDI_NUM_ACT);
+    float indi_cmd_scaling = ((float) stabilization_cmd[COMMAND_THRUST]) / avg_u_in;
+    /*float_vect_smul(indi_u, indi_u, indi_cmd_scaling, INDI_NUM_ACT);*/
+    indi_u[2] *= indi_cmd_scaling;
+    indi_u[3] *= indi_cmd_scaling;
   }
 
   // Bound the inputs to the actuators
@@ -403,7 +406,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   }
 
   //Don't increment if thrust is off
-  if(!in_flight) {
+  if(radio_control.values[RADIO_THROTTLE] < 300) {
     float_vect_zero(indi_u, INDI_NUM_ACT);
     float_vect_zero(actuator_state_filt_vect, INDI_NUM_ACT);
   }

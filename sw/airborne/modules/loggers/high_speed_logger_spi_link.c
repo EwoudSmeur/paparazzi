@@ -53,6 +53,8 @@ void high_speed_logger_spi_link_init(void)
 
 #include "state.h"
 #include "stabilization.h"
+#include "subsystems/actuators.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 
 void high_speed_logger_spi_link_periodic(void)
 {
@@ -75,16 +77,16 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data.gyro_p     = rates->p;
     high_speed_logger_spi_link_data.gyro_q     = rates->q;
     high_speed_logger_spi_link_data.gyro_r     = rates->r;
-    high_speed_logger_spi_link_data.acc_x      = stabilization_cmd[COMMAND_THRUST];
-    high_speed_logger_spi_link_data.acc_y      = stabilization_cmd[COMMAND_ROLL];
-    high_speed_logger_spi_link_data.acc_z      = stabilization_cmd[COMMAND_PITCH];
-    high_speed_logger_spi_link_data.mag_x      = stabilization_cmd[COMMAND_YAW];
-    high_speed_logger_spi_link_data.mag_y      = accel->z;
-    high_speed_logger_spi_link_data.mag_z      = accel->x;
-    high_speed_logger_spi_link_data.phi        = accel->y;
-    high_speed_logger_spi_link_data.theta      = quat->qi;
-    high_speed_logger_spi_link_data.psi        = quat->qx;
-    high_speed_logger_spi_link_data.extra1     = quat->qy;
+    high_speed_logger_spi_link_data.acc_x      = actuators_pprz[0];
+    high_speed_logger_spi_link_data.acc_y      = actuators_pprz[1];
+    high_speed_logger_spi_link_data.acc_z      = actuators_pprz[2];
+    high_speed_logger_spi_link_data.mag_x      = actuators_pprz[3];
+    high_speed_logger_spi_link_data.mag_y      = accel->x;
+    high_speed_logger_spi_link_data.mag_z      = accel->y;
+    high_speed_logger_spi_link_data.phi        = accel->z;
+    high_speed_logger_spi_link_data.theta      = angular_accel_ref.p;
+    high_speed_logger_spi_link_data.psi        = angular_accel_ref.q;
+    high_speed_logger_spi_link_data.extra1     = angular_accel_ref.r;
     high_speed_logger_spi_link_data.extra2     = quat->qz;
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction);

@@ -7,10 +7,10 @@
 <airframe name="mini cyclone">
 
   <servos driver="Pwm">
+    <servo name="ELEVON_LEFT"  no="0" min="1000" neutral="1500" max="2000"/>
+    <servo name="ELEVON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/>
     <servo name="RM" no="2" min="1000" neutral="1100" max="2000"/>
     <servo name="LM" no="3" min="1000" neutral="1100" max="2000"/>
-    <servo name="ELEVON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/>
-    <servo name="ELEVON_LEFT"  no="0" min="1000" neutral="1500" max="2000"/>
   </servos>
 
   <commands>
@@ -21,41 +21,11 @@
   </commands>
 
   <command_laws>
-    <call fun="motor_mixing_run(autopilot_motors_on,FALSE,values)"/>
-    <set servo="RM" value="motor_mixing.commands[0]"/>
-    <set servo="LM" value="motor_mixing.commands[1]"/>
-
-    <!-- Mode dependent actuator laws for the elevons. The elevons act different in rc attitude flight mode-->
-    <!-- First the correct feedback is stored in variables -->
-    <let var="aileron_feedback_left"  value="+@YAW"/>
-    <let var="aileron_feedback_right" value="+@YAW"/>
-
-    <let var="elevator_feedback_left"  value="-@PITCH"/>
-    <let var="elevator_feedback_right" value="+@PITCH"/>
-
-    <!-- Here the gains are defined for the two feedback cases, hover and forward-->
-    <let var="hover_left"  value="$elevator_feedback_left  - $aileron_feedback_left"/>
-    <let var="hover_right" value="$elevator_feedback_right - $aileron_feedback_right"/>
-
-    <let var="forward_left"  value="6*$aileron_feedback_left+4*$elevator_feedback_left"/>
-    <let var="forward_right" value="6*$aileron_feedback_right+4*$elevator_feedback_right"/>
-
-    <!-- This statement tells the autopilot to use the hover feedback if in mode attitude direct and to use the forward feedback in all other cases-->
-    <set servo="ELEVON_LEFT"    value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? $hover_left   : $forward_left" />
-    <set servo="ELEVON_RIGHT"   value="AP_MODE == AP_MODE_ATTITUDE_DIRECT ? $hover_right  : $forward_right" />
+    <set servo="ELEVON_LEFT"     value="autopilot_motors_on ? actuators_pprz[0] : 0"/>
+    <set servo="ELEVON_RIGHT"    value="autopilot_motors_on ? actuators_pprz[1] : 0"/>
+    <set servo="RM"              value="autopilot_motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <set servo="LM"              value="autopilot_motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
   </command_laws>
-
-  <section name="MIXING" prefix="MOTOR_MIXING_">
-    <define name="TRIM_ROLL" value="0"/>
-    <define name="TRIM_PITCH" value="0"/>
-    <define name="TRIM_YAW" value="0"/>
-    <define name="NB_MOTOR" value="2"/>
-    <define name="SCALE" value="256"/>
-    <define name="PITCH_COEF"  value="{    0,    0 }"/>
-    <define name="ROLL_COEF"   value="{ -256,  256 }"/>
-    <define name="YAW_COEF"    value="{    0,    0 }"/>
-    <define name="THRUST_COEF" value="{  256,  256 }"/>
-  </section>
 
   <!-- If you got a caliberation XML document from your IMU supplier, import this in the IMU section -->
 
@@ -202,6 +172,38 @@
     <define name="PSI_DDGAIN"   value=" 0"/>
   </section>
 
+  <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
+    <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
+    <define name="G1_ROLL"   value="{   0,    0, -3.2,  4.0}"/>
+    <define name="G1_PITCH"  value="{-1.9,  2.2,    0,    0}"/>
+    <define name="G1_YAW"    value="{-0.9, -1.1,  0.9, -1.0}"/>
+    <define name="G1_THRUST" value="{   0,    0,  -.8,  -.8}"/>
+    <!--Counter torque effect of spinning up a rotor-->
+    <define name="G2" value="{0, 0, 0, 0}"/>
+
+    <!-- reference acceleration for attitude control -->
+    <define name="REF_ERR_P" value="70.0"/>
+    <define name="REF_ERR_Q" value="70.0"/>
+    <define name="REF_ERR_R" value="70.0"/>
+    <define name="REF_RATE_P" value="10.0"/>
+    <define name="REF_RATE_Q" value="10.0"/>
+    <define name="REF_RATE_R" value="10.0"/>
+
+    <!--Maxium yaw rate, to avoid instability-->
+    <define name="MAX_R" value="100.0" unit="deg/s"/>
+
+    <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
+    <define name="FILT_CUTOFF" value="5.0"/>
+
+    <!-- first order actuator dynamics -->
+    <define name="ACT_DYN" value="{0.04, 0.04, 0.025, 0.025}"/>
+    <define name="ACT_RATE_LIMIT" value="{120, 120, 9600, 9600}"/>
+    <define name="ACT_IS_SERVO" value="{1, 1, 0, 0}"/>
+
+    <!-- Adaptive Learning Rate -->
+    <define name="USE_ADAPTIVE" value="FALSE"/>
+    <define name="ADAPTIVE_MU" value="0.0001"/>
+  </section>
 
   <!-- Gains for vertical navigation -->
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
@@ -216,6 +218,7 @@
     <define name="H_X" value=" 0.47577"/>
     <define name="H_Y" value=" 0.11811"/>
     <define name="H_Z" value=" 0.87161"/>
+    <define name="GRAVITY_HEURISTIC_FACTOR" value="0"/>
   </section>
 
   <!-- Gains for horizontal navigation-->
@@ -275,7 +278,6 @@
       <define name="USE_AIRSPEED" value="TRUE"/>
     </target>
 
-    <module name="motor_mixing"/>
     <module name="actuators"     type="pwm">
       <define name="SERVO_HZ" value="400"/>
       <!--define name="USE_SERVOS_7AND8"/-->
@@ -285,13 +287,17 @@
     <!-- Change the orientation via channels  -->
     <module name="imu"           type="apogee">
     	<define name="IMU_APOGEE_CHAN_X" value="2" />
-        <define name="IMU_APOGEE_CHAN_Y" value="1" />
-        <define name="IMU_APOGEE_CHAN_Z" value="0" />
+      <define name="IMU_APOGEE_CHAN_Y" value="1" />
+      <define name="IMU_APOGEE_CHAN_Z" value="0" />
+      <define name="APOGEE_GYRO_RANGE" value="MPU60X0_GYRO_RANGE_2000" />
+      <define name="APOGEE_ACCEL_RANGE" value="MPU60X0_ACCEL_RANGE_16G" />
+      <define name="APOGEE_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ" />
+      <define name="APOGEE_SMPLRT_DIV" value="3" />
     </module>
 
     <module name="air_data"/>
     <module name="gps"           type="ublox"/>
-    <module name="stabilization" type="int_quat"/>
+    <module name="stabilization" type="indi"/>
     <module name="ahrs"          type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="TRUE"/>
       <!--define name="AHRS_GRAVITY_UPDATE_COORDINATED_TURN" value="TRUE"/-->

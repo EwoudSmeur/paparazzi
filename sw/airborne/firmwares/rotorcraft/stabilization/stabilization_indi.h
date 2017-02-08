@@ -30,6 +30,7 @@ extern struct Int32Quat   stab_att_sp_quat;  ///< with #INT32_QUAT_FRAC
 extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
 
 extern bool indi_use_adaptive;
+extern struct FloatRates angular_accel_ref;
 
 struct ReferenceSystem {
   float err_p;
