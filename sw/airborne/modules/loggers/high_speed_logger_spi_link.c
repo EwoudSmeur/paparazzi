@@ -84,9 +84,9 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data.mag_y      = accel->x;
     high_speed_logger_spi_link_data.mag_z      = accel->y;
     high_speed_logger_spi_link_data.phi        = accel->z;
-    high_speed_logger_spi_link_data.theta      = angular_accel_ref.p;
-    high_speed_logger_spi_link_data.psi        = angular_accel_ref.q;
-    high_speed_logger_spi_link_data.extra1     = angular_accel_ref.r;
+    high_speed_logger_spi_link_data.theta      = quat->qi;
+    high_speed_logger_spi_link_data.psi        = quat->qx;
+    high_speed_logger_spi_link_data.extra1     = quat->qy;
     high_speed_logger_spi_link_data.extra2     = quat->qz;
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction);

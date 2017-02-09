@@ -318,7 +318,7 @@ void stabilization_indi_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
  *
  * Function that calculates the INDI commands
  */
-static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_control, bool in_flight)
+static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_control, bool UNUSED in_flight)
 {
 
   struct FloatRates rate_ref;
@@ -354,69 +354,38 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   //G2 is scaled by INDI_G_SCALING to make it readable
   g2_times_du = g2_times_du/INDI_G_SCALING;
 
-  if(true){
-  /*if(indi_thrust_increment_set){*/
-    // Calculate the min and max increments
-    for(i=0; i<INDI_NUM_ACT; i++) {
-      u_min[i] = - actuator_state_filt_vect[i];
-      u_max[i] = MAX_PPRZ - actuator_state_filt_vect[i];
-    }
-
-    //State prioritization {W Roll, W pitch, W yaw, TOTAL THRUST}
-    static float Wv[INDI_OUTPUTS] = {1000, 1000, 1, 100};
-
-    // incremental thrust
-    float wls_temp_thrust = stabilization_cmd[COMMAND_THRUST]
-      - (actuator_state[0] + actuator_state[1] + actuator_state[2] +actuator_state[3])/4;
-    wls_temp_thrust *= -1.0/1000.0;
-
-    // The control objective in array format
-    indi_v[0] = (angular_accel_ref.p - angular_acceleration[0]);
-    indi_v[1] = (angular_accel_ref.q - angular_acceleration[1]);
-    indi_v[2] = (angular_accel_ref.r - angular_acceleration[2] + g2_times_du);
-    indi_v[3] = wls_temp_thrust;
-    /*indi_v[3] = indi_thrust_increment;*/
-
-    // WLS Control Allocator
-    num_iter =
-      wls_alloc(indi_du,indi_v,u_min,u_max,Bwls,INDI_NUM_ACT,INDI_OUTPUTS,0,0,Wv,0,0,10000,10);
-
-    // Add the increments to the actuators
-    float_vect_sum(indi_u, actuator_state_filt_vect, indi_du, INDI_NUM_ACT);
-  } else
-  {
-    // Calculate the increment for each actuator
-    for(i=0; i<INDI_NUM_ACT; i++) {
-      indi_du[i] = (g1g2_pseudo_inv[i][0] * (angular_accel_ref.p - angular_acceleration[0]))
-        + (g1g2_pseudo_inv[i][1] * (angular_accel_ref.q - angular_acceleration[1]))
-        + (g1g2_pseudo_inv[i][2] * (angular_accel_ref.r - angular_acceleration[2] + g2_times_du));
-    }
-
-    // Add the increments to the actuators without the thrust
-    float_vect_sum(indi_u, actuator_state_filt_vect, indi_du, INDI_NUM_ACT);
-
-#warning the vertical control is hacked!
-    // Calculate the average of the actuators as a measure for the thrust
-    float avg_u_in = 0;
-    for(i=2; i<INDI_NUM_ACT; i++) {
-      avg_u_in += indi_u[i];
-    }
-    avg_u_in /= 2;
-
-    // Make sure the thrust is bounded
-    Bound(stabilization_cmd[COMMAND_THRUST],0, MAX_PPRZ);
-
-    //avoid dividing by zero
-    if(avg_u_in < 1.0) {
-      avg_u_in = 1.0;
-    }
-
-    // Rescale the command to the actuators to get the desired thrust
-    float indi_cmd_scaling = ((float) stabilization_cmd[COMMAND_THRUST]) / avg_u_in;
-    /*float_vect_smul(indi_u, indi_u, indi_cmd_scaling, INDI_NUM_ACT);*/
-    indi_u[2] *= indi_cmd_scaling;
-    indi_u[3] *= indi_cmd_scaling;
+  // Calculate the min and max increments
+  for(i=0; i<INDI_NUM_ACT; i++) {
+    u_min[i] = -MAX_PPRZ*act_is_servo[i] - actuator_state_filt_vect[i];
+    u_max[i] = MAX_PPRZ - actuator_state_filt_vect[i];
   }
+
+  //State prioritization {W Roll, W pitch, W yaw, TOTAL THRUST}
+  static float Wv[INDI_OUTPUTS] = {1000, 1000, 1, 100};
+
+  float v_thrust = 0.0;
+  if(indi_thrust_increment_set){
+    v_thrust = indi_thrust_increment;
+  } else {
+#warning the vertical control is hacked!
+    // incremental thrust
+    v_thrust = stabilization_cmd[COMMAND_THRUST]
+      - (actuator_state[2] +actuator_state[3])/2;
+    v_thrust *= -1.0/625.0;
+  }
+
+  // The control objective in array format
+  indi_v[0] = (angular_accel_ref.p - angular_acceleration[0]);
+  indi_v[1] = (angular_accel_ref.q - angular_acceleration[1]);
+  indi_v[2] = (angular_accel_ref.r - angular_acceleration[2] + g2_times_du);
+  indi_v[3] = v_thrust;
+
+  // WLS Control Allocator
+  num_iter =
+    wls_alloc(indi_du,indi_v,u_min,u_max,Bwls,INDI_NUM_ACT,INDI_OUTPUTS,0,0,Wv,0,0,10000,10);
+
+  // Add the increments to the actuators
+  float_vect_sum(indi_u, actuator_state_filt_vect, indi_du, INDI_NUM_ACT);
 
   // Bound the inputs to the actuators
   for(i=0; i<INDI_NUM_ACT; i++) {

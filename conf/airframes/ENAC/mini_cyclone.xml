@@ -174,9 +174,9 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1_ROLL"   value="{   0,    0, -3.2,  4.0}"/>
-    <define name="G1_PITCH"  value="{-1.9,  2.2,    0,    0}"/>
-    <define name="G1_YAW"    value="{-0.9, -1.1,  0.9, -1.0}"/>
+    <define name="G1_ROLL"   value="{   0,    0, -4.1,  4.5}"/>
+    <define name="G1_PITCH"  value="{-2.0,  2.4,    0,    0}"/>
+    <define name="G1_YAW"    value="{-0.5, -0.6,  0.6, -0.6}"/>
     <define name="G1_THRUST" value="{   0,    0,  -.8,  -.8}"/>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{0, 0, 0, 0}"/>
@@ -229,11 +229,10 @@
   </section>
 
   <section name="MISC">
-<!--     <define name="REF_QUAT_INFINITESIMAL_STEP" value="TRUE"/> -->
     <!--The Quadshot uses (when TRUE) a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
     <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
     <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
-    <define name="TRANSITION_MAX_OFFSET" value="-82.0" unit="deg"/>
+    <define name="TRANSITION_MAX_OFFSET" value="-45.0" unit="deg"/>
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
   </section>
 
