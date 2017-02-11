@@ -55,6 +55,7 @@ void high_speed_logger_spi_link_init(void)
 #include "stabilization.h"
 #include "subsystems/actuators.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
+#include "firmwares/rotorcraft/guidance/guidance_h.h"
 
 void high_speed_logger_spi_link_periodic(void)
 {
@@ -88,6 +89,7 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data.psi        = quat->qx;
     high_speed_logger_spi_link_data.extra1     = quat->qy;
     high_speed_logger_spi_link_data.extra2     = quat->qz;
+    high_speed_logger_spi_link_data.extra3     = transition_theta_offset;
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction);
   }

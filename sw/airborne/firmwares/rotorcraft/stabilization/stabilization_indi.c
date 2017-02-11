@@ -121,6 +121,9 @@ float act_obs[INDI_NUM_ACT];
 struct Int32Eulers stab_att_sp_euler;
 struct Int32Quat   stab_att_sp_quat;
 
+float q_filt = 0.0;
+float r_filt = 0.0;
+
 abi_event rpm_ev;
 static void rpm_cb(uint8_t sender_id, uint16_t *rpm, uint8_t num_act);
 
@@ -153,10 +156,10 @@ void init_filters(void);
 #include "subsystems/datalink/telemetry.h"
 static void send_indi_g(struct transport_tx *trans, struct link_device *dev)
 {
-  pprz_msg_send_INDI_G(trans, dev, AC_ID, INDI_NUM_ACT, g1_est[0],
-                                          INDI_NUM_ACT, g1_est[1],
-                                          INDI_NUM_ACT, g1_est[2],
-                                          INDI_NUM_ACT, g1_est[3],
+  pprz_msg_send_INDI_G(trans, dev, AC_ID, INDI_NUM_ACT, g1g2[0],
+                                          INDI_NUM_ACT, g1g2[1],
+                                          INDI_NUM_ACT, g1g2[2],
+                                          INDI_NUM_ACT, g1g2[3],
                                           INDI_NUM_ACT, g2_est);
 }
 
@@ -335,10 +338,13 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
 
   struct FloatRates *body_rates = stateGetBodyRates_f();
 
+  q_filt = (q_filt*3+body_rates->q)/4;
+  r_filt = (r_filt*3+body_rates->r)/4;
+
   //calculate the virtual control (reference acceleration) based on a PD controller
   angular_accel_ref.p = (rate_ref.p - body_rates->p) * reference_acceleration.rate_p;
-  angular_accel_ref.q = (rate_ref.q - body_rates->q) * reference_acceleration.rate_q;
-  angular_accel_ref.r = (rate_ref.r - body_rates->r) * reference_acceleration.rate_r;
+  angular_accel_ref.q = (rate_ref.q - q_filt) * reference_acceleration.rate_q;
+  angular_accel_ref.r = (rate_ref.r - r_filt) * reference_acceleration.rate_r;
 
   g2_times_du = 0.0;
   int8_t i;

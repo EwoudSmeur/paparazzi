@@ -612,10 +612,10 @@ static inline void transition_run(bool to_forward)
 {
   if (to_forward) {
     //Add 0.00625%
-    transition_percentage += 1 << (INT32_PERCENTAGE_FRAC - 4);
+    transition_percentage += 2 << (INT32_PERCENTAGE_FRAC - 4);
   } else {
     //Subtract 0.00625%
-    transition_percentage -= 1 << (INT32_PERCENTAGE_FRAC - 4);
+    transition_percentage -= 2 << (INT32_PERCENTAGE_FRAC - 4);
   }
 
 #ifdef TRANSITION_MAX_OFFSET

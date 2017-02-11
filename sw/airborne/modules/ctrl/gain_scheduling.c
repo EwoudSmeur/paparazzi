@@ -104,8 +104,8 @@ void gain_scheduling_periodic(void)
     //Calculate the ratio between the scheduling points
     int32_t ratio;
     ratio = BFP_OF_REAL((FLOAT_OF_BFP(SCHEDULING_VARIABLE,
-                                      SCHEDULING_VARIABLE_FRAC) - scheduling_points[section - 1]) / (scheduling_points[section] -
-                                          scheduling_points[section - 1]), INT32_RATIO_FRAC);
+            SCHEDULING_VARIABLE_FRAC) - scheduling_points[section - 1]) / (scheduling_points[section] -
+            scheduling_points[section - 1]), INT32_RATIO_FRAC);
 
     int64_t g1, g2, gbl;
 
