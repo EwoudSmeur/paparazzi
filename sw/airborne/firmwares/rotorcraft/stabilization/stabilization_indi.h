@@ -26,11 +26,28 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_common_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_quat_int.h"
 
+//only 4 actuators supported for now
+#ifndef INDI_NUM_ACT
+#define INDI_NUM_ACT 4
+#endif
+// outputs: roll, pitch, yaw, thrust
+#ifndef INDI_OUTPUTS
+#define INDI_OUTPUTS 4
+#endif
+
+// Scaling for the control effectiveness to make it readible
+#ifndef INDI_G_SCALING
+#define INDI_G_SCALING 1000.0
+#endif
+
 extern struct Int32Quat   stab_att_sp_quat;  ///< with #INT32_QUAT_FRAC
 extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
 
 extern bool indi_use_adaptive;
 extern struct FloatRates angular_accel_ref;
+
+// used for scheduling
+extern float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
 
 struct ReferenceSystem {
   float err_p;
