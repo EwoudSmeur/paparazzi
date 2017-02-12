@@ -7,8 +7,8 @@
 <airframe name="mini cyclone">
 
   <servos driver="Pwm">
-    <servo name="ELEVON_LEFT"  no="0" min="1000" neutral="1500" max="2000"/>
-    <servo name="ELEVON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/>
+    <servo name="ELEVON_LEFT"  no="0" min="1214" neutral="1500" max="1786"/>
+    <servo name="ELEVON_RIGHT" no="1" min="1214" neutral="1500" max="1786"/>
     <servo name="RM" no="2" min="1000" neutral="1100" max="2000"/>
     <servo name="LM" no="3" min="1000" neutral="1100" max="2000"/>
   </servos>
@@ -25,12 +25,9 @@
     <set servo="ELEVON_RIGHT"    value="autopilot_motors_on ? actuators_pprz[1] : 0"/>
     <set servo="RM"              value="autopilot_motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
     <set servo="LM"              value="autopilot_motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
+    <!--<set servo="RM"              value="autopilot_motors_on ? -MAX_PPRZ : -MAX_PPRZ"/>-->
+    <!--<set servo="LM"              value="autopilot_motors_on ? -MAX_PPRZ : -MAX_PPRZ"/>-->
   </command_laws>
-
-  <!-- If you got a caliberation XML document from your IMU supplier, import this in the IMU section -->
-
-  <!-- Note that is better to have *no* calibration file at all, than a one with incorrect caliberation values.
-       The default factory values are most of the time perfectly acceptable, so by default we will not use the caliberation file -->
 
   <section name="IMU" prefix="IMU_">
     <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
@@ -159,7 +156,7 @@
 
     <!-- first order actuator dynamics -->
     <define name="ACT_DYN" value="{0.04, 0.04, 0.025, 0.025}"/>
-    <define name="ACT_RATE_LIMIT" value="{120, 120, 9600, 9600}"/>
+    <define name="ACT_RATE_LIMIT" value="{209, 209, 9600, 9600}"/>
     <define name="ACT_IS_SERVO" value="{1, 1, 0, 0}"/>
 
     <!-- Adaptive Learning Rate -->
@@ -200,11 +197,10 @@
 
   <modules main_freq="512">
     <module name="gps" type="ubx_ucenter"/>
-    <!--<module name="flight_recorder"/>-->
-    <!--<module name="tlsf"/>-->
-    <!--<module name="pprzlog"/>-->
-    <!--<module name="logger" type"sd_chibios"/>-->
-    <module name="logger_spi_link"/>
+    <module name="tlsf"/>
+    <module name="pprzlog"/>
+    <module name="logger" type="sd_chibios"/>
+    <module name="flight_recorder"/>
 
     <module name="ctrl_effectiveness_scheduling"/>
 
@@ -214,26 +210,16 @@
       <define name="AIRSPEED_ETS_SYNC_SEND"/>
     </module>
 
-    <!-- Load this module to use multiple gain sets, which have to be specified in the gain sets section -->
-    <!--module name="gain_scheduling"/-->
-
     <module name="mag" type="hmc58xx">
       <configure name="MAG_HMC58XX_I2C_DEV" value="i2c2"/>
       <define name="MODULE_HMC58XX_UPDATE_AHRS"/>
-      <define name="HMC58XX_CHAN_X" value="2"/>
-      <define name="HMC58XX_CHAN_Y" value="0"/>
-      <define name="HMC58XX_CHAN_Z" value="1"/>
-
-      <define name="HMC58XX_CHAN_X_SIGN" value="+"/>
-      <define name="HMC58XX_CHAN_Y_SIGN" value="+"/>
-      <define name="HMC58XX_CHAN_Z_SIGN" value="-"/>
     </module>
 
   </modules>
 
 
   <firmware name="rotorcraft">
-    <target name="ap" board="apogee_1.0">
+    <target name="ap" board="apogee_1.0_chibios">
       <module name="radio_control" type="sbus">
         <!-- Put the mode on channel AUX1-->
         <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
@@ -247,10 +233,10 @@
     </module>
 
     <module name="telemetry"     type="xbee_api"/>
-    <!-- Change the orientation via channels  -->
     <module name="imu"           type="apogee">
       <define name="APOGEE_GYRO_RANGE" value="MPU60X0_GYRO_RANGE_2000" />
       <define name="APOGEE_ACCEL_RANGE" value="MPU60X0_ACCEL_RANGE_16G" />
+      <!--Set the frequency to 2000 hz with 256 Hz internal low pass-->
       <define name="APOGEE_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ" />
       <define name="APOGEE_SMPLRT_DIV" value="3" />
     </module>

@@ -161,5 +161,13 @@
 
   </process>
 
+  <process name="FlightRecorder">
+    <mode name="default">
+      <message name="ROTORCRAFT_CMD"        period=".05"/>
+      <message name="ROTORCRAFT_FP"         period="0.25"/>
+      <message name="AHRS_REF_QUAT"         period="0.05"/>
+    </mode>
+  </process>
+
 </telemetry>
 

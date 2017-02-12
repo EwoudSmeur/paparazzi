@@ -427,6 +427,35 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   for(i=0; i<INDI_NUM_ACT; i++) {
     actuators_pprz[i] = (int16_t) indi_u[i];
   }
+
+  /*Do some logging*/
+  static uint32_t log_counter = 0;
+  struct Int32Vect3 *accel = stateGetAccelBody_i();
+  struct Int32Quat *quat = stateGetNedToBodyQuat_i();
+  struct Int32Rates *body_rates_i = stateGetBodyRates_i();
+  static int32_t time_int = 0;
+  time_int = 1000*get_sys_time_float();
+  sdLogWriteLog(pprzLogFile, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+      log_counter,
+      body_rates_i->p,
+      body_rates_i->q,
+      body_rates_i->r,
+      actuators_pprz[0],
+      actuators_pprz[1],
+      actuators_pprz[2],
+      actuators_pprz[3],
+      accel->x,
+      accel->y,
+      accel->z,
+      quat->qi,
+      quat->qx,
+      quat->qy,
+      quat->qz,
+      sys_time.nb_tick,
+      sys_time.nb_sec,
+      sys_time.nb_sec_rem,
+      time_int);
+  log_counter += 1;
 }
 
 /**
