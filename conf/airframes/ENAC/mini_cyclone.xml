@@ -125,17 +125,17 @@
 
   <section name="ctrl_eff_scheduling" prefix="FWD_">
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1_ROLL"   value="{   0,    0, -10.2, 10.8}"/>
-    <define name="G1_PITCH"  value="{-10.0,  10.0,     0,    0}"/>
-    <define name="G1_YAW"    value="{-2.0, -2.5,   0.6, -0.6}"/>
+    <define name="G1_ROLL"   value="{   0,    0,   -8.9,  8.3}"/>
+    <define name="G1_PITCH"  value="{-25.0,  25.0,     0,    0}"/>
+    <define name="G1_YAW"    value="{-4.5, -6.3,   0.6, -0.6}"/>
     <define name="G1_THRUST" value="{   0,    0,   -.8,  -.8}"/>
   </section>
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1_ROLL"   value="{   0,    0,  -10.2, 10.8}"/>
-    <define name="G1_PITCH"  value="{-4.0,  4.8,      0,    0}"/>
-    <define name="G1_YAW"    value="{-0.6, -1.1,    0.5, -0.7}"/>
+    <define name="G1_ROLL"   value="{   0,    0,   -8.9,  8.3}"/>
+    <define name="G1_PITCH"  value="{-4.5,  3.5,      0,    0}"/>
+    <define name="G1_YAW"    value="{-1.2, -1.3,    0.7, -0.5}"/>
     <define name="G1_THRUST" value="{   0,    0,    -.8,  -.8}"/>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{0, 0, 0, 0}"/>
@@ -191,7 +191,7 @@
     <!--The Quadshot uses (when TRUE) a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
     <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
     <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
-    <define name="TRANSITION_MAX_OFFSET" value="-45.0" unit="deg"/>
+    <define name="TRANSITION_MAX_OFFSET" value="-60.0" unit="deg"/>
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
   </section>
 
@@ -200,7 +200,7 @@
     <module name="tlsf"/>
     <module name="pprzlog"/>
     <module name="logger" type="sd_chibios"/>
-    <module name="flight_recorder"/>
+    <!--<module name="flight_recorder"/>-->
 
     <module name="ctrl_effectiveness_scheduling"/>
 

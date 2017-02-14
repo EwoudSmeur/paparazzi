@@ -369,8 +369,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   } else {
 #warning the vertical control is hacked!
     // incremental thrust
-    v_thrust = stabilization_cmd[COMMAND_THRUST]
-      - (actuator_state[2] +actuator_state[3])/2;
+    v_thrust = stabilization_cmd[COMMAND_THRUST] - (actuator_state[2] +actuator_state[3])/2;
     v_thrust *= -1.0/625.0;
   }
 
@@ -433,8 +432,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   struct Int32Vect3 *accel = stateGetAccelBody_i();
   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
   struct Int32Rates *body_rates_i = stateGetBodyRates_i();
-  static int32_t time_int = 0;
-  time_int = 1000*get_sys_time_float();
+  // For floats: specify the number of digits, e.g. .5f
   sdLogWriteLog(pprzLogFile, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
       log_counter,
       body_rates_i->p,
@@ -451,11 +449,12 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
       quat->qx,
       quat->qy,
       quat->qz,
-      sys_time.nb_tick,
-      sys_time.nb_sec,
-      sys_time.nb_sec_rem,
-      time_int);
+      stab_att_sp_quat.qi,
+      stab_att_sp_quat.qx,
+      stab_att_sp_quat.qy,
+      stab_att_sp_quat.qz);
   log_counter += 1;
+
 }
 
 /**
