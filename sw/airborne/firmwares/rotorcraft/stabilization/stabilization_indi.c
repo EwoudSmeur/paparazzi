@@ -369,7 +369,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   } else {
 #warning the vertical control is hacked!
     // incremental thrust
-    v_thrust = stabilization_cmd[COMMAND_THRUST] - (actuator_state[2] +actuator_state[3])/2;
+    v_thrust = stabilization_cmd[COMMAND_THRUST] - (actuator_state_filt_vect[2] +actuator_state_filt_vect[3])/2;
     v_thrust *= -1.0/625.0;
   }
 
