@@ -432,8 +432,13 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   struct Int32Vect3 *accel = stateGetAccelBody_i();
   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
   struct Int32Rates *body_rates_i = stateGetBodyRates_i();
+  int32_t v_int[4];
+  v_int[0] = indi_v[0]*10000;
+  v_int[1] = indi_v[1]*10000;
+  v_int[2] = indi_v[2]*10000;
+  v_int[3] = indi_v[3]*10000;
   // For floats: specify the number of digits, e.g. .5f
-  sdLogWriteLog(pprzLogFile, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+  sdLogWriteLog(pprzLogFile, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
       log_counter,
       body_rates_i->p,
       body_rates_i->q,
@@ -452,7 +457,11 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
       stab_att_sp_quat.qi,
       stab_att_sp_quat.qx,
       stab_att_sp_quat.qy,
-      stab_att_sp_quat.qz);
+      stab_att_sp_quat.qz,
+      v_int[0],
+      v_int[1],
+      v_int[2],
+      v_int[3]);
   log_counter += 1;
 
 }

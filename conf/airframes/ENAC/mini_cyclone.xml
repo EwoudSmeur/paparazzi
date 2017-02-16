@@ -196,7 +196,7 @@
   </section>
 
   <modules main_freq="512">
-    <module name="gps" type="ubx_ucenter"/>
+    <!--<module name="gps" type="ubx_ucenter"/>-->
     <module name="tlsf"/>
     <module name="pprzlog"/>
     <module name="logger" type="sd_chibios"/>
