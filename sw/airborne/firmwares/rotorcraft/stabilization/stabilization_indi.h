@@ -46,6 +46,11 @@ extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
 extern bool indi_use_adaptive;
 extern struct FloatRates angular_accel_ref;
 
+extern float yaw_vs_pitch;
+
+// for logging
+extern float indi_v[4];
+
 // used for scheduling
 extern float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
 

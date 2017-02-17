@@ -123,6 +123,7 @@ struct Int32Quat   stab_att_sp_quat;
 
 float q_filt = 0.0;
 float r_filt = 0.0;
+float yaw_vs_pitch = 0.0;
 
 abi_event rpm_ev;
 static void rpm_cb(uint8_t sender_id, uint16_t *rpm, uint8_t num_act);
@@ -361,7 +362,11 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   }
 
   //State prioritization {W Roll, W pitch, W yaw, TOTAL THRUST}
-  static float Wv[INDI_OUTPUTS] = {1000, 1000, 1, 100};
+  static float Wv[INDI_OUTPUTS] = {1000, 10, 1, 1000};
+  Wv[1] = 10 - 9*yaw_vs_pitch;
+  Wv[2] = 1 + 9*yaw_vs_pitch;
+  Bound(Wv[1], 1, 10);
+  Bound(Wv[2], 1, 10);
 
   float v_thrust = 0.0;
   if(indi_thrust_increment_set){
@@ -428,41 +433,41 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   }
 
   /*Do some logging*/
-  static uint32_t log_counter = 0;
-  struct Int32Vect3 *accel = stateGetAccelBody_i();
-  struct Int32Quat *quat = stateGetNedToBodyQuat_i();
-  struct Int32Rates *body_rates_i = stateGetBodyRates_i();
-  int32_t v_int[4];
-  v_int[0] = indi_v[0]*10000;
-  v_int[1] = indi_v[1]*10000;
-  v_int[2] = indi_v[2]*10000;
-  v_int[3] = indi_v[3]*10000;
-  // For floats: specify the number of digits, e.g. .5f
-  sdLogWriteLog(pprzLogFile, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-      log_counter,
-      body_rates_i->p,
-      body_rates_i->q,
-      body_rates_i->r,
-      actuators_pprz[0],
-      actuators_pprz[1],
-      actuators_pprz[2],
-      actuators_pprz[3],
-      accel->x,
-      accel->y,
-      accel->z,
-      quat->qi,
-      quat->qx,
-      quat->qy,
-      quat->qz,
-      stab_att_sp_quat.qi,
-      stab_att_sp_quat.qx,
-      stab_att_sp_quat.qy,
-      stab_att_sp_quat.qz,
-      v_int[0],
-      v_int[1],
-      v_int[2],
-      v_int[3]);
-  log_counter += 1;
+  /*static uint32_t log_counter = 0;*/
+  /*struct Int32Vect3 *accel = stateGetAccelBody_i();*/
+  /*struct Int32Quat *quat = stateGetNedToBodyQuat_i();*/
+  /*struct Int32Rates *body_rates_i = stateGetBodyRates_i();*/
+  /*int32_t v_int[4];*/
+  /*v_int[0] = indi_v[0]*10000;*/
+  /*v_int[1] = indi_v[1]*10000;*/
+  /*v_int[2] = indi_v[2]*10000;*/
+  /*v_int[3] = indi_v[3]*10000;*/
+  /*// For floats: specify the number of digits, e.g. .5f*/
+  /*sdLogWriteLog(pprzLogFile, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",*/
+      /*log_counter,*/
+      /*body_rates_i->p,*/
+      /*body_rates_i->q,*/
+      /*body_rates_i->r,*/
+      /*actuators_pprz[0],*/
+      /*actuators_pprz[1],*/
+      /*actuators_pprz[2],*/
+      /*actuators_pprz[3],*/
+      /*accel->x,*/
+      /*accel->y,*/
+      /*accel->z,*/
+      /*quat->qi,*/
+      /*quat->qx,*/
+      /*quat->qy,*/
+      /*quat->qz,*/
+      /*stab_att_sp_quat.qi,*/
+      /*stab_att_sp_quat.qx,*/
+      /*stab_att_sp_quat.qy,*/
+      /*stab_att_sp_quat.qz,*/
+      /*v_int[0],*/
+      /*v_int[1],*/
+      /*v_int[2],*/
+      /*v_int[3]);*/
+  /*log_counter += 1;*/
 
 }
 

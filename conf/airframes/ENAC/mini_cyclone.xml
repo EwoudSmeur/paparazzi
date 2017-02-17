@@ -191,16 +191,18 @@
     <!--The Quadshot uses (when TRUE) a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
     <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
     <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
-    <define name="TRANSITION_MAX_OFFSET" value="-60.0" unit="deg"/>
+    <define name="TRANSITION_MAX_OFFSET" value="-75.0" unit="deg"/>
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
+    <define name="COORDINATED_TURN_AIRSPEED" value="18.0"/>
   </section>
 
   <modules main_freq="512">
-    <!--<module name="gps" type="ubx_ucenter"/>-->
-    <module name="tlsf"/>
-    <module name="pprzlog"/>
-    <module name="logger" type="sd_chibios"/>
+    <module name="gps" type="ubx_ucenter"/>
+    <!--<module name="tlsf"/>-->
+    <!--<module name="pprzlog"/>-->
+    <!--<module name="logger" type="sd_chibios"/>-->
     <!--<module name="flight_recorder"/>-->
+    <module name="logger_spi_link"/>
 
     <module name="ctrl_effectiveness_scheduling"/>
 
@@ -219,7 +221,8 @@
 
 
   <firmware name="rotorcraft">
-    <target name="ap" board="apogee_1.0_chibios">
+    <!--<target name="ap" board="apogee_1.0_chibios">-->
+    <target name="ap" board="apogee_1.0">
       <module name="radio_control" type="sbus">
         <!-- Put the mode on channel AUX1-->
         <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
