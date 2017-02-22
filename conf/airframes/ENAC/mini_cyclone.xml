@@ -31,12 +31,16 @@
 
   <section name="IMU" prefix="IMU_">
     <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
-    <define name="MAG_X_NEUTRAL" value="0"/>
-    <define name="MAG_Y_NEUTRAL" value="0"/>
-    <define name="MAG_Z_NEUTRAL" value="0"/>
-    <define name="MAG_X_SENS" value="4.19385009207" integer="16"/>
-    <define name="MAG_Y_SENS" value="4.32306399648" integer="16"/>
-    <define name="MAG_Z_SENS" value="4.63243801309" integer="16"/>
+    <define name="MAG_X_NEUTRAL" value="12"/>
+    <define name="MAG_Y_NEUTRAL" value="-103"/>
+    <define name="MAG_Z_NEUTRAL" value="-444"/>
+    <define name="MAG_X_SENS" value="3.67726438454" integer="16"/>
+    <define name="MAG_Y_SENS" value="3.72705676695" integer="16"/>
+    <define name="MAG_Z_SENS" value="3.80412188394" integer="16"/>
+
+    <define name= "MAG_X_CURRENT_COEF" value="0.00132143381435"/>
+    <define name= "MAG_Y_CURRENT_COEF" value="0.00613721186806"/>
+    <define name= "MAG_Z_CURRENT_COEF" value="0.0172048482992"/>
 
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="90." unit="deg"/>
@@ -215,6 +219,14 @@
     <module name="mag" type="hmc58xx">
       <configure name="MAG_HMC58XX_I2C_DEV" value="i2c2"/>
       <define name="MODULE_HMC58XX_UPDATE_AHRS"/>
+
+      <define name="HMC58XX_CHAN_X" value="1"/>
+      <define name="HMC58XX_CHAN_Y" value="0"/>
+      <define name="HMC58XX_CHAN_Z" value="2"/>
+
+      <define name="HMC58XX_CHAN_X_SIGN" value="-"/>
+      <define name="HMC58XX_CHAN_Y_SIGN" value="+"/>
+      <define name="HMC58XX_CHAN_Z_SIGN" value="+"/>
     </module>
 
   </modules>
@@ -234,6 +246,12 @@
       <define name="SERVO_HZ" value="400"/>
       <!--define name="USE_SERVOS_7AND8"/-->
     </module>
+
+    <module name="send_imu_mag_current">
+      <define name="MILLIAMP_AT_IDLE_THROTTLE" value="1000"/>
+      <define name="MILLIAMP_AT_FULL_THROTTLE" value="20000"/>
+    </module>
+    <module name="sys_mon"/>
 
     <module name="telemetry"     type="xbee_api"/>
     <module name="imu"           type="apogee">
