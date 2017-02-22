@@ -84,6 +84,8 @@ static void guidance_indi_filter_thrust(void);
 #endif
 #endif
 
+float wiggle_magnitude = 0.00;
+
 float thrust_act = 0;
 Butterworth2LowPass filt_accel_ned[3];
 Butterworth2LowPass roll_filt;
@@ -98,6 +100,8 @@ float filter_cutoff = GUIDANCE_INDI_FILTER_CUTOFF;
 
 struct FloatEulers guidance_euler_cmd;
 float thrust_in;
+
+float vspeed_sp_setting = 0.0;
 
 static void guidance_indi_propagate_filters(void);
 static void guidance_indi_calcG(struct FloatMat33 *Gmat);
@@ -153,8 +157,13 @@ void guidance_indi_run(bool in_flight, int32_t heading) {
   sp_accel.x = cosf(psi) * rc_x - sinf(psi) * rc_y;
   sp_accel.y = sinf(psi) * rc_x + cosf(psi) * rc_y;
 
+#if CYCLONE_DESCEND_TEST
+  speed_sp_z = vspeed_sp_setting;
+  sp_accel.z = (speed_sp_z - stateGetSpeedNed_f()->z) * guidance_indi_speed_gain;
+#else
   //for rc vertical control
   sp_accel.z = -(radio_control.values[RADIO_THROTTLE]-4500)*8.0/9600.0;
+#endif
 #endif
 
   //Calculate matrix of partial derivatives
@@ -207,6 +216,15 @@ void guidance_indi_run(bool in_flight, int32_t heading) {
   //Bound euler angles to prevent flipping
   Bound(guidance_euler_cmd.phi, -GUIDANCE_H_MAX_BANK, GUIDANCE_H_MAX_BANK);
   Bound(guidance_euler_cmd.theta, -GUIDANCE_H_MAX_BANK, GUIDANCE_H_MAX_BANK);
+
+  // Start the wiggle!
+  static int32_t wiggle_counter = 0;
+  if(wiggle_counter >= 1024) {
+    wiggle_counter = 0;
+  } else if(wiggle_counter < 512) {
+    heading += ANGLE_BFP_OF_REAL(wiggle_magnitude);
+  }
+  wiggle_counter ++;
 
   //set the quat setpoint with the calculated roll and pitch
   stabilization_attitude_set_setpoint_rp_quat_f(&guidance_euler_cmd, in_flight, heading);

@@ -50,7 +50,7 @@
   <section name="AUTOPILOT">
     <define name="MODE_MANUAL"  value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/>
-    <define name="MODE_AUTO2"  value="AP_MODE_RATE_DIRECT"/>
+    <define name="MODE_AUTO2"  value="AP_MODE_HOVER_Z_HOLD"/>
   </section>
 
   <section name="BAT">
@@ -156,7 +156,7 @@
     <define name="MAX_R" value="100.0" unit="deg/s"/>
 
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
-    <define name="FILT_CUTOFF" value="5.0"/>
+    <define name="FILT_CUTOFF" value="1.0"/>
 
     <!-- first order actuator dynamics -->
     <define name="ACT_DYN" value="{0.04, 0.04, 0.025, 0.025}"/>
@@ -177,11 +177,17 @@
     <define name="ADAPT_THROTTLE_ENABLED" value="FALSE"/>
   </section>
 
-  <section name="AHRS" prefix="AHRS_">
-    <define name="H_X" value=" 0.47577"/>
-    <define name="H_Y" value=" 0.11811"/>
-    <define name="H_Z" value=" 0.87161"/>
-    <define name="GRAVITY_HEURISTIC_FACTOR" value="0"/>
+  <!--<section name="AHRS" prefix="AHRS_">-->
+    <!--<define name="H_X" value="0.5138"/>-->
+    <!--<define name="H_Y" value="0.00019"/>-->
+    <!--<define name="H_Z" value="0.8578"/>-->
+    <!--<define name="GRAVITY_HEURISTIC_FACTOR" value="0"/>-->
+  <!--</section>-->
+
+  <section name="INS" prefix="INS_">
+    <define name="H_X" value="0.5138"/>
+    <define name="H_Y" value="0.00019"/>
+    <define name="H_Z" value="0.8578"/>
   </section>
 
   <!-- Gains for horizontal navigation-->
@@ -198,6 +204,10 @@
     <define name="TRANSITION_MAX_OFFSET" value="-75.0" unit="deg"/>
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
     <define name="COORDINATED_TURN_AIRSPEED" value="18.0"/>
+
+    <define name="BARO_PERIODIC_FREQUENCY" value="50"/>
+    <define name="GUIDANCE_H_MAX_BANK" value="30"/>
+    <define name="CYCLONE_DESCEND_TEST" value="FALSE"/>
   </section>
 
   <modules main_freq="512">
@@ -265,11 +275,19 @@
     <module name="air_data"/>
     <module name="gps"           type="ublox"/>
     <module name="stabilization" type="indi"/>
+    <module name="guidance"      type="indi">
+      <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
+    </module>
     <module name="ahrs"          type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="FALSE"/>
-      <!--define name="AHRS_GRAVITY_UPDATE_COORDINATED_TURN" value="TRUE"/-->
+      <configure name="USE_MAGNETOMETER" value="TRUE"/>
+      <!--<define name="AHRS_GRAVITY_UPDATE_COORDINATED_TURN" value="TRUE"/>-->
+      <!--<define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>-->
     </module>
 
     <module name="ins"/>
+    <!--<module name="ins" type="float_invariant">-->
+      <!--<define name="INS_PROPAGATE_FREQUENCY" value="500"/>-->
+    <!--</module>-->
+
   </firmware>
 </airframe>

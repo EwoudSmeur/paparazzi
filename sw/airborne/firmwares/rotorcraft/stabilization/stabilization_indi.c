@@ -123,7 +123,6 @@ struct Int32Quat   stab_att_sp_quat;
 
 float q_filt = 0.0;
 float r_filt = 0.0;
-float yaw_vs_pitch = 0.0;
 
 abi_event rpm_ev;
 static void rpm_cb(uint8_t sender_id, uint16_t *rpm, uint8_t num_act);
@@ -362,11 +361,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   }
 
   //State prioritization {W Roll, W pitch, W yaw, TOTAL THRUST}
-  static float Wv[INDI_OUTPUTS] = {1000, 10, 1, 1000};
-  Wv[1] = 10 - 9*yaw_vs_pitch;
-  Wv[2] = 1 + 9*yaw_vs_pitch;
-  Bound(Wv[1], 1, 10);
-  Bound(Wv[2], 1, 10);
+  static float Wv[INDI_OUTPUTS] = {1000, 1000, 1, 100};
 
   float v_thrust = 0.0;
   if(indi_thrust_increment_set){
@@ -396,7 +391,11 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     if(act_is_servo[i]) {
       BoundAbs(indi_u[i], MAX_PPRZ);
     } else {
-      Bound(indi_u[i], 0, MAX_PPRZ);
+      if((guidance_h.mode == GUIDANCE_H_MODE_HOVER) || (guidance_h.mode == GUIDANCE_H_MODE_NAV)) {
+        Bound(indi_u[i], 4000, MAX_PPRZ);
+      } else {
+        Bound(indi_u[i], 0, MAX_PPRZ);
+      }
     }
   }
 
