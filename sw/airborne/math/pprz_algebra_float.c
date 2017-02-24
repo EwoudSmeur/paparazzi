@@ -638,3 +638,21 @@ void float_mat_inv_4d(float invOut[16], float mat_in[16])
     for(i = 0; i < 16; ++i)
         invOut[i] = invOut[i] * inv_det;
 }
+
+bool float_mat_inv_2d(float inv_out[4], float mat_in[4]) {
+  float det = mat_in[0]*mat_in[3] - mat_in[1]*mat_in[2];
+
+  if(fabsf(det) < 1e-4) return 1; //not invertible
+
+  inv_out[0] =  mat_in[3]/det;
+  inv_out[1] = -mat_in[1]/det;
+  inv_out[2] = -mat_in[2]/det;
+  inv_out[3] =  mat_in[0]/det;
+
+  return 0; //return succes
+}
+
+void float_mat2_mult(struct FloatVect2 *vect_out, float mat[4], struct FloatVect2 vect_in) {
+  vect_out->x = mat[0]*vect_in.x + mat[1]*vect_in.y;
+  vect_out->y = mat[2]*vect_in.x + mat[3]*vect_in.y;
+}

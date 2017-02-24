@@ -41,6 +41,15 @@ extern void stabilization_attitude_set_setpoint_rp_quat_f(struct FloatEulers* in
 extern float guidance_indi_thrust_specific_force_gain;
 extern struct FloatVect3 euler_cmd;
 
+enum transition {HOVER, FORWARD};
+extern enum transition transition_state;
+
+extern float get_fwd_pitch(void);
+extern float get_transition_pitch(void);
+extern void get_two_d_accel(struct FloatVect2 *accel, float heading);
+extern void calc_inv_transition_effectiveness(float theta, float inv_eff[4]);
+extern bool perform_transition;
+
 extern float vspeed_sp_setting;
 extern float wiggle_magnitude;
 

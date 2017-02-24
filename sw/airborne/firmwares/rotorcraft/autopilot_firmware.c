@@ -117,9 +117,47 @@ static void send_energy(struct transport_tx *trans, struct link_device *dev)
   float power = vsup * curs;
   pprz_msg_send_ENERGY(trans, dev, AC_ID, &vsup, &curs, &e, &power);
 }
-
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 static void send_fp(struct transport_tx *trans, struct link_device *dev)
 {
+  /*struct FloatQuat quat;*/
+  /*static int32_t counter = 0.0;*/
+  /*counter -=1;*/
+  /*static float theta;*/
+  /*theta =  RadOfDeg( (float) counter);*/
+  /*if(counter < -110) {*/
+    /*counter = 0;*/
+  /*}*/
+  /*struct FloatEulers eulers = {0.0, theta, stabilization_attitude_get_heading_f()};*/
+  /*float_quat_of_eulers(&quat, &eulers);*/
+
+  /*float inv_eff[4];*/
+  /*float transition_pitch = get_transition_pitch();*/
+  /*calc_inv_transition_effectiveness(transition_pitch, inv_eff);*/
+
+  /*struct Int32Quat quati;*/
+  /*QUAT_BFP_OF_REAL(quati, quat);*/
+
+  /*DOWNLINK_SEND_AHRS_REF_QUAT(DefaultChannel, DefaultDevice, &quati.qi,*/
+                                                             /*&quati.qx,*/
+                                                             /*&quati.qy,*/
+                                                             /*&quati.qz,*/
+                                                             /*&quati.qi,*/
+                                                             /*&quati.qx,*/
+                                                             /*&quati.qy,*/
+                                                             /*&quati.qz);*/
+  /*float vect[4];*/
+  /*vect[0] = get_transition_pitch();*/
+
+  /*struct FloatVect2 accel;*/
+  /*get_two_d_accel(accel, stabilization_attitude_get_heading_f());*/
+  /*vect[1] = accel.x;*/
+  /*vect[2] = accel.y;*/
+  /*DOWNLINK_SEND_INDI_G(DefaultChannel, DefaultDevice, 4, inv_eff,*/
+                                                      /*4, vect,*/
+                                                      /*4, vect,*/
+                                                      /*4, vect,*/
+                                                      /*4, vect);*/
   int32_t carrot_up = -guidance_v_z_sp;
   pprz_msg_send_ROTORCRAFT_FP(trans, dev, AC_ID,
                               &(stateGetPositionEnu_i()->x),

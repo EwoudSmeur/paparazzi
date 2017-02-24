@@ -44,6 +44,7 @@
 #include "stdio.h"
 #include "filters/low_pass_filter.h"
 #include "subsystems/abi.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 
 // The acceleration reference is calculated with these gains. If you use GPS,
 // they are probably limited by the update rate of your GPS. The default
@@ -86,6 +87,8 @@ static void guidance_indi_filter_thrust(void);
 
 float wiggle_magnitude = 0.00;
 
+enum transition transition_state = HOVER;
+
 float thrust_act = 0;
 Butterworth2LowPass filt_accel_ned[3];
 Butterworth2LowPass roll_filt;
@@ -102,6 +105,9 @@ struct FloatEulers guidance_euler_cmd;
 float thrust_in;
 
 float vspeed_sp_setting = 0.0;
+
+bool perform_transition = false;
+bool not_transitioned = true;
 
 static void guidance_indi_propagate_filters(void);
 static void guidance_indi_calcG(struct FloatMat33 *Gmat);
@@ -131,6 +137,7 @@ void guidance_indi_enter(void) {
  * main indi guidance function
  */
 void guidance_indi_run(bool in_flight, int32_t heading) {
+  float heading_f = ANGLE_FLOAT_OF_BFP(heading);
 
   //filter accel to get rid of noise and filter attitude to synchronize with accel
   guidance_indi_propagate_filters();
@@ -148,86 +155,132 @@ void guidance_indi_run(bool in_flight, int32_t heading) {
   sp_accel.y = (speed_sp_y - stateGetSpeedNed_f()->y) * guidance_indi_speed_gain;
   sp_accel.z = (speed_sp_z - stateGetSpeedNed_f()->z) * guidance_indi_speed_gain;
 
+  if(perform_transition) {
+    float transition_pitch = get_transition_pitch();
+
+    transition_percentage = BFP_OF_REAL(transition_pitch/RadOfDeg(-78.0)*100,INT32_PERCENTAGE_FRAC);
+    Bound(transition_percentage,0,BFP_OF_REAL(100,INT32_PERCENTAGE_FRAC));
+
+    struct FloatVect2 sp_accel_tr;
+    if( (transition_pitch > RadOfDeg(-70.0)) && not_transitioned) {
+      sp_accel_tr.x = 2.0;
+    } else if(transition_pitch < RadOfDeg(-10.0)) {
+      sp_accel_tr.x = -2.0;
+      not_transitioned = false;
+    } else {
+      sp_accel_tr.x = 0.0;
+      perform_transition = false;
+    }
+
+    sp_accel_tr.y = sp_accel.z;
+    float inv_eff[4];
+    calc_inv_transition_effectiveness(transition_pitch, inv_eff);
+
+    struct FloatVect2 accel_tr;
+    get_two_d_accel(&accel_tr, heading_f);
+
+    struct FloatVect2 a_diff_tr = {sp_accel_tr.x - accel_tr.x, sp_accel_tr.y - accel_tr.y};
+
+    struct FloatVect2 cmds;
+    float_mat2_mult(&cmds,inv_eff,a_diff_tr); // cmds = delta 1)pitch 2)thrust
+
+    AbiSendMsgTHRUST(THRUST_INCREMENT_ID, cmds.y);
+
+    guidance_euler_cmd.theta = transition_pitch + cmds.x;
+
+    guidance_euler_cmd.phi = 0.0;
+    guidance_euler_cmd.psi = heading_f;
+
+    //Bound euler angles to prevent flipping
+    Bound(guidance_euler_cmd.theta, RadOfDeg(-110), 0.0);
+
+    struct FloatQuat sp_quat;
+    float_quat_of_eulers(&sp_quat, &guidance_euler_cmd);
+    float_quat_normalize(&sp_quat);
+    QUAT_BFP_OF_REAL(stab_att_sp_quat,sp_quat);
+
+  } else {
 #if GUIDANCE_INDI_RC_DEBUG
 #warning "GUIDANCE_INDI_RC_DEBUG lets you control the accelerations via RC, but disables autonomous flight!"
-  //for rc control horizontal, rotate from body axes to NED
-  float psi = stateGetNedToBodyEulers_f()->psi;
-  float rc_x = -(radio_control.values[RADIO_PITCH]/9600.0)*8.0;
-  float rc_y = (radio_control.values[RADIO_ROLL]/9600.0)*8.0;
-  sp_accel.x = cosf(psi) * rc_x - sinf(psi) * rc_y;
-  sp_accel.y = sinf(psi) * rc_x + cosf(psi) * rc_y;
+    //for rc control horizontal, rotate from body axes to NED
+    float psi = stateGetNedToBodyEulers_f()->psi;
+    float rc_x = -(radio_control.values[RADIO_PITCH]/9600.0)*8.0;
+    float rc_y = (radio_control.values[RADIO_ROLL]/9600.0)*8.0;
+    sp_accel.x = cosf(psi) * rc_x - sinf(psi) * rc_y;
+    sp_accel.y = sinf(psi) * rc_x + cosf(psi) * rc_y;
 
 #if CYCLONE_DESCEND_TEST
-  speed_sp_z = vspeed_sp_setting;
-  sp_accel.z = (speed_sp_z - stateGetSpeedNed_f()->z) * guidance_indi_speed_gain;
+    speed_sp_z = vspeed_sp_setting;
+    sp_accel.z = (speed_sp_z - stateGetSpeedNed_f()->z) * guidance_indi_speed_gain;
 #else
-  //for rc vertical control
-  sp_accel.z = -(radio_control.values[RADIO_THROTTLE]-4500)*8.0/9600.0;
+    //for rc vertical control
+    sp_accel.z = -(radio_control.values[RADIO_THROTTLE]-4500)*8.0/9600.0;
 #endif
 #endif
 
-  //Calculate matrix of partial derivatives
-  guidance_indi_calcG(&Ga);
-  //Invert this matrix
-  MAT33_INV(Ga_inv, Ga);
+    //Calculate matrix of partial derivatives
+    guidance_indi_calcG(&Ga);
+    //Invert this matrix
+    MAT33_INV(Ga_inv, Ga);
 
-  struct FloatVect3 a_diff = { sp_accel.x - filt_accel_ned[0].o[0], sp_accel.y -filt_accel_ned[1].o[0], sp_accel.z -filt_accel_ned[2].o[0]};
+    struct FloatVect3 a_diff = { sp_accel.x - filt_accel_ned[0].o[0], sp_accel.y -filt_accel_ned[1].o[0], sp_accel.z -filt_accel_ned[2].o[0]};
 
-  //Bound the acceleration error so that the linearization still holds
-  Bound(a_diff.x, -6.0, 6.0);
-  Bound(a_diff.y, -6.0, 6.0);
-  Bound(a_diff.z, -9.0, 9.0);
+    //Bound the acceleration error so that the linearization still holds
+    Bound(a_diff.x, -6.0, 6.0);
+    Bound(a_diff.y, -6.0, 6.0);
+    Bound(a_diff.z, -9.0, 9.0);
 
-  //If the thrust to specific force ratio has been defined, include vertical control
-  //else ignore the vertical acceleration error
+    //If the thrust to specific force ratio has been defined, include vertical control
+    //else ignore the vertical acceleration error
 #ifndef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
 #ifndef STABILIZATION_ATTITUDE_INDI_FULL
-  a_diff.z = 0.0;
+    a_diff.z = 0.0;
 #endif
 #endif
 
-  //Calculate roll,pitch and thrust command
-  MAT33_VECT3_MUL(euler_cmd, Ga_inv, a_diff);
+    //Calculate roll,pitch and thrust command
+    MAT33_VECT3_MUL(euler_cmd, Ga_inv, a_diff);
 
-  AbiSendMsgTHRUST(THRUST_INCREMENT_ID, euler_cmd.z);
+    AbiSendMsgTHRUST(THRUST_INCREMENT_ID, euler_cmd.z);
 
-  guidance_euler_cmd.phi = roll_filt.o[0] + euler_cmd.x;
-  guidance_euler_cmd.theta = pitch_filt.o[0] + euler_cmd.y;
-  //zero psi command, because a roll/pitch quat will be constructed later
-  guidance_euler_cmd.psi = 0;
+    guidance_euler_cmd.phi = roll_filt.o[0] + euler_cmd.x;
+    guidance_euler_cmd.theta = pitch_filt.o[0] + euler_cmd.y;
+    //zero psi command, because a roll/pitch quat will be constructed later
+    guidance_euler_cmd.psi = 0;
 
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
-  guidance_indi_filter_thrust();
+    guidance_indi_filter_thrust();
 
-  //Add the increment in specific force * specific_force_to_thrust_gain to the filtered thrust
-  thrust_in = thrust_filt.o[0] + euler_cmd.z*thrust_in_specific_force_gain;
-  Bound(thrust_in, 0, 9600);
+    //Add the increment in specific force * specific_force_to_thrust_gain to the filtered thrust
+    thrust_in = thrust_filt.o[0] + euler_cmd.z*thrust_in_specific_force_gain;
+    Bound(thrust_in, 0, 9600);
 
 #if GUIDANCE_INDI_RC_DEBUG
-  if(radio_control.values[RADIO_THROTTLE]<300) {
-    thrust_in = 0;
-  }
+    if(radio_control.values[RADIO_THROTTLE]<300) {
+      thrust_in = 0;
+    }
 #endif
 
-  //Overwrite the thrust command from guidance_v
-  stabilization_cmd[COMMAND_THRUST] = thrust_in;
+    //Overwrite the thrust command from guidance_v
+    stabilization_cmd[COMMAND_THRUST] = thrust_in;
 #endif
 
-  //Bound euler angles to prevent flipping
-  Bound(guidance_euler_cmd.phi, -GUIDANCE_H_MAX_BANK, GUIDANCE_H_MAX_BANK);
-  Bound(guidance_euler_cmd.theta, -GUIDANCE_H_MAX_BANK, GUIDANCE_H_MAX_BANK);
+    //Bound euler angles to prevent flipping
+    Bound(guidance_euler_cmd.phi, -GUIDANCE_H_MAX_BANK, GUIDANCE_H_MAX_BANK);
+    Bound(guidance_euler_cmd.theta, -GUIDANCE_H_MAX_BANK, GUIDANCE_H_MAX_BANK);
 
-  // Start the wiggle!
-  static int32_t wiggle_counter = 0;
-  if(wiggle_counter >= 1024) {
-    wiggle_counter = 0;
-  } else if(wiggle_counter < 512) {
-    heading += ANGLE_BFP_OF_REAL(wiggle_magnitude);
+    // Start the wiggle!
+    static int32_t wiggle_counter = 0;
+    if(wiggle_counter >= 1024) {
+      wiggle_counter = 0;
+    } else if(wiggle_counter < 512) {
+      heading += ANGLE_BFP_OF_REAL(wiggle_magnitude);
+    }
+    wiggle_counter ++;
+
+    //set the quat setpoint with the calculated roll and pitch
+    stabilization_attitude_set_setpoint_rp_quat_f(&guidance_euler_cmd, in_flight, heading);
   }
-  wiggle_counter ++;
-
-  //set the quat setpoint with the calculated roll and pitch
-  stabilization_attitude_set_setpoint_rp_quat_f(&guidance_euler_cmd, in_flight, heading);
 }
 
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
@@ -333,3 +386,55 @@ void stabilization_attitude_set_setpoint_rp_quat_f(struct FloatEulers* indi_rp_c
 
   QUAT_BFP_OF_REAL(stab_att_sp_quat,q_sp);
 }
+
+float get_transition_pitch(void) {
+  float fwd_theta = get_fwd_pitch()-RadOfDeg(90.0);
+  float hover_theta = stateGetNedToBodyEulers_f()->theta;
+
+  if(transition_state == HOVER) {
+    if(hover_theta > RadOfDeg(-45.0)) {
+      return hover_theta;
+    } else {
+      transition_state = FORWARD;
+      return fwd_theta;
+    }
+  } else {
+    if(fwd_theta < RadOfDeg(-45.0)) {
+      return fwd_theta;
+    } else {
+      transition_state = HOVER;
+      return hover_theta;
+    }
+  }
+}
+
+float get_fwd_pitch(void) {
+  struct FloatQuat ninety_quat = {0.7071, 0, 0.7071, 0};
+
+  struct FloatQuat rotated_quat;
+  struct FloatQuat *quat = stateGetNedToBodyQuat_f();
+  float_quat_comp(&rotated_quat, quat, &ninety_quat);
+  float_quat_normalize(&rotated_quat);
+  struct FloatEulers eulers;
+  float_eulers_of_quat(&eulers, &rotated_quat);
+
+  return eulers.theta;
+}
+
+void get_two_d_accel(struct FloatVect2 *accel, float heading) {
+  accel->x = filt_accel_ned[0].o[0] * cosf(heading) + filt_accel_ned[1].o[0] * sinf(heading);
+  accel->y = filt_accel_ned[2].o[0];
+}
+
+void calc_inv_transition_effectiveness(float theta, float inv_eff[4]) {
+  float T = 9.81;
+
+  float eff[4];
+  eff[0] = -cosf(theta)*T;
+  eff[1] = -sinf(theta);
+  eff[2] = -sinf(theta)*T - 42.0*theta/RadOfDeg(-90.0);
+  eff[3] = -cosf(theta);
+
+  float_mat_inv_2d(inv_eff, eff);
+}
+
