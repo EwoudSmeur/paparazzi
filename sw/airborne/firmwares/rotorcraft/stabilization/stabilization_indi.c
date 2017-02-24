@@ -358,6 +358,13 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   for(i=0; i<INDI_NUM_ACT; i++) {
     u_min[i] = -MAX_PPRZ*act_is_servo[i] - actuator_state_filt_vect[i];
     u_max[i] = MAX_PPRZ - actuator_state_filt_vect[i];
+
+    //limit minimum thrust ap can give
+    if(!act_is_servo[i]) {
+      if((guidance_h.mode == GUIDANCE_H_MODE_HOVER) || (guidance_h.mode == GUIDANCE_H_MODE_NAV)) {
+        u_min[i] = 3000 - actuator_state_filt_vect[i];
+      }
+    }
   }
 
   //State prioritization {W Roll, W pitch, W yaw, TOTAL THRUST}
@@ -391,11 +398,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     if(act_is_servo[i]) {
       BoundAbs(indi_u[i], MAX_PPRZ);
     } else {
-      if((guidance_h.mode == GUIDANCE_H_MODE_HOVER) || (guidance_h.mode == GUIDANCE_H_MODE_NAV)) {
-        Bound(indi_u[i], 4000, MAX_PPRZ);
-      } else {
-        Bound(indi_u[i], 0, MAX_PPRZ);
-      }
+      Bound(indi_u[i], 0, MAX_PPRZ);
     }
   }
 

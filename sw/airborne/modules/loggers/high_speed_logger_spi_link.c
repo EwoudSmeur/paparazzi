@@ -97,9 +97,6 @@ void high_speed_logger_spi_link_periodic(void)
     v_int[2] = indi_v[2]*10000;
     v_int[3] = indi_v[3]*10000;
 
-    struct Int32Vect3 euler_cmd_i = {ANGLE_BFP_OF_REAL(euler_cmd.x),
-        ANGLE_BFP_OF_REAL(euler_cmd.y), ANGLE_BFP_OF_REAL(euler_cmd.z)};
-
     high_speed_logger_spi_link_ready = false;
     high_speed_logger_spi_link_data.gyro_p     = rates->p;
     high_speed_logger_spi_link_data.gyro_q     = rates->q;
@@ -129,12 +126,12 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data2.gyro_r     = v_int[1];
     high_speed_logger_spi_link_data2.mag_x      = v_int[2];
     high_speed_logger_spi_link_data2.mag_y      = v_int[3];
-    high_speed_logger_spi_link_data2.mag_z      = stateGetPositionNed_i()->z;
-    high_speed_logger_spi_link_data2.gps_y      = stateGetSpeedNed_i()->z;
-    high_speed_logger_spi_link_data2.cmd_roll   = stateGetAccelNed_i()->z;
-    high_speed_logger_spi_link_data2.cmd_pitch  = euler_cmd_i.x;
-    high_speed_logger_spi_link_data2.cmd_yaw    = euler_cmd_i.y;
-    high_speed_logger_spi_link_data2.gps_speedx = euler_cmd_i.z;
+    high_speed_logger_spi_link_data2.mag_z      = stateGetPositionNed_i()->x;
+    high_speed_logger_spi_link_data2.gps_y      = stateGetPositionNed_i()->y;
+    high_speed_logger_spi_link_data2.cmd_roll   = stateGetPositionNed_i()->z;
+    high_speed_logger_spi_link_data2.cmd_pitch  = stateGetSpeedNed_i()->x;
+    high_speed_logger_spi_link_data2.cmd_yaw    = stateGetSpeedNed_i()->y;
+    high_speed_logger_spi_link_data2.gps_speedx = stateGetSpeedNed_i()->z;
     high_speed_logger_spi_link_data2.gps_speedy = 0;
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction2);
