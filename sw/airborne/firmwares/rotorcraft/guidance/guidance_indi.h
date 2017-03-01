@@ -44,13 +44,19 @@ extern struct FloatVect3 euler_cmd;
 enum transition {HOVER, FORWARD};
 extern enum transition transition_state;
 
+enum transition_ctrl {TO_FORWARD, IN_FORWARD, TO_HOVER};
+extern enum transition_ctrl transition_control;
+
 extern float get_fwd_pitch(void);
 extern float get_transition_pitch(void);
 extern void get_two_d_accel(struct FloatVect2 *accel, float heading);
 extern void calc_inv_transition_effectiveness(float theta, float inv_eff[4]);
+
 extern bool perform_transition;
+extern bool transition_back;
 
 extern float vspeed_sp_setting;
 extern float wiggle_magnitude;
+extern float transition_accel;
 
 #endif /* GUIDANCE_INDI_H */

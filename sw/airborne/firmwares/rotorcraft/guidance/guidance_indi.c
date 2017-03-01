@@ -88,12 +88,14 @@ static void guidance_indi_filter_thrust(void);
 float wiggle_magnitude = 0.00;
 
 enum transition transition_state = HOVER;
+enum transition_ctrl transition_control = TO_FORWARD;
 
 float thrust_act = 0;
 Butterworth2LowPass filt_accel_ned[3];
 Butterworth2LowPass roll_filt;
 Butterworth2LowPass pitch_filt;
 Butterworth2LowPass thrust_filt;
+Butterworth2LowPass pitchtr_filt;
 
 struct FloatMat33 Ga;
 struct FloatMat33 Ga_inv;
@@ -105,12 +107,14 @@ struct FloatEulers guidance_euler_cmd;
 float thrust_in;
 
 float vspeed_sp_setting = 0.0;
+float transition_accel = 2.0;
 
 bool perform_transition = false;
-bool not_transitioned = true;
+bool transition_back = false;
 
 static void guidance_indi_propagate_filters(void);
 static void guidance_indi_calcG(struct FloatMat33 *Gmat);
+static void transition_quat_from_angles(struct FloatQuat *q, struct FloatEulers *angles);
 
 /**
  *
@@ -128,6 +132,10 @@ void guidance_indi_enter(void) {
   init_butterworth_2_low_pass(&roll_filt, tau, sample_time, 0.0);
   init_butterworth_2_low_pass(&pitch_filt, tau, sample_time, 0.0);
   init_butterworth_2_low_pass(&thrust_filt, tau, sample_time, 0.0);
+  init_butterworth_2_low_pass(&pitchtr_filt, tau, sample_time, 0.0);
+
+  perform_transition = false;
+  transition_control = TO_FORWARD;
 }
 
 /**
@@ -156,46 +164,78 @@ void guidance_indi_run(bool in_flight, int32_t heading) {
   sp_accel.z = (speed_sp_z - stateGetSpeedNed_f()->z) * guidance_indi_speed_gain;
 
   if(perform_transition) {
+    /*Calculate pitch angle that can go beyond 90 degrees*/
     float transition_pitch = get_transition_pitch();
 
+    /*Calculate the transition percentage so that the ctrl_effecitveness scheduling works*/
     transition_percentage = BFP_OF_REAL(transition_pitch/RadOfDeg(-78.0)*100,INT32_PERCENTAGE_FRAC);
     Bound(transition_percentage,0,BFP_OF_REAL(100,INT32_PERCENTAGE_FRAC));
 
+    /*The desired acceleration in 2D, depending on the transition state*/
     struct FloatVect2 sp_accel_tr;
-    if( (transition_pitch > RadOfDeg(-70.0)) && not_transitioned) {
-      sp_accel_tr.x = 2.0;
-    } else if(transition_pitch < RadOfDeg(-10.0)) {
-      sp_accel_tr.x = -2.0;
-      not_transitioned = false;
-    } else {
-      sp_accel_tr.x = 0.0;
-      perform_transition = false;
+    switch (transition_control) {
+      case TO_FORWARD:
+        sp_accel_tr.x = transition_accel;
+        if(transition_pitch < RadOfDeg(-70.0)) {
+          transition_control++;
+        }
+        break;
+      case IN_FORWARD:
+        sp_accel_tr.x = 0.0;
+        if(transition_back) {
+          transition_control++;
+        }
+        break;
+      case TO_HOVER:
+        sp_accel_tr.x = -transition_accel;
+        if(transition_pitch > RadOfDeg(-10.0)) {
+          perform_transition = false;
+          transition_control = TO_FORWARD;
+        }
+        break;
+      default:
+        sp_accel_tr.x = 0.0;
+        break;
     }
+    sp_accel_tr.y = sp_accel.z; //Always keep controlling the altitude (y = z axis)
 
-    sp_accel_tr.y = sp_accel.z;
+    // Calculate the inverse of the control effectiveness
     float inv_eff[4];
     calc_inv_transition_effectiveness(transition_pitch, inv_eff);
 
+    // Obtain the acceleration in a 2D 'navigation' plane
     struct FloatVect2 accel_tr;
     get_two_d_accel(&accel_tr, heading_f);
 
+    // Calculate the acceleration error
     struct FloatVect2 a_diff_tr = {sp_accel_tr.x - accel_tr.x, sp_accel_tr.y - accel_tr.y};
 
+    // Multiply with the inverse control effectiveness
     struct FloatVect2 cmds;
     float_mat2_mult(&cmds,inv_eff,a_diff_tr); // cmds = delta 1)pitch 2)thrust
 
-    AbiSendMsgTHRUST(THRUST_INCREMENT_ID, cmds.y);
+    if(transition_control == IN_FORWARD) {
+      stabilization_cmd[COMMAND_THRUST] = radio_control.values[RADIO_THROTTLE];
+    } else {
+      // Send the thrust increment to the inner loop
+      AbiSendMsgTHRUST(THRUST_INCREMENT_ID, cmds.y);
+    }
 
-    guidance_euler_cmd.theta = transition_pitch + cmds.x;
+    // Incrment the pitch angle, using the special pitch representation
+    guidance_euler_cmd.theta = pitchtr_filt.o[0] + cmds.x;
 
-    guidance_euler_cmd.phi = 0.0;
+    // Set the roll and yaw angles. Yaw will be updated from the read rc coordinated turn function
+    int32_t roll_rc = radio_control.values[RADIO_ROLL];
+    float roll_f = roll_rc * STABILIZATION_ATTITUDE_SP_MAX_PHI / MAX_PPRZ;
+    guidance_euler_cmd.phi = roll_f;
     guidance_euler_cmd.psi = heading_f;
 
     //Bound euler angles to prevent flipping
     Bound(guidance_euler_cmd.theta, RadOfDeg(-110), 0.0);
 
+    // Set the quaternion setpoint, by subsequently rotating around 'navigation' axes
     struct FloatQuat sp_quat;
-    float_quat_of_eulers(&sp_quat, &guidance_euler_cmd);
+    transition_quat_from_angles(&sp_quat, &guidance_euler_cmd);
     float_quat_normalize(&sp_quat);
     QUAT_BFP_OF_REAL(stab_att_sp_quat,sp_quat);
 
@@ -310,6 +350,8 @@ void guidance_indi_propagate_filters(void) {
 
   update_butterworth_2_low_pass(&roll_filt, stateGetNedToBodyEulers_f()->phi);
   update_butterworth_2_low_pass(&pitch_filt, stateGetNedToBodyEulers_f()->theta);
+
+  update_butterworth_2_low_pass(&pitchtr_filt, get_transition_pitch());
 }
 
 /**
@@ -431,10 +473,43 @@ void calc_inv_transition_effectiveness(float theta, float inv_eff[4]) {
 
   float eff[4];
   eff[0] = -cosf(theta)*T;
-  eff[1] = -sinf(theta);
-  eff[2] = -sinf(theta)*T - 42.0*theta/RadOfDeg(-90.0);
-  eff[3] = -cosf(theta);
+  eff[1] =  sinf(theta);
+  eff[2] =  sinf(theta)*T - 42.0*theta/RadOfDeg(-90.0);
+  eff[3] =  cosf(theta);
 
   float_mat_inv_2d(inv_eff, eff);
+}
+
+/** First pitch, then roll, the rotate to the correct heading.
+ * The roll angle is interpreted relative to to the horizontal plane (earth bound).
+ * @param[in] roll roll angle
+ * @param[in] pitch pitch angle
+ * @param[in] yaw yaw angle
+ * @param[out] q quaternion representing the RC roll/pitch input
+ */
+void transition_quat_from_angles(struct FloatQuat *q, struct FloatEulers *angles)
+{
+  /* only non-zero entries for roll quaternion */
+  float roll2 = angles->phi / 2.0f;
+  float qx_roll = sinf(roll2);
+  float qi_roll = cosf(roll2);
+
+  //An offset is added if in forward mode
+  /* only non-zero entries for pitch quaternion */
+  float pitch2 = angles->theta / 2.0f;
+  float qy_pitch = sinf(pitch2);
+  float qi_pitch = cosf(pitch2);
+
+  /* only multiply non-zero entries of float_quat_comp(q, &q_roll, &q_pitch) */
+  struct FloatQuat q_rp;
+  q_rp.qi = qi_roll * qi_pitch;
+  q_rp.qx = qx_roll * qi_pitch;
+  q_rp.qy = qi_roll * qy_pitch;
+  q_rp.qz = qx_roll * qy_pitch;
+
+  struct FloatQuat q_yaw_sp;
+  const struct FloatVect3 zaxis = {0., 0., 1.};
+  float_quat_of_axis_angle(&q_yaw_sp, &zaxis, angles->psi);
+  float_quat_comp(q, &q_yaw_sp, &q_rp);
 }
 
