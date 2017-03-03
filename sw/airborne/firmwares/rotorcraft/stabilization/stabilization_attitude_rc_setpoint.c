@@ -32,7 +32,7 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/autopilot_rc_helpers.h"
 #include "mcu_periph/sys_time.h"
-#include "firmwares/rotorcraft/autopilot.h"
+#include "autopilot.h"
 
 #ifndef STABILIZATION_ATTITUDE_DEADBAND_A
 #define STABILIZATION_ATTITUDE_DEADBAND_A 0

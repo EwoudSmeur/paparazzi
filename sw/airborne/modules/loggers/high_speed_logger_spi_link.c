@@ -73,6 +73,7 @@ void high_speed_logger_spi_link_init(void)
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/guidance/guidance_indi.h"
+#include "firmwares/rotorcraft/guidance/guidance_v.h"
 
 void high_speed_logger_spi_link_periodic(void)
 {
@@ -90,6 +91,8 @@ void high_speed_logger_spi_link_periodic(void)
     struct Int32Rates *rates = stateGetBodyRates_i();
     struct Int32Vect3 *accel = stateGetAccelBody_i();
     struct Int32Quat *quat = stateGetNedToBodyQuat_i();
+
+    struct Int32Vect2 sp_accel_tri = {ACCEL_BFP_OF_REAL(sp_accel_tr.x),ACCEL_BFP_OF_REAL(sp_accel_tr.y)};
 
     int32_t v_int[4];
     v_int[0] = indi_v[0]*10000;
@@ -122,9 +125,9 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data2.acc_y      = stab_att_sp_quat.qx;
     high_speed_logger_spi_link_data2.acc_z      = stab_att_sp_quat.qy;
     high_speed_logger_spi_link_data2.gyro_p     = stab_att_sp_quat.qz;
-    high_speed_logger_spi_link_data2.gyro_q     = v_int[0];
-    high_speed_logger_spi_link_data2.gyro_r     = v_int[1];
-    high_speed_logger_spi_link_data2.mag_x      = v_int[2];
+    high_speed_logger_spi_link_data2.gyro_q     = sp_accel_tri.x;
+    high_speed_logger_spi_link_data2.gyro_r     = sp_accel_tri.y;
+    high_speed_logger_spi_link_data2.mag_x      = guidance_v_z_ref;
     high_speed_logger_spi_link_data2.mag_y      = v_int[3];
     high_speed_logger_spi_link_data2.mag_z      = stateGetPositionNed_i()->x;
     high_speed_logger_spi_link_data2.gps_y      = stateGetPositionNed_i()->y;

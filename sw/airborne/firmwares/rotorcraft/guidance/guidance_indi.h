@@ -54,6 +54,7 @@ extern void calc_inv_transition_effectiveness(float theta, float inv_eff[4]);
 
 extern bool perform_transition;
 extern bool transition_back;
+extern struct FloatVect2 sp_accel_tr;
 
 extern float vspeed_sp_setting;
 extern float wiggle_magnitude;

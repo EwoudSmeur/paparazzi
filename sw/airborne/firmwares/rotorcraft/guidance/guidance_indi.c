@@ -89,6 +89,7 @@ float wiggle_magnitude = 0.00;
 
 enum transition transition_state = HOVER;
 enum transition_ctrl transition_control = TO_FORWARD;
+struct FloatVect2 sp_accel_tr;
 
 float thrust_act = 0;
 Butterworth2LowPass filt_accel_ned[3];
@@ -136,6 +137,7 @@ void guidance_indi_enter(void) {
 
   perform_transition = false;
   transition_control = TO_FORWARD;
+  FLOAT_VECT2_ZERO(sp_accel_tr);
 }
 
 /**
@@ -172,7 +174,6 @@ void guidance_indi_run(bool in_flight, int32_t heading) {
     Bound(transition_percentage,0,BFP_OF_REAL(100,INT32_PERCENTAGE_FRAC));
 
     /*The desired acceleration in 2D, depending on the transition state*/
-    struct FloatVect2 sp_accel_tr;
     switch (transition_control) {
       case TO_FORWARD:
         sp_accel_tr.x = transition_accel;
