@@ -73,7 +73,7 @@
    telemetry="telemetry/default_rotorcraft.xml"
    flight_plan="flight_plans/rotorcraft_basic.xml"
    settings="settings/rotorcraft_basic.xml"
-   settings_modules="modules/ahrs_int_cmpl_quat.xml modules/stabilization_indi.xml modules/nav_basic_rotorcraft.xml modules/guidance_rotorcraft.xml modules/gps.xml modules/air_data.xml modules/servo_tester.xml modules/imu_common.xml modules/gps_ubx_ucenter.xml"
+   settings_modules="modules/ahrs_int_cmpl_quat.xml modules/guidance_indi.xml modules/stabilization_indi.xml modules/nav_basic_rotorcraft.xml modules/guidance_rotorcraft.xml modules/gps.xml modules/air_data.xml modules/servo_tester.xml modules/imu_common.xml modules/gps_ubx_ucenter.xml"
    gui_color="#ffff7f7f0000"
   />
   <aircraft
@@ -154,17 +154,6 @@
    gui_color="#f08d1ff61ff6"
   />
   <aircraft
-   name="cyclone_mini"
-   ac_id="20"
-   airframe="airframes/ENAC/mini_cyclone.xml"
-   radio="radios/T10CG_SBUS.xml"
-   telemetry="telemetry/default_rotorcraft.xml"
-   flight_plan="flight_plans/rotorcraft_basic.xml"
-   settings="settings/rotorcraft_basic.xml"
-   settings_modules="modules/ahrs_int_cmpl_quat.xml modules/guidance_indi.xml modules/stabilization_indi.xml modules/nav_basic_rotorcraft.xml modules/guidance_rotorcraft.xml modules/gps.xml modules/air_data.xml modules/imu_common.xml modules/gps_ubx_ucenter.xml"
-   gui_color="#ffff7f7f0000"
-  />
-  <aircraft
    name="chimera"
    ac_id="15"
    airframe="airframes/ENAC/fixed-wing/chimera.xml"
@@ -174,5 +163,16 @@
    settings="settings/fixedwing_basic.xml"
    settings_modules="modules/airspeed_ms45xx_i2c.xml modules/air_data.xml modules/gps.xml modules/nav_basic_fw.xml modules/guidance_full_pid_fw.xml modules/stabilization_adaptive_fw.xml modules/ahrs_float_dcm.xml modules/imu_common.xml"
    gui_color="#0000fffff0ed"
+  />
+  <aircraft
+   name="cyclone_mini"
+   ac_id="20"
+   airframe="airframes/ENAC/mini_cyclone.xml"
+   radio="radios/T10CG_SBUS.xml"
+   telemetry="telemetry/default_rotorcraft.xml"
+   flight_plan="flight_plans/rotorcraft_basic.xml"
+   settings="settings/rotorcraft_basic.xml"
+   settings_modules="modules/ahrs_int_cmpl_quat.xml modules/guidance_indi.xml modules/stabilization_indi.xml modules/nav_basic_rotorcraft.xml modules/guidance_rotorcraft.xml modules/gps.xml modules/air_data.xml modules/imu_common.xml modules/gps_ubx_ucenter.xml"
+   gui_color="#ffff7f7f0000"
   />
 </conf>

@@ -7,8 +7,8 @@
 <airframe name="foam cylone">
 
   <servos driver="Pwm">
-    <servo name="ELEVON_LEFT"  no="0" min="1214" neutral="1500" max="1786"/>
-    <servo name="ELEVON_RIGHT" no="1" min="1214" neutral="1500" max="1786"/>
+    <servo name="ELEVON_LEFT"  no="0" min="1000" neutral="1500" max="2000"/>
+    <servo name="ELEVON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/>
     <servo name="RM" no="2" min="1000" neutral="1100" max="2000"/>
     <servo name="LM" no="3" min="1000" neutral="1100" max="2000"/>
     <servo name="SERVO_TEST" no="4" min="1000" neutral="1500" max="2000"/>
@@ -138,10 +138,10 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1_ROLL"   value="{   0,    0,   -8.9,  8.3}"/>
-    <define name="G1_PITCH"  value="{-4.5,  3.5,      0,    0}"/>
-    <define name="G1_YAW"    value="{-1.2, -1.3,    0.7, -0.5}"/>
-    <define name="G1_THRUST" value="{   0,    0,    -.8,  -.8}"/>
+    <define name="G1_ROLL"   value="{   0,    0,  -16.0, 16.0}"/>
+    <define name="G1_PITCH"  value="{-9.0,  9.0,      0,    0}"/>
+    <define name="G1_YAW"    value="{-3.0, -3.0,    0.0, -0.0}"/>
+    <define name="G1_THRUST" value="{   0,    0,   -1.2, -1.2}"/>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{0, 0, 0, 0}"/>
 
@@ -160,8 +160,8 @@
     <define name="FILT_CUTOFF" value="5.0"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN" value="{0.04, 0.04, 0.025, 0.025}"/>
-    <define name="ACT_RATE_LIMIT" value="{209, 209, 9600, 9600}"/>
+    <define name="ACT_DYN" value="{0.1, 0.1, 0.06, 0.06}"/>
+    <define name="ACT_RATE_LIMIT" value="{170, 170, 9600, 9600}"/>
     <define name="ACT_IS_SERVO" value="{1, 1, 0, 0}"/>
 
     <!-- Adaptive Learning Rate -->
@@ -213,13 +213,15 @@
 
   <modules main_freq="512">
     <module name="gps" type="ubx_ucenter"/>
-    <!--<module name="tlsf"/>-->
-    <!--<module name="pprzlog"/>-->
-    <!--<module name="logger" type="sd_chibios"/>-->
+    <module name="tlsf"/>
+    <module name="pprzlog">
+      <define name="SDLOG_START_DELAY" value="10"/>
+    </module>
+    <module name="logger" type="sd_chibios"/>
     <!--<module name="flight_recorder"/>-->
     <!--<module name="logger_spi_link"/>-->
 
-    <!--<module name="ctrl_effectiveness_scheduling"/>-->
+    <module name="ctrl_effectiveness_scheduling"/>
 
     <!--Use an airspeed sensor and get the measured airspeed in the messages-->
 

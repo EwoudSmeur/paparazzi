@@ -86,6 +86,7 @@ static void guidance_indi_filter_thrust(void);
 #endif
 
 float wiggle_magnitude = 0.00;
+float inv_eff[4];
 
 enum transition transition_state = HOVER;
 enum transition_ctrl transition_control = TO_FORWARD;
@@ -201,7 +202,6 @@ void guidance_indi_run(bool in_flight, int32_t heading) {
     sp_accel_tr.y = sp_accel.z; //Always keep controlling the altitude (y = z axis)
 
     // Calculate the inverse of the control effectiveness
-    float inv_eff[4];
     calc_inv_transition_effectiveness(transition_pitch, inv_eff);
 
     // Obtain the acceleration in a 2D 'navigation' plane

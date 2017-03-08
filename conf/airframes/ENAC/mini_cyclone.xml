@@ -58,30 +58,6 @@
     <define name="CATASTROPHIC_BAT_LEVEL" value="9.9" unit="V"/>
   </section>
 
-
-  <!-- These gains are used when the gain scheduling module is enabled (by loading it in the modules section)-->
-  <section name ="GAIN_SETS">
-    <define name="NUMBER_OF_GAINSETS" value="2"/>
-    <define name="SCHEDULING_VARIABLE" value="(radio.values[COMMAND_THRUST]+ transition_status"/>
-    <define name="SCHEDULING_POINTS" value="{1000, 6000}"/>
-    <define name="SCHEDULING_VARIABLE_FRAC" value="0"/>
-
-    <define name="PHI_P" value="{230, 230}"/>
-    <define name="PHI_D" value="{170, 170}"/>
-    <define name="PHI_I" value="{30, 30}"/>
-    <define name="PHI_DD" value="{0, 0}"/>
-
-    <define name="THETA_P" value="{200, 300}"/>
-    <define name="THETA_D" value="{100, 50}"/>
-    <define name="THETA_I" value="{40, 40}"/>
-    <define name="THETA_DD" value="{0, 0}"/>
-
-    <define name="PSI_P" value="{300, 300}"/>
-    <define name="PSI_D" value="{150, 150}"/>
-    <define name="PSI_I" value="{0, 0}"/>
-    <define name="PSI_DD" value="{0, 0}"/>
-  </section>
-
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
 
     <!-- setpoints -->
@@ -218,8 +194,6 @@
     <!--<module name="flight_recorder"/>-->
     <module name="logger_spi_link"/>
 
-    <module name="ctrl_effectiveness_scheduling"/>
-
     <!--Use an airspeed sensor and get the measured airspeed in the messages-->
     <module name="airspeed_ets">
       <configure name="AIRSPEED_ETS_I2C_DEV" value="i2c2"/>
@@ -241,6 +215,12 @@
 
   </modules>
 
+  <section name="SIMULATOR" prefix="NPS_">
+    <define name="ACTUATOR_NAMES" value="ele_left, ele_right, mot_right, mot_left" type="string[]"/>
+    <define name="JSBSIM_MODEL" value="cyclone" type="string"/>
+    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
+    <define name="NO_MOTOR_MIXING" value="TRUE"/>
+  </section>
 
   <firmware name="rotorcraft">
     <!--<target name="ap" board="apogee_1.0_chibios">-->
@@ -250,6 +230,15 @@
         <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
       </module>
       <define name="USE_AIRSPEED" value="TRUE"/>
+      <module name="ctrl_effectiveness_scheduling"/>
+    </target>
+    <target name="nps"          board="pc">
+      <module name="fdm" type="jsbsim"/>
+      <module name="udp"/>
+      <module name="radio_control" type="datalink"/>
+      <module name="logger_file">
+        <define name="FILE_LOGGER_PATH" value="/home/ewoud/Documents"/>
+      </module>
     </target>
 
     <module name="actuators"     type="pwm">

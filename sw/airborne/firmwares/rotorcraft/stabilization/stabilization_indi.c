@@ -435,42 +435,42 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   }
 
   /*Do some logging*/
-  /*static uint32_t log_counter = 0;*/
-  /*struct Int32Vect3 *accel = stateGetAccelBody_i();*/
-  /*struct Int32Quat *quat = stateGetNedToBodyQuat_i();*/
-  /*struct Int32Rates *body_rates_i = stateGetBodyRates_i();*/
-  /*struct Int32Vect2 sp_accel_tri = {ACCEL_BFP_OF_REAL(sp_accel_tr.x),ACCEL_BFP_OF_REAL(sp_accel_tr.y)};*/
-  /*// For floats: specify the number of digits, e.g. .5f*/
-  /*sdLogWriteLog(pprzLogFile, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",*/
-      /*log_counter,*/
-      /*body_rates_i->p,*/
-      /*body_rates_i->q,*/
-      /*body_rates_i->r,*/
-      /*actuators_pprz[0],*/
-      /*actuators_pprz[1],*/
-      /*actuators_pprz[2],*/
-      /*actuators_pprz[3],*/
-      /*accel->x,*/
-      /*accel->y,*/
-      /*accel->z,*/
-      /*quat->qi,*/
-      /*quat->qx,*/
-      /*quat->qy,*/
-      /*quat->qz,*/
-      /*stab_att_sp_quat.qi,*/
-      /*stab_att_sp_quat.qx,*/
-      /*stab_att_sp_quat.qy,*/
-      /*stab_att_sp_quat.qz,*/
-      /*stateGetPositionNed_i()->x,*/
-      /*stateGetPositionNed_i()->y,*/
-      /*stateGetPositionNed_i()->z,*/
-      /*stateGetSpeedNed_i()->x,*/
-      /*stateGetSpeedNed_i()->y,*/
-      /*stateGetSpeedNed_i()->z,*/
-      /*sp_accel_tri.x,*/
-      /*sp_accel_tri.y);*/
+  static uint32_t log_counter = 0;
+  struct Int32Vect3 *accel = stateGetAccelBody_i();
+  struct Int32Quat *quat = stateGetNedToBodyQuat_i();
+  struct Int32Rates *body_rates_i = stateGetBodyRates_i();
+  struct Int32Vect2 sp_accel_tri = {ACCEL_BFP_OF_REAL(sp_accel_tr.x),ACCEL_BFP_OF_REAL(sp_accel_tr.y)};
+  // For floats: specify the number of digits, e.g. .5f
+  sdLogWriteLog(pprzLogFile, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+      log_counter,
+      body_rates_i->p,
+      body_rates_i->q,
+      body_rates_i->r,
+      actuators_pprz[0],
+      actuators_pprz[1],
+      actuators_pprz[2],
+      actuators_pprz[3],
+      accel->x,
+      accel->y,
+      accel->z,
+      quat->qi,
+      quat->qx,
+      quat->qy,
+      quat->qz,
+      stab_att_sp_quat.qi,
+      stab_att_sp_quat.qx,
+      stab_att_sp_quat.qy,
+      stab_att_sp_quat.qz,
+      stateGetPositionNed_i()->x,
+      stateGetPositionNed_i()->y,
+      stateGetPositionNed_i()->z,
+      stateGetSpeedNed_i()->x,
+      stateGetSpeedNed_i()->y,
+      stateGetSpeedNed_i()->z,
+      sp_accel_tri.x,
+      sp_accel_tri.y);
 
-  /*log_counter += 1;*/
+  log_counter += 1;
 
 }
 
