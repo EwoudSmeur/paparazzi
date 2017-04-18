@@ -28,8 +28,10 @@
 #include "filters/low_pass_filter.h"
 
 //only 4 actuators supported for now
-#ifndef INDI_NUM_ACT
+#ifndef STABILIZATION_INDI_NUM_ACT
 #define INDI_NUM_ACT 4
+#else
+#define INDI_NUM_ACT STABILIZATION_INDI_NUM_ACT
 #endif
 // outputs: roll, pitch, yaw, thrust
 #ifndef INDI_OUTPUTS

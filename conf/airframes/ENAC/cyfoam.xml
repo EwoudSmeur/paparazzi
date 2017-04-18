@@ -11,7 +11,7 @@
     <servo name="ELEVON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/>
     <servo name="RM" no="2" min="1000" neutral="1100" max="2000"/>
     <servo name="LM" no="3" min="1000" neutral="1100" max="2000"/>
-    <!--<servo name="SERVO_TEST" no="4" min="1000" neutral="1500" max="2000"/>-->
+    <servo name="TAIL" no="4" min="1000" neutral="1500" max="2000"/>
   </servos>
 
   <commands>
@@ -26,6 +26,7 @@
     <set servo="ELEVON_RIGHT"    value="autopilot.motors_on ? actuators_pprz[1] : 0"/>
     <set servo="RM"              value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
     <set servo="LM"              value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
+    <set servo="TAIL"              value="autopilot.motors_on ? actuators_pprz[4] : 0"/>
     <!--<set servo="RM"              value="autopilot_motors_on ? -MAX_PPRZ : -MAX_PPRZ"/>-->
     <!--<set servo="LM"              value="autopilot_motors_on ? -MAX_PPRZ : -MAX_PPRZ"/>-->
   </command_laws>
@@ -70,10 +71,10 @@
 
   <section name="ctrl_eff_scheduling" prefix="FWD_">
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1_ROLL"   value="{    0,     0, -13.0,  13.0}"/>
-    <define name="G1_PITCH"  value="{-12.0,  12.0,     0,     0}"/>
-    <define name="G1_YAW"    value="{-20.0, -20.0,   0.0,   0.0}"/>
-    <define name="G1_THRUST" value="{    0,     0,  -0.9,  -0.9}"/>
+    <define name="G1_ROLL"   value="{    0,     0, -13.0,  13.0,  0.0}"/>
+    <define name="G1_PITCH"  value="{-12.0,  12.0,     0,     0, -4.0}"/>
+    <define name="G1_YAW"    value="{-20.0, -20.0,   0.0,   0.0,  0.0}"/>
+    <define name="G1_THRUST" value="{    0,     0,  -0.9,  -0.9,  0.0}"/>
   </section>
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
@@ -88,12 +89,13 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1_ROLL"   value="{   0,    0,  -13.3,  13.3}"/>
-    <define name="G1_PITCH"  value="{-2.1,  2.1,      0,     0}"/>
-    <define name="G1_YAW"    value="{-2.0, -2.0,    0.0,   0.0}"/>
-    <define name="G1_THRUST" value="{   0,    0,   -1.1,  -1.1}"/>
+    <define name="G1_ROLL"   value="{   0,    0,  -13.3,  13.3,  0.0}"/>
+    <define name="G1_PITCH"  value="{-2.1,  2.1,      0,     0, -4.0}"/>
+    <define name="G1_YAW"    value="{-2.0, -2.0,    0.0,   0.0,  0.0}"/>
+    <define name="G1_THRUST" value="{   0,    0,   -1.1,  -1.1,  0.0}"/>
     <!--Counter torque effect of spinning up a rotor-->
-    <define name="G2" value="{0, 0, 0, 0}"/>
+    <define name="G2" value="{0, 0, 0, 0, 0}"/>
+    <define name="NUM_ACT" value="5"/>
 
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="107.0"/>
@@ -110,9 +112,9 @@
     <define name="FILT_CUTOFF" value="5.0"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN" value="{0.1, 0.1, 0.06, 0.06}"/>
-    <define name="ACT_RATE_LIMIT" value="{170, 170, 9600, 9600}"/>
-    <define name="ACT_IS_SERVO" value="{1, 1, 0, 0}"/>
+    <define name="ACT_DYN" value="{0.1, 0.1, 0.06, 0.06, 0.06}"/>
+    <define name="ACT_RATE_LIMIT" value="{170, 170, 9600, 9600, 9600}"/>
+    <define name="ACT_IS_SERVO" value="{1, 1, 0, 0, 1}"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
@@ -288,7 +290,7 @@
     </module>
 
     <module name="ahrs"          type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="TRUE"/>
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <!--Use external magnetometer-->
       <define name="AHRS_ICQ_MAG_ID" value="MAG_HMC58XX_SENDER_ID"/>
       <!--<define name="AHRS_GRAVITY_UPDATE_COORDINATED_TURN" value="TRUE"/>-->
