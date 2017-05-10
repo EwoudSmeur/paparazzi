@@ -193,7 +193,8 @@ void main_init(void)
 
   // register the timers for the periodic functions
   main_periodic_tid = sys_time_register_timer((1. / PERIODIC_FREQUENCY), 0, NULL);
-#if PERIODIC_FREQUENCY != MODULES_FREQUENCY
+#if TRUE
+#error bla
   modules_tid = sys_time_register_timer(1. / MODULES_FREQUENCY, (1. / PERIODIC_FREQUENCY)/2, NULL);
 #endif
   radio_control_tid = sys_time_register_timer((1. / 60.), 0, NULL);
@@ -218,7 +219,7 @@ void handle_periodic_tasks(void)
 {
   if (sys_time_check_and_ack_timer(main_periodic_tid)) {
     main_periodic();
-#if PERIODIC_FREQUENCY == MODULES_FREQUENCY
+#if FALSE
     /* Use the main periodc freq timer for modules if the freqs are the same
      * This is mainly useful for logging each step.
      */
