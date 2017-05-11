@@ -194,7 +194,6 @@ void main_init(void)
   // register the timers for the periodic functions
   main_periodic_tid = sys_time_register_timer((1. / PERIODIC_FREQUENCY), 0, NULL);
 #if TRUE
-#error bla
   modules_tid = sys_time_register_timer(1. / MODULES_FREQUENCY, (1. / PERIODIC_FREQUENCY)/2, NULL);
 #endif
   radio_control_tid = sys_time_register_timer((1. / 60.), 0, NULL);

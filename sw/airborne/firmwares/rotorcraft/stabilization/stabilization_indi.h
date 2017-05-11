@@ -30,6 +30,9 @@ extern struct Int32Quat   stab_att_sp_quat;  ///< with #INT32_QUAT_FRAC
 extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
 
 extern bool indi_use_adaptive;
+extern float indi_du[4];
+extern float indi_v[4];
+extern float actuator_state_filt_vect[4];
 
 struct ReferenceSystem {
   float err_p;

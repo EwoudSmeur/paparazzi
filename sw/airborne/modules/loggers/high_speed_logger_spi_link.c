@@ -27,7 +27,9 @@
 
 
 struct high_speed_logger_spi_link_data high_speed_logger_spi_link_data;
+struct high_speed_logger_spi_link_data high_speed_logger_spi_link_data2;
 struct spi_transaction high_speed_logger_spi_link_transaction;
+struct spi_transaction high_speed_logger_spi_link_transaction2;
 
 static volatile bool high_speed_logger_spi_link_ready = true;
 
@@ -36,6 +38,7 @@ static void high_speed_logger_spi_link_trans_cb(struct spi_transaction *trans);
 void high_speed_logger_spi_link_init(void)
 {
   high_speed_logger_spi_link_data.id = 0;
+  high_speed_logger_spi_link_data2.id = 1;
 
   high_speed_logger_spi_link_transaction.select        = SPISelectUnselect;
   high_speed_logger_spi_link_transaction.cpol          = SPICpolIdleHigh;
@@ -49,6 +52,19 @@ void high_speed_logger_spi_link_init(void)
   high_speed_logger_spi_link_transaction.input_length  = 0;
   high_speed_logger_spi_link_transaction.input_buf     = NULL;
   high_speed_logger_spi_link_transaction.after_cb      = high_speed_logger_spi_link_trans_cb;
+
+  high_speed_logger_spi_link_transaction2.select        = SPISelectUnselect;
+  high_speed_logger_spi_link_transaction2.cpol          = SPICpolIdleHigh;
+  high_speed_logger_spi_link_transaction2.cpha          = SPICphaEdge2;
+  high_speed_logger_spi_link_transaction2.dss           = SPIDss8bit;
+  high_speed_logger_spi_link_transaction2.bitorder      = SPIMSBFirst;
+  high_speed_logger_spi_link_transaction2.cdiv          = SPIDiv64;
+  high_speed_logger_spi_link_transaction2.slave_idx     = HIGH_SPEED_LOGGER_SPI_LINK_SLAVE_NUMBER;
+  high_speed_logger_spi_link_transaction2.output_length = sizeof(high_speed_logger_spi_link_data2);
+  high_speed_logger_spi_link_transaction2.output_buf    = (uint8_t*) &high_speed_logger_spi_link_data2;
+  high_speed_logger_spi_link_transaction2.input_length  = 0;
+  high_speed_logger_spi_link_transaction2.input_buf     = NULL;
+high_speed_logger_spi_link_transaction2.after_cb = high_speed_logger_spi_link_trans_cb;
 }
 
 #include "subsystems/actuators.h"
@@ -56,6 +72,7 @@ void high_speed_logger_spi_link_init(void)
 #include "modules/actuators/kiss_telemetry.h"
 #include "state.h"
 #include "firmwares/rotorcraft/stabilization.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 
 void high_speed_logger_spi_link_periodic(void)
 {
@@ -71,19 +88,45 @@ void high_speed_logger_spi_link_periodic(void)
     high_speed_logger_spi_link_data.id = counter;
 
     struct Int32Rates *rates = stateGetBodyRates_i();
+    struct Int32Quat *quat = stateGetNedToBodyQuat_i();
 
     high_speed_logger_spi_link_ready = false;
     high_speed_logger_spi_link_data.gyro_p     = rates->p;
     high_speed_logger_spi_link_data.gyro_q     = rates->q;
     high_speed_logger_spi_link_data.gyro_r     = rates->r;
-    high_speed_logger_spi_link_data.acc_x      = actuators_pprz[0];
-    high_speed_logger_spi_link_data.acc_y      = actuators_pprz[1];
-    high_speed_logger_spi_link_data.acc_z      = actuators_pprz[2];
-    high_speed_logger_spi_link_data.mag_x      = actuators_pprz[3];
-    high_speed_logger_spi_link_data.mag_y      = rpm_feedback_log;
-    high_speed_logger_spi_link_data.mag_z      = actuators_pprz[0];
+    high_speed_logger_spi_link_data.act1       = indi_du[0];
+    high_speed_logger_spi_link_data.act2       = indi_du[1];
+    high_speed_logger_spi_link_data.act3       = indi_du[2];
+    high_speed_logger_spi_link_data.act4       = indi_du[3];
+    high_speed_logger_spi_link_data.v1         = indi_v[0];
+    high_speed_logger_spi_link_data.v2         = indi_v[1];
+    high_speed_logger_spi_link_data.v3         = indi_v[2];
+    high_speed_logger_spi_link_data.v4         = indi_v[3];
+    high_speed_logger_spi_link_data.quati      = quat->qi;
+    high_speed_logger_spi_link_data.quatx      = quat->qx;
+    high_speed_logger_spi_link_data.quaty      = quat->qy;
+    high_speed_logger_spi_link_data.quatz      = quat->qz;
 
     spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction);
+
+    counter++;
+    high_speed_logger_spi_link_data2.gyro_p     = rates->p;
+    high_speed_logger_spi_link_data2.gyro_q     = rates->q;
+    high_speed_logger_spi_link_data2.gyro_r     = rates->r;
+    high_speed_logger_spi_link_data2.act1       = actuator_state_filt_vect[0];
+    high_speed_logger_spi_link_data2.act2       = actuator_state_filt_vect[1];
+    high_speed_logger_spi_link_data2.act3       = actuator_state_filt_vect[2];
+    high_speed_logger_spi_link_data2.act4       = actuator_state_filt_vect[3];
+    high_speed_logger_spi_link_data2.v1         = indi_v[0];
+    high_speed_logger_spi_link_data2.v2         = indi_v[1];
+    high_speed_logger_spi_link_data2.v3         = indi_v[2];
+    high_speed_logger_spi_link_data2.v4         = indi_v[3];
+    high_speed_logger_spi_link_data2.quati      = stab_att_sp_quat.qi;
+    high_speed_logger_spi_link_data2.quatx      = stab_att_sp_quat.qx;
+    high_speed_logger_spi_link_data2.quaty      = stab_att_sp_quat.qy;
+    high_speed_logger_spi_link_data2.quatz      = stab_att_sp_quat.qz;
+
+    spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &high_speed_logger_spi_link_transaction2);
   }
 }
 
