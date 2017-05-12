@@ -404,11 +404,16 @@ void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_sp, bool
   float_quat_comp(&q_rp_sp, &q_yaw, &q_rp_cmd);
   float_quat_normalize(&q_rp_sp);
 
+    int32_t psi_addition = 0;
+    if(radio_control.values[RADIO_MODE] > 5000) {
+      psi_addition = ANGLE_BFP_OF_REAL(RadOfDeg(40.0));
+    }
+
   if (in_flight) {
     /* get current heading setpoint */
     struct FloatQuat q_yaw_sp;
 #if defined STABILIZATION_ATTITUDE_TYPE_INT
-    float_quat_of_axis_angle(&q_yaw_sp, &zaxis, ANGLE_FLOAT_OF_BFP(stab_att_sp_euler.psi));
+    float_quat_of_axis_angle(&q_yaw_sp, &zaxis, ANGLE_FLOAT_OF_BFP(stab_att_sp_euler.psi + psi_addition));
 #else
     float_quat_of_axis_angle(&q_yaw_sp, &zaxis, stab_att_sp_euler.psi);
 #endif
