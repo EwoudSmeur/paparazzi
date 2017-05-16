@@ -33,6 +33,9 @@ extern bool indi_use_adaptive;
 extern float indi_du[4];
 extern float indi_v[4];
 extern float actuator_state_filt_vect[4];
+extern float actuator_state[4];
+extern int num_iter;
+extern float psi_step;
 
 struct ReferenceSystem {
   float err_p;

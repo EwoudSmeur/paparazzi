@@ -56,7 +56,7 @@
    radio_control.values[RADIO_YAW] < -STABILIZATION_ATTITUDE_DEADBAND_R)
 
 float care_free_heading = 0;
-
+float psi_step = 50.0;
 
 static int32_t get_rc_roll(void)
 {
@@ -406,7 +406,7 @@ void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_sp, bool
 
     int32_t psi_addition = 0;
     if(radio_control.values[RADIO_MODE] > 5000) {
-      psi_addition = ANGLE_BFP_OF_REAL(RadOfDeg(40.0));
+      psi_addition = ANGLE_BFP_OF_REAL(RadOfDeg(psi_step));
     }
 
   if (in_flight) {

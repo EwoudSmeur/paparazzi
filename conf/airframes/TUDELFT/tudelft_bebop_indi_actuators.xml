@@ -23,7 +23,7 @@
     </module>
     <module name="stabilization" type="rate_indi"/>
     <module name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="TRUE"/>
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <define name="AHRS_USE_GPS_HEADING" value="FALSE"/>
     </module>
     <module name="ins" type="extended"/>
@@ -38,9 +38,9 @@
     <module name="geo_mag"/>
     <module name="air_data"/>
     <module name="send_imu_mag_current"/>
-    <!--module name="logger_file">
+    <module name="logger_file">
       <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
-    </module-->
+    </module>
   </modules>
 
   <commands>
@@ -126,12 +126,12 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness -->
-    <define name="G1_ROLL" value="{20 , -20, -20 , 20 }"/>
-    <define name="G1_PITCH" value="{14 , 14, -14 , -14 }"/>
-    <define name="G1_YAW" value="{-1, 1, -1, 1}"/>
+    <define name="G1_ROLL" value="{18 , -18, -18 , 18 }"/>
+    <define name="G1_PITCH" value="{11 , 11, -11 , -11 }"/>
+    <define name="G1_YAW" value="{-0.7, 0.7, -0.7, 0.7}"/>
     <define name="G1_THRUST" value="{-.4, -.4, -.4, -.4}"/>
     <!--Counter torque effect of spinning up a rotor-->
-    <define name="G2" value="{-60.0,   60.0,  -60.0,   60.0}"/>
+    <define name="G2" value="{-65.0,   65.0,  -65.0,   65.0}"/>
 
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="600.0"/>
@@ -150,6 +150,8 @@
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
     <define name="ADAPTIVE_MU" value="0.0001"/>
+
+    <define name="ALLOCATION_PSEUDO_INVERSE" value="TRUE"/>
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
@@ -186,8 +188,8 @@
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-    <define name="MODE_AUTO1" value="AP_MODE_NAV"/>
-    <define name="MODE_AUTO2" value="AP_MODE_HOVER_Z_HOLD"/>
+    <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_DIRECT"/>
+    <define name="MODE_AUTO2" value="AP_MODE_ATTITUDE_DIRECT"/>
 
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
   </section>

@@ -75,6 +75,10 @@ void file_logger_stop(void)
   }
 }
 
+#include "firmwares/rotorcraft/stabilization.h"
+#include "subsystems/actuators.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
+
 /** Log the values to a csv file */
 void file_logger_periodic(void)
 {
@@ -82,27 +86,43 @@ void file_logger_periodic(void)
     return;
   }
   static uint32_t counter;
-  struct Int32Quat *quat = stateGetNedToBodyQuat_i();
+  struct FloatQuat *quat = stateGetNedToBodyQuat_f();
+  struct FloatRates *rates = stateGetBodyRates_f();
 
-  fprintf(file_logger, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+  fprintf(file_logger, "%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%d\n",
           counter,
-          imu.gyro_unscaled.p,
-          imu.gyro_unscaled.q,
-          imu.gyro_unscaled.r,
-          imu.accel_unscaled.x,
-          imu.accel_unscaled.y,
-          imu.accel_unscaled.z,
-          imu.mag_unscaled.x,
-          imu.mag_unscaled.y,
-          imu.mag_unscaled.z,
-          stabilization_cmd[COMMAND_THRUST],
-          stabilization_cmd[COMMAND_ROLL],
-          stabilization_cmd[COMMAND_PITCH],
-          stabilization_cmd[COMMAND_YAW],
+          rates->p,
+          rates->q,
+          rates->r,
           quat->qi,
           quat->qx,
           quat->qy,
-          quat->qz
+          quat->qz,
+          stab_att_sp_quat.qi,
+          stab_att_sp_quat.qx,
+          stab_att_sp_quat.qy,
+          stab_att_sp_quat.qz,
+          indi_v[0],
+          indi_v[1],
+          indi_v[2],
+          indi_v[3],
+          indi_du[0],
+          indi_du[1],
+          indi_du[2],
+          indi_du[3],
+          actuator_state_filt_vect[0],
+          actuator_state_filt_vect[1],
+          actuator_state_filt_vect[2],
+          actuator_state_filt_vect[3],
+          actuators_pprz[0],
+          actuators_pprz[1],
+          actuators_pprz[2],
+          actuators_pprz[3],
+          actuator_state[0],
+          actuator_state[1],
+          actuator_state[2],
+          actuator_state[3],
+          num_iter
          );
   counter++;
 }
