@@ -31,6 +31,10 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #include "state.h"
 #include "subsystems/actuators.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
+
+#include "modules/loggers/sdlog_chibios.h"
+
 
 void logger_start(void) {
 }
