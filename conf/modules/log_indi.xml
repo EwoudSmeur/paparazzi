@@ -1,0 +1,17 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="log_indi" dir="loggers">
+  <doc>
+	<description>
+    Logs INDI data for chibiOS logger
+    </description>
+  </doc>
+  <header>
+	<file name="log_indi.h" />
+  </header>
+  <periodic fun="logger_periodic()" start="logger_start()"
+		    stop="logger_stop()" autorun="FALSE" />
+  <makefile>
+	<file name="log_indi.c"/>
+  </makefile>
+</module>
