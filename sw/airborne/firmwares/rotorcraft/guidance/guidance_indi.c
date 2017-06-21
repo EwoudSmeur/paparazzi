@@ -101,6 +101,7 @@ float thrust_in;
 
 static void guidance_indi_propagate_filters(void);
 static void guidance_indi_calcG(struct FloatMat33 *Gmat);
+static float calcthrust(uint16_t *rpm);
 
 /**
  *
@@ -258,7 +259,10 @@ void guidance_indi_calcG(struct FloatMat33 *Gmat) {
   float spsi = sinf(euler->psi);
   float cpsi = cosf(euler->psi);
   //minus gravity is a guesstimate of the thrust force, thrust measurement would be better
-  float T = -9.81;
+  /*float T = -9.81;*/
+
+  // Use the thrust curve per motor to calculate the thrust
+  float T = -calcthrust(actuators_bebop.rpm_obs)/0.395;
 
   RMAT_ELMT(*Gmat, 0, 0) = (cphi*spsi - sphi*cpsi*stheta)*T;
   RMAT_ELMT(*Gmat, 1, 0) = (-sphi*spsi*stheta - cpsi*cphi)*T;
@@ -269,6 +273,23 @@ void guidance_indi_calcG(struct FloatMat33 *Gmat) {
   RMAT_ELMT(*Gmat, 0, 2) = sphi*spsi + cphi*cpsi*stheta;
   RMAT_ELMT(*Gmat, 1, 2) = cphi*spsi*stheta - cpsi*sphi;
   RMAT_ELMT(*Gmat, 2, 2) = cphi*ctheta;
+}
+
+/**
+ * @brief thrust per motor
+ *
+ * @param rpm
+ *
+ * @return
+ */
+float calcthrust(uint16_t *rpm){
+  float thrust = 0;
+  float rps = 0;
+  for(int i=0; i<4; i++) {
+    rps = rpm[i]/60.0;
+    thrust = thrust + 0.08 -0.002283*rps + 7.088e-5 * rps * rps;
+  }
+  return thrust;
 }
 
 /**

@@ -34,6 +34,10 @@
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_algebra_float.h"
 
+// logging variables
+extern struct FloatEulers guidance_euler_cmd;
+extern struct FloatVect3 sp_accel;
+
 extern void guidance_indi_enter(void);
 extern void guidance_indi_run(bool in_flight, float heading_sp);
 extern void stabilization_attitude_set_setpoint_rp_quat_f(struct FloatEulers* indi_rp_cmd, bool in_flight, float heading);

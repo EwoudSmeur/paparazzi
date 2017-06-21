@@ -75,6 +75,12 @@ void file_logger_stop(void)
   }
 }
 
+#include "stabilization/stabilization_attitude_quat_indi.h"
+#include "guidance/guidance_v.h"
+#include "guidance/guidance_h.h"
+#include "guidance/guidance_indi.h"
+#include "subsystems/gps.h"
+#include "stabilization/stabilization_indi.h"
 /** Log the values to a csv file */
 void file_logger_periodic(void)
 {
@@ -82,27 +88,63 @@ void file_logger_periodic(void)
     return;
   }
   static uint32_t counter;
+  struct FloatRates float_rates = *stateGetBodyRates_f();
   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
+  struct Int32Quat *quatsp = &stab_att_sp_quat;
+  struct NedCoor_f *accel_ned = stateGetAccelNed_f();
+  struct NedCoor_f *speed_ned = stateGetSpeedNed_f();
+  struct NedCoor_f *pos_ned = stateGetPositionNed_f();
+  float sp_x = POS_FLOAT_OF_BFP(guidance_h.sp.pos.x);
+  float sp_y = POS_FLOAT_OF_BFP(guidance_h.sp.pos.y);
+  float sp_z = POS_FLOAT_OF_BFP(guidance_v_z_sp);
 
-  fprintf(file_logger, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+  fprintf(file_logger, "%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%d,%d,%f,%f,%f\n",
           counter,
-          imu.gyro_unscaled.p,
-          imu.gyro_unscaled.q,
-          imu.gyro_unscaled.r,
-          imu.accel_unscaled.x,
-          imu.accel_unscaled.y,
-          imu.accel_unscaled.z,
-          imu.mag_unscaled.x,
-          imu.mag_unscaled.y,
-          imu.mag_unscaled.z,
-          stabilization_cmd[COMMAND_THRUST],
-          stabilization_cmd[COMMAND_ROLL],
-          stabilization_cmd[COMMAND_PITCH],
-          stabilization_cmd[COMMAND_YAW],
+          float_rates.p,
+          float_rates.q,
+          float_rates.r,
+          indi_u[0],
+          indi_u[1],
+          indi_u[2],
+          indi_u[3],
           quat->qi,
           quat->qx,
           quat->qy,
-          quat->qz
+          quat->qz,
+          act_obs[0],
+          act_obs[1],
+          act_obs[2],
+          act_obs[3],
+          angular_accel_ref.p,
+          angular_accel_ref.q,
+          angular_accel_ref.r,
+          quatsp->qi,
+          quatsp->qx,
+          quatsp->qy,
+          quatsp->qz,
+          accel_ned->x,
+          accel_ned->y,
+          accel_ned->z,
+          speed_ned->x,
+          speed_ned->y,
+          speed_ned->z,
+          pos_ned->x,
+          pos_ned->y,
+          pos_ned->z,
+          guidance_euler_cmd.phi,
+          guidance_euler_cmd.theta,
+          sp_x,
+          sp_y,
+          sp_z,
+          gps.ecef_vel.x,
+          gps.ecef_vel.y,
+          gps.ecef_vel.z,
+          gps.ecef_pos.x,
+          gps.ecef_pos.y,
+          gps.ecef_pos.z,
+          sp_accel.x,
+          sp_accel.y,
+          sp_accel.z
          );
   counter++;
 }
