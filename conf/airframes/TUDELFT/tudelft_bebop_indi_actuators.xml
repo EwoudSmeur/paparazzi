@@ -23,7 +23,7 @@
     </module>
     <module name="stabilization" type="rate_indi"/>
     <module name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="TRUE"/>
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <define name="AHRS_USE_GPS_HEADING" value="FALSE"/>
     </module>
     <module name="ins" type="extended"/>
@@ -38,9 +38,9 @@
     <module name="geo_mag"/>
     <module name="air_data"/>
     <module name="send_imu_mag_current"/>
-    <!--module name="logger_file">
+    <module name="logger_file">
       <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
-    </module-->
+    </module>
   </modules>
 
   <commands>
@@ -129,7 +129,7 @@
     <define name="G1_ROLL" value="{20 , -20, -20 , 20 }"/>
     <define name="G1_PITCH" value="{14 , 14, -14 , -14 }"/>
     <define name="G1_YAW" value="{-1, 1, -1, 1}"/>
-    <define name="G1_THRUST" value="{-.4, -.4, -.4, -.4}"/>
+    <define name="G1_THRUST" value="{-.25, -.25, -.25, -.25}"/>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{-61.2093,   65.3670,  -65.7419,   65.4516}"/>
 

@@ -35,4 +35,6 @@
 
 extern void ahrs_icq_register(void);
 
+extern float save_dt;
+
 #endif /* AHRS_INT_CMPL_QUAT_WRAPPER_H */

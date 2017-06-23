@@ -65,7 +65,7 @@ struct ReferenceSystem reference_acceleration = {
 // outputs: roll, pitch, yaw, thrust
 #define INDI_OUTPUTS 4
 // Factor that the estimated G matrix is allowed to deviate from initial one
-#define INDI_ALLOWED_G_FACTOR 2.0
+#define INDI_ALLOWED_G_FACTOR 3.0
 // Scaling for the control effectiveness to make it readible
 #define INDI_G_SCALING 1000.0
 

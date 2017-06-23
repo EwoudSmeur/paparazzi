@@ -31,6 +31,11 @@ extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
 
 extern bool indi_use_adaptive;
 
+extern float indi_u[4];
+extern float act_obs[4];
+extern struct FloatRates angular_accel_ref;
+extern float g1[4][4];
+
 struct ReferenceSystem {
   float err_p;
   float err_q;

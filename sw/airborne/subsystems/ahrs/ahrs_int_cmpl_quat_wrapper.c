@@ -136,6 +136,7 @@ static abi_event body_to_imu_ev;
 static abi_event geo_mag_ev;
 static abi_event gps_ev;
 
+float save_dt = 0.0;
 
 static void gyro_cb(uint8_t __attribute__((unused)) sender_id,
                     uint32_t stamp, struct Int32Rates *gyro)
@@ -148,6 +149,7 @@ static void gyro_cb(uint8_t __attribute__((unused)) sender_id,
 
   if (last_stamp > 0 && ahrs_icq.is_aligned) {
     float dt = (float)(stamp - last_stamp) * 1e-6;
+    save_dt = dt;
     ahrs_icq_propagate(gyro, dt);
     set_body_state_from_quat();
   }
