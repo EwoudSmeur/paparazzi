@@ -401,12 +401,12 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
 
   //State prioritization {W Roll, W pitch, W yaw, TOTAL THRUST}
   static float Wv[INDI_OUTPUTS] = {100, 1000, 0.1, 10};
-  if(radio_control.values[6] > 0 && (actuator_state_filt_vect[0] < -7000) && (actuator_state_filt_vect[1] > 7000)) {
+  if(radio_control.values[RADIO_EXTRA1] > 0 && (actuator_state_filt_vect[0] < -7000) && (actuator_state_filt_vect[1] > 7000)) {
     /*Wv[0] = 100;*/
     /*Wv[3] = 10;*/
     Bwls[1][2] = thrust_of_pitch_eff/INDI_G_SCALING;
     Bwls[1][3] = thrust_of_pitch_eff/INDI_G_SCALING;
-  } else if(radio_control.values[6] > 0 && (actuator_state_filt_vect[0] > 7000) && (actuator_state_filt_vect[1] < -7000)) {
+  } else if(radio_control.values[RADIO_EXTRA1] > 0 && (actuator_state_filt_vect[0] > 7000) && (actuator_state_filt_vect[1] < -7000)) {
     Bwls[1][2] = -thrust_of_pitch_eff/INDI_G_SCALING;
     Bwls[1][3] = -thrust_of_pitch_eff/INDI_G_SCALING;
   } else {

@@ -277,7 +277,21 @@ void guidance_indi_run(bool UNUSED in_flight, float *heading_sp) {
   //Invert this matrix
   MAT33_INV(Ga_inv, Ga);
 
-  struct FloatVect3 a_diff = { sp_accel.x - filt_accel_ned[0].o[0], sp_accel.y -filt_accel_ned[1].o[0], sp_accel.z -filt_accel_ned[2].o[0]};
+  // Calculate acceleration compensated for flap-lift effect
+  /*accel_ned_comp = filt_accel_ned - rot_to_ned*flap_lift_eff*flap_deflection;*/
+  float flap_accel_body_x = -0.00011*actuator_state_filt_vect[0] + 0.00011*actuator_state_filt_vect[1];
+  /*struct FloatRMat rot_mat;*/
+  /*float_rmat_of_quat(&rot_mat, stateGetNedToBodyQuat_f());*/
+  float accel_x, accel_y;
+  if(radio_control.values[RADIO_EXTRA1] > 0) {
+    accel_x = filt_accel_ned[0].o[0] - (cosf(eulers_zxy.psi) - sinf(eulers_zxy.psi)) * flap_accel_body_x;
+    accel_y = filt_accel_ned[1].o[0] - (sinf(eulers_zxy.psi) + cosf(eulers_zxy.psi)) * flap_accel_body_x;
+  } else {
+    accel_x = filt_accel_ned[0].o[0];
+    accel_y = filt_accel_ned[1].o[0];
+  }
+
+  struct FloatVect3 a_diff = { sp_accel.x - accel_x, sp_accel.y - accel_y, sp_accel.z -filt_accel_ned[2].o[0]};
 
   //Bound the acceleration error so that the linearization still holds
   Bound(a_diff.x, -6.0, 6.0);

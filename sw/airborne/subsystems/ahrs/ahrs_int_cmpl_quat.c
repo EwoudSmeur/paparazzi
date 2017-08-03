@@ -551,12 +551,12 @@ void ahrs_icq_update_gps(struct GpsState *gps_s __attribute__((unused)))
 
     /* the assumption here is that there is no side-slip, so heading=course */
 
-    if (ahrs_icq.heading_aligned) {
-      ahrs_icq_update_heading(course);
-    } else {
+    /*if (ahrs_icq.heading_aligned) {*/
+      /*ahrs_icq_update_heading(course);*/
+    /*} else {*/
       /* hard reset the heading if this is the first measurement */
       ahrs_icq_realign_heading(course);
-    }
+    /*}*/
   }
 #endif
 }

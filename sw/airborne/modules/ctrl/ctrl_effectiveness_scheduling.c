@@ -60,7 +60,7 @@ void ctrl_eff_scheduling_init(void)
 #if EFF_SCHED_USE_FUNCTION
 void ctrl_eff_scheduling_periodic(void)
 {
-  if(radio_control.values[6] > 0) {
+  if(radio_control.values[RADIO_EXTRA1] > 0) {
     ctrl_eff_scheduling_periodic_b();
   } else {
     ctrl_eff_scheduling_periodic_a();
