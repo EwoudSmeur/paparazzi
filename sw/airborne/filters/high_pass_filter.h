@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Gautier Hattenberger
+ * Copyright (C) 2017 Ewoud Smeur
  *
  * This file is part of paparazzi.
  *
@@ -40,10 +40,10 @@
  *        a0 + a1 z^-1 + a2 z^-2 etc
  */
 struct FourthOrderHighPass {
-  float a[4]; ///< denominator gains
-  float b[4]; ///< numerator gains
-  float i[4]; ///< input history
-  float o[4]; ///< output history
+  double a[4]; ///< denominator gains
+  double b[4]; ///< numerator gains
+  double i[4]; ///< input history
+  double o[4]; ///< output history
 };
 
 
@@ -52,7 +52,7 @@ struct FourthOrderHighPass {
  * @param filter fourth order high pass filter structure
  * @param value initial value of the filter
  */
-static inline void init_fourth_order_high_pass(struct FourthOrderHighPass *filter, float *a, float *b, float value)
+static inline void init_fourth_order_high_pass(struct FourthOrderHighPass *filter, double *a, double *b, double value)
 {
   filter->a[0] = a[0];
   filter->a[1] = a[1];
@@ -62,7 +62,7 @@ static inline void init_fourth_order_high_pass(struct FourthOrderHighPass *filte
   filter->b[1] = b[1];
   filter->b[2] = b[2];
   filter->b[3] = b[3];
-  filter->i[0] = filter->i[1] = filter->o[0] = filter->o[1] = value;
+  filter->i[0] = filter->i[1] = filter->i[2] = filter->i[3] = filter->o[0] = filter->o[1] = filter->o[2] = filter->o[3] = value;
 }
 
 /** Update fourth order high pass filter state with a new value.
@@ -71,9 +71,9 @@ static inline void init_fourth_order_high_pass(struct FourthOrderHighPass *filte
  * @param value new input value of the filter
  * @return new filtered value
  */
-static inline float update_fourth_order_high_pass(struct FourthOrderHighPass *filter, float value)
+static inline double update_fourth_order_high_pass(struct FourthOrderHighPass *filter, double value)
 {
-  float out = filter->b[0] * value
+  double out = filter->b[0] * value
               + filter->b[1] * filter->i[0]
               + filter->b[2] * filter->i[1]
               + filter->b[3] * filter->i[2]
@@ -99,7 +99,7 @@ static inline float update_fourth_order_high_pass(struct FourthOrderHighPass *fi
  * @param filter fourth order high pass filter structure
  * @return current value of the filter
  */
-static inline float get_fourth_order_high_pass(struct FourthOrderHighPass *filter)
+static inline double get_fourth_order_high_pass(struct FourthOrderHighPass *filter)
 {
   return filter->o[0];
 }

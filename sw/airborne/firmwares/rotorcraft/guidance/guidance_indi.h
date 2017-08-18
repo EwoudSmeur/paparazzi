@@ -33,6 +33,7 @@
 #include "std.h"
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_algebra_float.h"
+#include "filters/high_pass_filter.h"
 
 extern void guidance_indi_enter(void);
 extern void guidance_indi_run(bool in_flight, float *heading_sp);
@@ -50,5 +51,7 @@ extern float guidance_indi_pos_gain;
 extern float guidance_indi_speed_gain;
 
 extern struct FloatVect2 desired_airspeed;
+extern int16_t update_hp_freq_and_reset;
+extern struct FourthOrderHighPass flap_accel_hp;
 
 #endif /* GUIDANCE_INDI_H */
