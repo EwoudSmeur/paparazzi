@@ -115,6 +115,14 @@ void ctrl_eff_scheduling_periodic_b(void)
     reference_acceleration.err_q = 200.0;
   }
 
+  // Tail rotor effectiveness
+  if(airspeed < 12.0 && eulers_zxy.theta < -20.0) {
+    tail_active = true;
+    g1g2[1][4] = -fabs(actuator_state_filt_vect[4])/1000*0.0005;
+  } else {
+    tail_active = false;
+  }
+
 }
 
 void ctrl_eff_scheduling_periodic_a(void)
@@ -133,5 +141,9 @@ void ctrl_eff_scheduling_periodic_a(void)
       }
     }
   }
+
+  // make sure tail rotor is off
+  g1g2[1][4] = 0.0;
+  tail_active = false;
 }
 #endif

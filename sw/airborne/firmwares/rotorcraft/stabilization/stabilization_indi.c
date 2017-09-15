@@ -47,6 +47,8 @@
 #include "modules/adcs/adc_generic.h"
 #include "mcu_periph/pwm_input.h"
 
+bool tail_active = false;
+
 float u_min[INDI_NUM_ACT];
 float u_max[INDI_NUM_ACT];
 float indi_v[INDI_OUTPUTS];
@@ -417,9 +419,16 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     Bwls[1][3] = 0.0;
   }
 
+  int num_act;
+  if(tail_active) {
+    num_act = 5;
+  } else {
+    num_act = 4;
+  }
+
   // WLS Control Allocator
   num_iter =
-    wls_alloc(indi_du,indi_v,u_min,u_max,Bwls,INDI_NUM_ACT,INDI_OUTPUTS,0,0,Wv,0,0,10000,10);
+    wls_alloc(indi_du,indi_v,u_min,u_max,Bwls,num_act,INDI_OUTPUTS,0,0,Wv,0,0,10000,10);
 
   // Add the increments to the actuators
   float_vect_sum(indi_u, actuator_state_filt_vect, indi_du, INDI_NUM_ACT);
@@ -438,6 +447,11 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     float_vect_zero(indi_u, INDI_NUM_ACT);
     float_vect_zero(indi_du, INDI_NUM_ACT);
 #endif
+  }
+
+  if(!tail_active) {
+    indi_u[4] = 0.0;
+    indi_du[4] = 0.0;
   }
 
   // Propagate actuator filters
@@ -494,7 +508,9 @@ uint32_t raw_duty2 = 0;
 #ifdef USE_PWM_INPUT1
   // Log angle of attack and sideslip
   raw_duty1 = get_pwm_input_duty_in_usec(PWM_INPUT1);
-  raw_duty2 = get_pwm_input_duty_in_usec(PWM_INPUT2);
+  /*raw_duty2 = get_pwm_input_duty_in_usec(PWM_INPUT2);*/
+  //log the tail rotor for this branch
+  raw_duty2 = actuators_pprz[4];
 #else
   // Log the current
   raw_duty1 = adc_generic_val1;
