@@ -392,13 +392,14 @@ struct FloatVect3 calc_euler_cmd_nl(struct FloatVect3 input_accel) {
     Tm = -input_accel_norm;
 
   // Calculate the required change in thrust
-  uint16_t rpm_filt[4];
   int8_t i = 0;
+  float Tm_act = 0;
   for(i=0; i<4; i++) {
-    float scaling = get_servo_max(i)-get_servo_min(i);
-    rpm_filt[i] =(uint16_t) (actuator_lowpass_filters[i].o[0]*scaling/MAX_PPRZ+get_servo_min(i));
+    /*float scaling = get_servo_max(i)-get_servo_min(i);*/
+    /*rpm_filt[i] =(uint16_t) (actuator_lowpass_filters[i].o[0]*scaling/MAX_PPRZ+get_servo_min(i));*/
+    Tm_act += -(actuator_lowpass_filters[i].o[0]/9600.0)*9.81/2.0;
   }
-  output.z = Tm-(-calcthrust(rpm_filt)/0.395);
+  output.z = Tm-(Tm_act);
 
   // pre-calculate sin(psi) and cos(psi)
   float psi = stateGetNedToBodyEulers_f()->psi;
@@ -430,13 +431,13 @@ struct FloatVect3 calc_euler_cmd_nl(struct FloatVect3 input_accel) {
 struct FloatVect3 calc_input_accel(struct FloatEulers *eulers) {
 
   // First calculate the thrust magnitude
-  uint16_t rpm_filt[4];
   int8_t i = 0;
+  float Tm = 0;
   for(i=0; i<4; i++) {
-    float scaling = get_servo_max(i)-get_servo_min(i);
-    rpm_filt[i] =(uint16_t) (actuator_lowpass_filters[i].o[0]*scaling/MAX_PPRZ+get_servo_min(i));
+    /*float scaling = get_servo_max(i)-get_servo_min(i);*/
+    /*rpm_filt[i] =(uint16_t) (actuator_lowpass_filters[i].o[0]*scaling/MAX_PPRZ+get_servo_min(i));*/
+    Tm += -(actuator_lowpass_filters[i].o[0]/9600.0)*9.81/2.0;
   }
-  float Tm = -calcthrust(rpm_filt)/0.395;
 
   // Calculate the thrust vector
   struct FloatVect3 accel_input0;

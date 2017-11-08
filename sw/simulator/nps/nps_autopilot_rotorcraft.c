@@ -20,6 +20,7 @@
  */
 
 #include "nps_autopilot.h"
+#include "firmwares/rotorcraft/autopilot.h"
 
 #include "firmwares/rotorcraft/main.h"
 #include "nps_sensors.h"
@@ -160,7 +161,7 @@ void nps_autopilot_run_step(double time)
   /* scale final motor commands to 0-1 for feeding the fdm */
   for (uint8_t i = 0; i < NPS_COMMANDS_NB; i++) {
 #if NPS_NO_MOTOR_MIXING
-    actuators_pprz[i] = autopilot_get_motors_on() ? actuators_pprz[i] : 0;
+    actuators_pprz[i] = autopilot_motors_on ? actuators_pprz[i] : 0;
     autopilot.commands[i] = (double)actuators_pprz[i] / MAX_PPRZ;
 #else
     autopilot.commands[i] = (double)motor_mixing.commands[i] / MAX_PPRZ;
