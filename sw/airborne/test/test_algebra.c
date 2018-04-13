@@ -34,6 +34,7 @@ float test_rmat_comp_inv(struct FloatRMat ma2c_f, struct FloatRMat mb2c_f, int d
 float test_quat_comp_inv(struct FloatQuat qa2c_f, struct FloatQuat qb2c_f, int display);
 float test_quat_of_rmat(void);
 float test_rmat_of_eulers_312(void);
+float test_rmat_of_eulers_321(void);
 
 float test_quat(void);
 float test_quat2(void);
@@ -62,8 +63,9 @@ int main(int argc, char **argv)
   //  test_quat_of_rmat();
   printf("\n");
   //  test_rmat_of_eulers_312();
+  test_rmat_of_eulers_321();
   //  test_quat2();
-  test_8();
+  /*test_8();*/
   //test_9();
   //test_10();
   return 0;
@@ -696,6 +698,37 @@ float test_quat_of_rmat(void)
   return 0.;
 }
 
+float test_rmat_of_eulers_321(void)
+{
+
+  struct FloatEulers eul321_f;
+  EULERS_ASSIGN(eul321_f, RadOfDeg(67.), RadOfDeg(22.), RadOfDeg(13.));
+  DISPLAY_FLOAT_EULERS_DEG("eul321_f", eul321_f);
+  struct Int32Eulers eul321_i;
+  EULERS_BFP_OF_REAL(eul321_i, eul321_f);
+  DISPLAY_INT32_EULERS("eul321_i", eul321_i);
+
+  struct FloatRMat rmat_f;
+  float_rmat_of_eulers_321(&rmat_f, &eul321_f);
+  DISPLAY_FLOAT_RMAT_AS_EULERS_DEG("rmat float", rmat_f);
+
+  struct Int32RMat rmat_i;
+  int32_rmat_of_eulers_321(&rmat_i, &eul321_i);
+  DISPLAY_INT32_RMAT_AS_EULERS_DEG("rmat int", rmat_i);
+
+  struct Int32Vect3 testvec = {100,200,300};
+  struct Int32Vect3 output;
+  int32_rmat_vmult(&output, &rmat_i, &testvec);
+  DISPLAY_INT32_VECT3("vect mult ", output);
+
+  struct FloatVect3 testvecf = {100,200,300};
+  struct FloatVect3 outputf;
+  float_rmat_vmult(&outputf, &rmat_f, &testvecf);
+  DISPLAY_FLOAT_VECT3("vect mult f ", outputf);
+
+  return 0;
+
+}
 
 float test_rmat_of_eulers_312(void)
 {
