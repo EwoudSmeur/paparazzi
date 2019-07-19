@@ -70,7 +70,10 @@
       <define name="IMU_MPU9250_ACCEL_RANGE" value="MPU9250_ACCEL_RANGE_16G" />
     </module>
 
-    <!--<module name="servo_tester"/>-->
+    <module name="servo_tester">
+      <define name="SERVO_NOISE_FREQ" value="6.25"/>
+      <define name="SERVO_NOISE_MAGNITUDE" value="250.0"/>
+    </module>
 
     <module name="air_data">
       <define name="USE_AIRSPEED_AIR_DATA" value="FALSE"/>
@@ -147,7 +150,7 @@
     <servo name="ELEVON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/>
     <servo name="RM" no="2" min="1000" neutral="1100" max="2000"/>
     <servo name="LM" no="3" min="1000" neutral="1100" max="2000"/>
-    <!--<servo name="SERVO_TEST" no="4" min="1000" neutral="1500" max="2000"/>-->
+    <servo name="SERVO_TEST" no="4" min="1000" neutral="1500" max="2000"/>
   </servos>
 
   <commands>

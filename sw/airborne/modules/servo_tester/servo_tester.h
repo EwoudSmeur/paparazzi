@@ -28,6 +28,7 @@
 #define SERVO_TESTER_H
 
 #include "generated/airframe.h"
+#include "state.h"
 
 extern int32_t servo_test_val;
 extern bool do_servo_run;

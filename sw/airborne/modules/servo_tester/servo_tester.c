@@ -28,9 +28,9 @@
 #include "servo_tester.h"
 #include "subsystems/commands.h"
 #include "generated/airframe.h"
-#include "generated/airframe.h"
 #include "subsystems/actuators.h"
 #include "generated/modules.h"
+#include <stdio.h>
 
 int32_t servo_test_val;
 
@@ -45,6 +45,7 @@ int32_t servo_run_step;
 #endif
 
 int32_t servo_mean;
+int32_t timer;
 
 void servo_tester_init()
 {
@@ -55,11 +56,17 @@ void servo_tester_init()
   servo_run_step = (SERVO_SERVO_TEST_MAX - SERVO_SERVO_TEST_MIN) / 2 / 8;
 
   servo_mean = SERVO_SERVO_TEST_NEUTRAL;
+
+  timer = 0;
 }
 
 
 void servo_tester_periodic()
 {
+  timer += 1;
+  if (timer >= SERVO_TESTER_PERIODIC_FREQ * SERVO_NOISE_FREQ) {
+    timer = 0;
+  }
 
   /*Go up and down with increasing amplitude*/
   if (do_servo_run && (servo_run_counter < 8)) {
@@ -78,7 +85,14 @@ void servo_tester_periodic()
     servo_test_val = servo_mean;
   }
 
-  Bound(servo_test_val, SERVO_SERVO_TEST_MIN, SERVO_SERVO_TEST_MAX);
-  Set_SERVO_TEST_Servo(servo_test_val);
+  float noise = sinf((float)timer*2*M_PI / (float)SERVO_TESTER_PERIODIC_FREQ * SERVO_NOISE_FREQ);
+  noise *= SERVO_NOISE_MAGNITUDE;
+
+  int32_t servo_with_noise = servo_test_val;
+
+  servo_with_noise += (int32_t)noise;
+
+  Bound(servo_with_noise, SERVO_SERVO_TEST_MIN, SERVO_SERVO_TEST_MAX);
+  Set_SERVO_TEST_Servo(servo_with_noise);
 }
 
