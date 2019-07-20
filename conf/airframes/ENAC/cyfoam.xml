@@ -72,7 +72,7 @@
 
     <module name="servo_tester">
       <define name="SERVO_NOISE_FREQ" value="6.25"/>
-      <define name="SERVO_NOISE_MAGNITUDE" value="250.0"/>
+      <define name="SERVO_NOISE_MAGNITUDE" value="26.0"/> <!--PWM units!-->
     </module>
 
     <module name="air_data">
