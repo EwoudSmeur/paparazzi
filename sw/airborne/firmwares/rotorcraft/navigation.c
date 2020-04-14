@@ -382,6 +382,7 @@ struct FloatVect3 nav_get_speed_sp_from_line(struct FloatVect2 line_v_enu, struc
   //Normal vector to the line, with length of the line
   struct FloatVect2 normalv;
   VECT2_ASSIGN(normalv, -line_v.y, line_v.x);
+  // TODO: length_normalv == length_line? replace?
   float length_normalv = float_vect2_norm(&normalv);
   if(length_normalv < 0.01) {
     length_normalv = 0.01;
@@ -428,7 +429,7 @@ struct FloatVect3 nav_get_speed_sp_from_line(struct FloatVect2 line_v_enu, struc
     Bound(speed_sp_return.z, -nav_climb_vspeed, -nav_descend_vspeed);
   }
 
-  return speed_sp_return; //DUMMY
+  return speed_sp_return;
 }
 
 /**

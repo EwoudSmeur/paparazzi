@@ -174,7 +174,7 @@
     <define name="USE_AIRSPEED" value="TRUE"/>
   </section>
 
-  <modules main_freq="512">
+  <modules main_freq="500">
     <!--<module name="gps" type="ubx_ucenter"/>-->
     <module name="tlsf"/>
     <module name="pprzlog">
