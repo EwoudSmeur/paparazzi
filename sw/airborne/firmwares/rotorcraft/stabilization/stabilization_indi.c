@@ -482,7 +482,8 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
 
   /*Commit the actuator command*/
   for (i = 0; i < INDI_NUM_ACT; i++) {
-    actuators_pprz[i] = (int16_t) indi_u[i];
+    /*actuators_pprz[i] = (int16_t) indi_u[i];*/
+    actuators_pprz[i] = (int16_t) radio_control.values[RADIO_THROTTLE];
   }
 }
 

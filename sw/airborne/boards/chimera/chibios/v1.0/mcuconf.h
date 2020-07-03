@@ -17,6 +17,8 @@
 #ifndef _MCUCONF_H_
 #define _MCUCONF_H_
 
+#include "generated/airframe.h"
+
 /*
  * STM32F4xx drivers configuration.
  * The following settings override the default settings present in
@@ -213,7 +215,7 @@
 #define STM32_I2C_BUSY_TIMEOUT              50
 #define STM32_I2C_I2C1_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 0)
 #define STM32_I2C_I2C1_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 6)
-#define STM32_I2C_I2C2_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 2)
+#define STM32_I2C_I2C2_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 3)
 #define STM32_I2C_I2C2_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 7)
 //#define STM32_I2C_I2C3_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 2)
 //#define STM32_I2C_I2C3_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 4)
@@ -294,6 +296,11 @@
 #define STM32_PWM_TIM5_IRQ_PRIORITY         7
 #define STM32_PWM_TIM8_IRQ_PRIORITY         7
 #define STM32_PWM_TIM9_IRQ_PRIORITY         7
+
+#define STM32_PWM3_UP_DMA_STREAM            STM32_DMA_STREAM_ID(1, 2)
+#define STM32_PWM3_UP_DMA_CHANNEL           5
+#define STM32_PWM3_UP_DMA_IRQ_PRIORITY      6
+#define STM32_PWM3_UP_DMA_PRIORITY          2
 
 /*
  * SERIAL driver system settings.
