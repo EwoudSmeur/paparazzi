@@ -7,22 +7,29 @@
 <airframe name="foam cylone">
 
   <section name="CONFIG_BOARD">
-    <define name="USE_PWM0"     value="FALSE"/>
-    <define name="USE_PWM1"     value="FALSE"/>
-    <define name="USE_PWM2"     value="FALSE"/>
-    <define name="USE_PWM3"     value="FALSE"/>
+    <!--<define name="USE_PWM0"     value="TRUE"/>-->
+    <!--<define name="USE_PWM1"     value="TRUE"/>-->
+    <!--<define name="USE_PWM2"     value="TRUE"/>-->
+    <!--<define name="USE_PWM3"     value="TRUE"/>-->
+    <define name="USE_PWM4"     value="FALSE"/>
+    <define name="USE_PWM5"     value="FALSE"/>
+    <define name="USE_PWM6"     value="FALSE"/>
+    <define name="USE_PWM7"     value="FALSE"/>
     <!--<define name="STM32_PWM_USE_TIM3"     value="TRUE"/>-->
   </section>
 
-  <servos driver="Pwm">
-    <servo name="ELEVON_LEFT"  no="4" min="1000" neutral="1500" max="2000"/> <!--neutral 1526-->
-    <servo name="ELEVON_RIGHT" no="5" min="1000" neutral="1500" max="2000"/> <!--neutral 1515-->
-    <!--<servo name="SERVO_TEST" no="4" min="1000" neutral="1500" max="2000"/>-->
-  </servos>
+  <!--<servos driver="Pwm">-->
+    <!--<servo name="ELEVON_LEFT"  no="0" min="1000" neutral="1500" max="2000"/> [>neutral 1526<]-->
+    <!--<servo name="ELEVON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/> [>neutral 1515<]-->
+    <!--[><servo name="SERVO_TEST" no="4" min="1000" neutral="1500" max="2000"/><]-->
+  <!--</servos>-->
 
   <servos driver="DShot">
-    <servo name="RM" no="0" min="0" neutral="100" max="1900"/>
-    <servo name="LM" no="1" min="0" neutral="100" max="1900"/>
+    <servo name="RM" no="4" min="0" neutral="100" max="1900"/>
+    <servo name="RM1" no="5" min="0" neutral="100" max="1900"/>
+    <servo name="RM2" no="6" min="0" neutral="100" max="1900"/>
+    <servo name="RM3" no="7" min="0" neutral="100" max="1900"/>
+    <!--<servo name="LM" no="5" min="0" neutral="100" max="1900"/>-->
     <!--<servo name="SERVO_TEST" no="1" min="0" neutral="50" max="1900"/>-->
   </servos>
 
@@ -34,10 +41,13 @@
   </commands>
 
   <command_laws>
-    <set servo="ELEVON_LEFT"     value="autopilot.motors_on ? actuators_pprz[0] : 0"/>
-    <set servo="ELEVON_RIGHT"    value="autopilot.motors_on ? actuators_pprz[1] : 0"/>
+    <!--<set servo="ELEVON_LEFT"     value="autopilot.motors_on ? actuators_pprz[0] : 0"/>-->
+    <!--<set servo="ELEVON_RIGHT"    value="autopilot.motors_on ? actuators_pprz[1] : 0"/>-->
     <set servo="RM"              value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
-    <set servo="LM"              value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
+    <set servo="RM1"              value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <set servo="RM2"              value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <set servo="RM3"              value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <!--<set servo="LM"              value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>-->
     <!--<set servo="RM"              value="autopilot_motors_on ? -MAX_PPRZ : -MAX_PPRZ"/>-->
     <!--<set servo="LM"              value="autopilot_motors_on ? -MAX_PPRZ : -MAX_PPRZ"/>-->
   </command_laws>
@@ -77,6 +87,7 @@
 
   <section name="BAT">
     <define name="LOW_BAT_LEVEL" value="13.9" units="V"/>
+    <define name="CRITIC_BAT_LEVEL" value="13.5" units="V"/>
     <define name="CATASTROPHIC_BAT_LEVEL" value="13.2" unit="V"/>
   </section>
 
@@ -185,29 +196,6 @@
     <define name="USE_AIRSPEED" value="TRUE"/>
   </section>
 
-  <modules main_freq="500">
-    <!--<module name="gps" type="ubx_ucenter"/>-->
-    <module name="tlsf"/>
-    <module name="pprzlog">
-      <define name="SDLOG_START_DELAY" value="10"/>
-    </module>
-    <module name="logger" type="sd_chibios"/>
-    <!--<module name="flight_recorder"/>-->
-    <!--<module name="logger_spi_link"/>-->
-
-    <!--Use an airspeed sensor and get the measured airspeed in the messages-->
-    <module name="airspeed" type="ms45xx_i2c">
-      <define name="MS45XX_I2C_DEV" value="i2c1"/>
-      <define name="MS45XX_AIRSPEED_SCALE" value="2.4"/>
-      <define name="USE_AIRSPEED_MS45XX" value="TRUE"/>
-    </module>
-
-    <module name="pwm_meas">
-      <define name="USE_PWM_INPUT1" value="PWM_PULSE_TYPE_ACTIVE_LOW"/>
-      <define name="USE_PWM_INPUT2" value="PWM_PULSE_TYPE_ACTIVE_LOW"/>
-    </module>
-  </modules>
-
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="ele_left, ele_right, mot_right, mot_left" type="string[]"/>
     <define name="JSBSIM_MODEL" value="cyclone" type="string"/>
@@ -251,44 +239,65 @@
       <define name="INDI_FUNCTIONS_RC_CHANNEL" value="4"/>
     </target>
 
+    <!--<module name="gps" type="ubx_ucenter"/>-->
+    <module name="tlsf"/>
+    <!--<module name="pprzlog">-->
+      <!--<define name="SDLOG_START_DELAY" value="10"/>-->
+    <!--</module>-->
+    <!--<module name="logger" type="sd_chibios"/>-->
+    <!--<module name="flight_recorder"/>-->
+    <!--<module name="logger_spi_link"/>-->
+
+    <!--Use an airspeed sensor and get the measured airspeed in the messages-->
+    <!--<module name="airspeed" type="ms45xx_i2c">-->
+      <!--<define name="MS45XX_I2C_DEV" value="i2c1"/>-->
+      <!--<define name="MS45XX_AIRSPEED_SCALE" value="2.4"/>-->
+      <!--<define name="USE_AIRSPEED_MS45XX" value="TRUE"/>-->
+    <!--</module>-->
+
+    <!--<module name="pwm_meas">-->
+      <!--<define name="USE_PWM_INPUT1" value="PWM_PULSE_TYPE_ACTIVE_LOW"/>-->
+      <!--<define name="USE_PWM_INPUT2" value="PWM_PULSE_TYPE_ACTIVE_LOW"/>-->
+    <!--</module>-->
+
     <module name="actuators"     type="dshot"/>
 
-    <module name="actuators"     type="pwm">
-      <define name="SERVO_HZ" value="400"/>
-    </module>
+    <!--<module name="actuators"     type="pwm">-->
+      <!--<define name="SERVO_HZ" value="400"/>-->
+    <!--</module>-->
 
-    <module name="mag" type="hmc58xx">
-      <configure name="MAG_HMC58XX_I2C_DEV" value="i2c2"/>
-      <define name="MODULE_HMC58XX_UPDATE_AHRS"/>
+    <!--<module name="mag" type="hmc58xx">-->
+      <!--<configure name="MAG_HMC58XX_I2C_DEV" value="i2c2"/>-->
+      <!--<define name="MODULE_HMC58XX_UPDATE_AHRS"/>-->
 
-      <define name="HMC58XX_CHAN_X" value="1"/>
-      <define name="HMC58XX_CHAN_Y" value="0"/>
-      <define name="HMC58XX_CHAN_Z" value="2"/>
+      <!--<define name="HMC58XX_CHAN_X" value="1"/>-->
+      <!--<define name="HMC58XX_CHAN_Y" value="0"/>-->
+      <!--<define name="HMC58XX_CHAN_Z" value="2"/>-->
 
-      <define name="HMC58XX_CHAN_X_SIGN" value="-"/>
-      <define name="HMC58XX_CHAN_Y_SIGN" value="+"/>
-      <define name="HMC58XX_CHAN_Z_SIGN" value="+"/>
+      <!--<define name="HMC58XX_CHAN_X_SIGN" value="-"/>-->
+      <!--<define name="HMC58XX_CHAN_Y_SIGN" value="+"/>-->
+      <!--<define name="HMC58XX_CHAN_Z_SIGN" value="+"/>-->
 
-      <!--run the chimera mag once every 64 seconds to avoid message spam-->
-      <define name="MPU9250_MAG_PRESCALER" value="32768"/>
+      <!--[>run the chimera mag once every 64 seconds to avoid message spam<]-->
+      <!--<define name="MPU9250_MAG_PRESCALER" value="32768"/>-->
 
-      <define name="HMC58XX_MAG_TO_IMU_PHI" value="RadOfDeg\(6.5\)"/>
-      <define name="HMC58XX_MAG_TO_IMU_THETA" value="RadOfDeg\(28.5\)"/>
-      <define name="HMC58XX_MAG_TO_IMU_PSI" value="RadOfDeg\(181.0\)"/>
-    </module>
+      <!--<define name="HMC58XX_MAG_TO_IMU_PHI" value="RadOfDeg\(6.5\)"/>-->
+      <!--<define name="HMC58XX_MAG_TO_IMU_THETA" value="RadOfDeg\(28.5\)"/>-->
+      <!--<define name="HMC58XX_MAG_TO_IMU_PSI" value="RadOfDeg\(181.0\)"/>-->
+    <!--</module>-->
 
-    <module name="send_imu_mag_current">
-      <define name="MILLIAMP_AT_IDLE_THROTTLE" value="1000"/>
-      <define name="MILLIAMP_AT_FULL_THROTTLE" value="30000"/>
-      <define name="CURRENT_ESTIMATION_NONLINEARITY" value="1.5"/>
-    </module>
+    <!--<module name="send_imu_mag_current">-->
+      <!--<define name="MILLIAMP_AT_IDLE_THROTTLE" value="1000"/>-->
+      <!--<define name="MILLIAMP_AT_FULL_THROTTLE" value="30000"/>-->
+      <!--<define name="CURRENT_ESTIMATION_NONLINEARITY" value="1.5"/>-->
+    <!--</module>-->
     <module name="sys_mon"/>
 
     <module name="telemetry"     type="xbee_api"/>
-    <module name="imu" type="chimera">
-      <define name="IMU_MPU9250_GYRO_RANGE" value="MPU9250_GYRO_RANGE_2000" />
-      <define name="IMU_MPU9250_ACCEL_RANGE" value="MPU9250_ACCEL_RANGE_16G" />
-    </module>
+    <!--<module name="imu" type="chimera">-->
+      <!--<define name="IMU_MPU9250_GYRO_RANGE" value="MPU9250_GYRO_RANGE_2000" />-->
+      <!--<define name="IMU_MPU9250_ACCEL_RANGE" value="MPU9250_ACCEL_RANGE_16G" />-->
+    <!--</module>-->
 
     <!--<module name="servo_tester"/>-->
 
@@ -331,7 +340,7 @@
     <!--</module>-->
 
     <!--<module name="ins"/>-->
-    <module name="ins" type="ekf2"/>
+    <!--<module name="ins" type="ekf2"/>-->
     <!--<module name="ins" type="float_invariant">-->
       <!--<define name="INS_PROPAGATE_FREQUENCY" value="500"/>-->
       <!--<define name="INS_FINV_MAG_ID" value="MAG_HMC58XX_SENDER_ID"/>-->

@@ -18,36 +18,6 @@
     <waypoint name="CAM" x="14.2" y="-29.4"/>
     <waypoint name="TD" x="5.6" y="-10.9"/>
   </waypoints>
-  <exceptions>
-    <!-- RC-Loss -->
-    <exception cond="((radio_control.status == RC_REALLY_LOST) &&
-      !(IndexOfBlock('Takeoff') > nav_block) &&
-      !(nav_block >= IndexOfBlock('land here')) &&
-      (autopilot_in_flight() == true) )" deroute="ComeBackAndLand"/>
-
-    <!-- GPS loss -->
-    <!-- Not done from flight plan, main.c goes to AP_MODE_FAILSAFE hardcoded -->
-
-    <!-- Geofence -->
-    <!-- Not done from flight plan -->
-
-    <!-- Datalink loss -->
-    <exception cond="(datalink_time > 60 &&
-      !(datalink_time > 120) &&
-      !(IndexOfBlock('Takeoff') > nav_block) &&
-      !(nav_block >= IndexOfBlock('land here')) &&
-      (autopilot_in_flight() == true) )" deroute="DatalinkLoss"/>
-
-    <!-- Battery loss -->
-    <exception cond="(electrical.bat_low &&
-      !(IndexOfBlock('Holding point') > nav_block) &&
-      !(nav_block >= IndexOfBlock('land here')) &&
-      (autopilot_in_flight() == true) )" deroute="ComeBackAndLand"/>
-    <exception cond="(electrical.bat_critical &&
-      !(IndexOfBlock('Holding point') > nav_block) &&
-      !(nav_block >= IndexOfBlock('land here')) &&
-      (autopilot_in_flight() == true) )" deroute="land here"/>
-  </exceptions>
 
   <blocks>
     <block name="Wait GPS">

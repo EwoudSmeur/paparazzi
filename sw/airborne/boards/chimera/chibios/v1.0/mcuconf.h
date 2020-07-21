@@ -103,7 +103,7 @@
 /*
  * ADC driver system settings.
  */
-#define STM32_ADC_ADCPRE                    ADC_CCR_ADCPRE_DIV4
+#define STM32_ADC_ADCPRE                    ADC_CCR_ADCPRE_DIV8
 #define STM32_ADC_USE_ADC1                  TRUE
 #define STM32_ADC_USE_ADC2                  FALSE
 #define STM32_ADC_USE_ADC3                  FALSE
@@ -214,7 +214,7 @@
 #define STM32_I2C_USE_I2C4                  FALSE
 #define STM32_I2C_BUSY_TIMEOUT              50
 #define STM32_I2C_I2C1_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 0)
-#define STM32_I2C_I2C1_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 6)
+#define STM32_I2C_I2C1_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 7)
 #define STM32_I2C_I2C2_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 3)
 #define STM32_I2C_I2C2_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 7)
 //#define STM32_I2C_I2C3_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 2)
@@ -297,10 +297,15 @@
 #define STM32_PWM_TIM8_IRQ_PRIORITY         7
 #define STM32_PWM_TIM9_IRQ_PRIORITY         7
 
-#define STM32_PWM3_UP_DMA_STREAM            STM32_DMA_STREAM_ID(1, 2)
-#define STM32_PWM3_UP_DMA_CHANNEL           5
-#define STM32_PWM3_UP_DMA_IRQ_PRIORITY      6
-#define STM32_PWM3_UP_DMA_PRIORITY          2
+//#define STM32_PWM3_UP_DMA_STREAM            STM32_DMA_STREAM_ID(1, 2)
+//#define STM32_PWM3_UP_DMA_CHANNEL           5
+//#define STM32_PWM3_UP_DMA_IRQ_PRIORITY      0
+//#define STM32_PWM3_UP_DMA_PRIORITY          3
+
+#define STM32_PWM4_UP_DMA_STREAM            STM32_DMA_STREAM_ID(1, 6)
+#define STM32_PWM4_UP_DMA_CHANNEL           2
+#define STM32_PWM4_UP_DMA_IRQ_PRIORITY      0
+#define STM32_PWM4_UP_DMA_PRIORITY          3
 
 /*
  * SERIAL driver system settings.
@@ -464,7 +469,7 @@
 #define STM32_SDC_SDMMC_READ_TIMEOUT        25
 #define STM32_SDC_SDMMC_CLOCK_DELAY         10
 #define STM32_SDC_SDMMC1_DMA_STREAM         STM32_DMA_STREAM_ID(2, 6)
-#define STM32_SDC_SDMMC1_DMA_PRIORITY       3
+#define STM32_SDC_SDMMC1_DMA_PRIORITY       0
 #define STM32_SDC_SDMMC1_IRQ_PRIORITY       9
 
 /*
