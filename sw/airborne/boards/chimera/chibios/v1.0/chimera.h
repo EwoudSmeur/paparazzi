@@ -8,6 +8,8 @@
  */
 #include "boards/chimera/chibios/v1.0/board.h"
 
+#include "generated/airframe.h"
+
 /**
  * PPRZ definitions
  */
@@ -17,6 +19,48 @@
  */
 #define AHB_CLK STM32_HCLK
 
+/**
+ * DSHOT
+ */
+#define DSHOT_SERVO_0 0
+#define DSHOT_SERVO_0_GPIO GPIOA
+#define DSHOT_SERVO_0_PIN GPIO6
+#define DSHOT_SERVO_0_AF GPIO_AF2
+#define DSHOT_SERVO_0_DRIVER DSHOTD3
+#define DSHOT_SERVO_0_CHANNEL 0
+
+#define DSHOT_SERVO_1 1
+#define DSHOT_SERVO_1_GPIO GPIOA
+#define DSHOT_SERVO_1_PIN GPIO7
+#define DSHOT_SERVO_1_AF GPIO_AF2
+#define DSHOT_SERVO_1_DRIVER DSHOTD3
+#define DSHOT_SERVO_1_CHANNEL 1
+
+//#define DSHOT_SERVO_2 2
+//#define DSHOT_SERVO_2_GPIO GPIOB
+//#define DSHOT_SERVO_2_PIN GPIO0
+//#define DSHOT_SERVO_2_AF GPIO_AF2
+//#define DSHOT_SERVO_2_DRIVER DSHOTD3
+//#define DSHOT_SERVO_2_CHANNEL 2
+
+//#define DSHOT_SERVO_3 3
+//#define DSHOT_SERVO_3_GPIO GPIOB
+//#define DSHOT_SERVO_3_PIN GPIO1
+//#define DSHOT_SERVO_3_AF GPIO_AF2
+//#define DSHOT_SERVO_3_DRIVER DSHOTD3
+//#define DSHOT_SERVO_3_CHANNEL 3
+
+#ifndef DSHOT_TELEMETRY_DEV
+#define DSHOT_TELEMETRY_DEV &SD1
+#endif
+
+#define DSHOT_CONF_TIM3 1
+#define DSHOT_CONF3_DEF { \
+  .dma_stream = STM32_PWM3_UP_DMA_STREAM,   \
+  .dma_channel = STM32_PWM3_UP_DMA_CHANNEL, \
+  .pwmp = &PWMD3,                           \
+  .tlm_sd = DSHOT_TELEMETRY_DEV             \
+}
 
 /*
  * LEDs

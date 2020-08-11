@@ -290,6 +290,11 @@
 #define STM32_ICU_USE_TIM16                 FALSE
 #define STM32_ICU_USE_TIM17                 FALSE
 
+#define STM32_PWM3_UP_DMA_STREAM            STM32_DMA_STREAM_ID(1, 2)
+#define STM32_PWM3_UP_DMA_CHANNEL           5
+#define STM32_PWM3_UP_DMA_IRQ_PRIORITY      6
+#define STM32_PWM3_UP_DMA_PRIORITY          2
+
 /*
  * MAC driver system settings.
  */
@@ -354,7 +359,7 @@
 /*
  * SERIAL driver system settings.
  */
-#if USE_UART1
+#if TRUE //USE_UART1
 #define STM32_SERIAL_USE_USART1             TRUE
 #else
 #define STM32_SERIAL_USE_USART1             FALSE

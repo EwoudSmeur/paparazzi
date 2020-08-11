@@ -189,6 +189,7 @@ void dshotStart(DSHOTDriver *driver, const DSHOTConfig *config)
   driver->config->pwmp->tim->DCR = DCR_DBL | DCR_DBA(driver->config->pwmp); // enable bloc register DMA transaction
   pwmChangePeriod(driver->config->pwmp, DSHOT_PWM_PERIOD);
 
+  driver->dshotMotors.onGoingQry = false;
   for (size_t j = 0; j < DSHOT_CHANNELS; j++) {
     pwmEnableChannel(driver->config->pwmp, j, 0);
     driver->dshotMotors.dp[j] =  makeDshotPacket(0, 0);
