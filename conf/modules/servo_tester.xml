@@ -31,7 +31,7 @@
     <file name="servo_tester.h"/>
   </header>
   <init fun="servo_tester_init()"/>
-  <periodic fun="servo_tester_periodic()" freq="512"/>
+  <periodic fun="servo_tester_periodic()"/>
   <makefile>
     <file name="servo_tester.c"/>
   </makefile>

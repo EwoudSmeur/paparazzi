@@ -377,7 +377,7 @@
 // TODO PWM on AUX pins
 
 #ifdef STM32_PWM_USE_TIM3
-#define PWM_CONF_TIM3 STM32_PWM_USE_TIM3
+#define PWM_CONF_TIM3 0
 #else
 #define PWM_CONF_TIM3 1
 #endif
