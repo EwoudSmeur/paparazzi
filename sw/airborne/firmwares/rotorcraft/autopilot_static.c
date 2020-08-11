@@ -106,10 +106,15 @@ void autopilot_static_init(void)
   autopilot_arming_init();
 }
 
+#include "arch/chibios/modules/actuators/actuators_dshot_arch.h"
+#include "subsystems/datalink/downlink.h"
+extern uint8_t *data;
 
 #define NAV_PRESCALER (PERIODIC_FREQUENCY / NAV_FREQ)
 void autopilot_static_periodic(void)
 {
+
+  RunOnceEvery(NAV_PRESCALER, DOWNLINK_SEND_PAYLOAD(DefaultChannel, DefaultDevice, 9, data););
 
   RunOnceEvery(NAV_PRESCALER, compute_dist2_to_home());
 

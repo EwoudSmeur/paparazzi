@@ -33,6 +33,9 @@
 
 uint16_t actuators_dshot_values[ACTUATORS_DSHOT_NB];
 
+// Feedback
+uint8_t *data;
+
 #if DSHOT_CONF_TIM1
 static DSHOTDriver DSHOTD1;
 static IN_DMA_SECTION_NOINIT(DshotDmaBuffer dshot1DmaBuffer);
@@ -143,6 +146,7 @@ void actuators_dshot_arch_commit(void)
 {
 #ifdef DSHOT_SERVO_0
   dshotSetThrottle(&DSHOT_SERVO_0_DRIVER, DSHOT_SERVO_0_CHANNEL, actuators_dshot_values[DSHOT_SERVO_0]);
+ data = dshotGetTelemetry(&DSHOTD3, 0)->rawData;
 #endif
 #ifdef DSHOT_SERVO_1
   dshotSetThrottle(&DSHOT_SERVO_1_DRIVER, DSHOT_SERVO_1_CHANNEL, actuators_dshot_values[DSHOT_SERVO_1]);
