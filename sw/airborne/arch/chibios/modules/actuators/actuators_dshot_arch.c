@@ -33,6 +33,9 @@
 
 uint16_t actuators_dshot_values[ACTUATORS_DSHOT_NB];
 
+DshotTelemetry * esc_telem;
+uint8_t index_last_telemetry = 0;
+
 // Feedback
 uint8_t *data;
 
@@ -146,7 +149,6 @@ void actuators_dshot_arch_commit(void)
 {
 #ifdef DSHOT_SERVO_0
   dshotSetThrottle(&DSHOT_SERVO_0_DRIVER, DSHOT_SERVO_0_CHANNEL, actuators_dshot_values[DSHOT_SERVO_0]);
- data = dshotGetTelemetry(&DSHOTD3, 0)->rawData;
 #endif
 #ifdef DSHOT_SERVO_1
   dshotSetThrottle(&DSHOT_SERVO_1_DRIVER, DSHOT_SERVO_1_CHANNEL, actuators_dshot_values[DSHOT_SERVO_1]);
@@ -181,6 +183,10 @@ void actuators_dshot_arch_commit(void)
 #ifdef DSHOT_SERVO_11
   dshotSetThrottle(&DSHOT_SERVO_11_DRIVER, DSHOT_SERVO_11_CHANNEL, actuators_dshot_values[DSHOT_SERVO_11]);
 #endif
+
+  // Find out from which motor was the last requested telemetry
+  index_last_telemetry = DSHOTD3.dshotMotors.currentTlmQry;
+  esc_telem = dshotGetTelemetry(&DSHOTD3, index_last_telemetry);
 
 #if DSHOT_CONF_TIM1
   dshotSendFrame(&DSHOTD1);

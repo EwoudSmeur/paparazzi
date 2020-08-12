@@ -123,16 +123,14 @@ typedef enum {
  *          we'll have to add a little bit abstraction here
  */
 typedef struct {
-  union {
-    struct {
-      uint8_t  temp;
-      uint16_t voltage;
-      uint16_t current;
-      uint16_t consumption;
-      uint16_t rpm;
-    } __attribute__((__packed__, scalar_storage_order("big-endian")));
-    uint8_t rawData[9];
+  struct {
+    uint8_t  temp;
+    uint16_t voltage;
+    uint16_t current;
+    uint16_t consumption;
+    uint16_t rpm;
   };
+  uint8_t rawData[9];
   uint8_t  crc8;
 }  __attribute__((__packed__)) DshotTelemetry ;
 

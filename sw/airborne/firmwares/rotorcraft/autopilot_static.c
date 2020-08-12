@@ -107,14 +107,43 @@ void autopilot_static_init(void)
 }
 
 #include "arch/chibios/modules/actuators/actuators_dshot_arch.h"
+#include "modules/actuators/esc_dshot.h"
 #include "subsystems/datalink/downlink.h"
-extern uint8_t *data;
+#include "modules/servo_tester/servo_tester.h"
+extern uint8_t index_last_telemetry;
+extern DshotTelemetry * esc_telem;
 
 #define NAV_PRESCALER (PERIODIC_FREQUENCY / NAV_FREQ)
 void autopilot_static_periodic(void)
 {
 
-  RunOnceEvery(NAV_PRESCALER, DOWNLINK_SEND_PAYLOAD(DefaultChannel, DefaultDevice, 9, data););
+#ifndef SITL
+
+#define LOG_LENGTH_INT 8
+#define LOG_LENGTH_FLOAT 0
+
+  int32_t sd_buffer_i[LOG_LENGTH_INT] = {0};
+  float sd_buffer_f[LOG_LENGTH_FLOAT] = {0};
+
+  static uint32_t log_counter = 0;
+
+  sd_buffer_i[0] = log_counter;
+  sd_buffer_i[1] = servo_test_val;
+  sd_buffer_i[2] = esc_telem->temp;
+  sd_buffer_i[3] = esc_telem->voltage;
+  sd_buffer_i[4] = esc_telem->current;
+  sd_buffer_i[5] = esc_telem->consumption;
+  sd_buffer_i[6] = esc_telem->rpm;
+  sd_buffer_i[7] = index_last_telemetry;
+
+  /*sd_buffer_f[0] = body_rates_f->p;*/
+
+  sdLogWriteRaw(pprzLogFile, (uint8_t*) sd_buffer_i, LOG_LENGTH_INT*4);
+  sdLogWriteRaw(pprzLogFile, (uint8_t*) sd_buffer_f, LOG_LENGTH_FLOAT*4);
+  log_counter += 1;
+#endif
+
+  /*RunOnceEvery(NAV_PRESCALER, DOWNLINK_SEND_PAYLOAD(DefaultChannel, DefaultDevice, 9, data););*/
 
   RunOnceEvery(NAV_PRESCALER, compute_dist2_to_home());
 

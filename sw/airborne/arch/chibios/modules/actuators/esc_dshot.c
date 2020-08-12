@@ -473,6 +473,13 @@ static noreturn void dshotTlmRec(void *arg)
     const bool success =
       (sdReadTimeout(driver->config->tlm_sd, driver->dshotMotors.dt[idx].rawData, sizeof(DshotTelemetry),
                      TIME_MS2I(DSHOT_TELEMETRY_TIMEOUT_MS)) == sizeof(DshotTelemetry));
+
+    driver->dshotMotors.dt[idx].temp = driver->dshotMotors.dt[idx].rawData[0];
+    driver->dshotMotors.dt[idx].voltage = driver->dshotMotors.dt[idx].rawData[2] | (driver->dshotMotors.dt[idx].rawData[1] << 8);
+    driver->dshotMotors.dt[idx].current = driver->dshotMotors.dt[idx].rawData[4] | (driver->dshotMotors.dt[idx].rawData[3] << 8);
+    driver->dshotMotors.dt[idx].consumption = driver->dshotMotors.dt[idx].rawData[6] | (driver->dshotMotors.dt[idx].rawData[5] << 8);
+    driver->dshotMotors.dt[idx].rpm = driver->dshotMotors.dt[idx].rawData[8] | (driver->dshotMotors.dt[idx].rawData[7] << 8);
+
     if (!success ||
         (calculateCrc8(driver->dshotMotors.dt[idx].rawData,
                        sizeof(driver->dshotMotors.dt[idx].rawData)) != driver->dshotMotors.dt[idx].crc8)) {
@@ -484,5 +491,6 @@ static noreturn void dshotTlmRec(void *arg)
     }
     driver->dshotMotors.onGoingQry = false;
   }
+
 }
 
