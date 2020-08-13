@@ -308,7 +308,8 @@ void dshotSendFrame(DSHOTDriver *driver)
       driver->dshotMotors.onGoingQry = true;
       const uint32_t index = (driver->dshotMotors.currentTlmQry + 1) % DSHOT_CHANNELS;
       driver->dshotMotors.currentTlmQry = index;
-      setDshotPacketTlm(&driver->dshotMotors.dp[index], true);
+      /*setDshotPacketTlm(&driver->dshotMotors.dp[index], true);*/
+      driver->dshotMotors.dp[index].telemetryRequest = 1;
       chMBPostTimeout(&driver->mb, driver->dshotMotors.currentTlmQry, TIME_IMMEDIATE);
     }
 
@@ -340,7 +341,7 @@ uint32_t dshotGetCrcErrorsCount(DSHOTDriver *driver)
  * @return    pointer on a telemetry structure
  * @api
  */
-const DshotTelemetry *dshotGetTelemetry(const DSHOTDriver *driver, const uint32_t index)
+DshotTelemetry *dshotGetTelemetry(const DSHOTDriver *driver, const uint32_t index)
 {
   return &driver->dshotMotors.dt[index];
 }
@@ -469,7 +470,7 @@ static noreturn void dshotTlmRec(void *arg)
   chRegSetThreadName("dshotTlmRec");
   while (true) {
     chMBFetchTimeout(&driver->mb, (msg_t *) &escIdx, TIME_INFINITE);
-    const uint32_t idx = escIdx;
+    uint32_t idx = escIdx;
     const bool success =
       (sdReadTimeout(driver->config->tlm_sd, driver->dshotMotors.dt[idx].rawData, sizeof(DshotTelemetry),
                      TIME_MS2I(DSHOT_TELEMETRY_TIMEOUT_MS)) == sizeof(DshotTelemetry));

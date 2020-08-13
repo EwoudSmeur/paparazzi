@@ -32,6 +32,8 @@
 #include BOARD_CONFIG
 
 uint16_t actuators_dshot_values[ACTUATORS_DSHOT_NB];
+uint16_t tlmreq1 = 0;
+uint16_t tlmreq2 = 0;
 
 DshotTelemetry * esc_telem;
 uint8_t index_last_telemetry = 0;
@@ -187,6 +189,8 @@ void actuators_dshot_arch_commit(void)
   // Find out from which motor was the last requested telemetry
   index_last_telemetry = DSHOTD3.dshotMotors.currentTlmQry;
   esc_telem = dshotGetTelemetry(&DSHOTD3, index_last_telemetry);
+  tlmreq1 = DSHOTD3.dshotMotors.dp[0].telemetryRequest;
+  tlmreq2 = DSHOTD3.dshotMotors.dp[1].telemetryRequest;
 
 #if DSHOT_CONF_TIM1
   dshotSendFrame(&DSHOTD1);

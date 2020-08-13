@@ -22,8 +22,8 @@
 
   <servos driver="DShot">
     <servo name="RM" no="0" min="0" neutral="100" max="1900"/>
-    <!--<servo name="LM" no="1" min="0" neutral="100" max="1900"/>-->
-    <servo name="SERVO_TEST" no="1" min="0" neutral="0" max="1900"/>
+    <servo name="LM" no="1" min="0" neutral="100" max="1900"/>
+    <!--<servo name="SERVO_TEST" no="1" min="0" neutral="0" max="1900"/>-->
   </servos>
 
   <commands>
@@ -37,7 +37,7 @@
     <set servo="ELEVON_LEFT"     value="autopilot.motors_on ? actuators_pprz[0] : 0"/>
     <set servo="ELEVON_RIGHT"    value="autopilot.motors_on ? actuators_pprz[1] : 0"/>
     <set servo="RM"              value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
-    <!--<set servo="LM"              value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>-->
+    <set servo="LM"              value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
     <!--<set servo="RM"              value="autopilot_motors_on ? -MAX_PPRZ : -MAX_PPRZ"/>-->
     <!--<set servo="LM"              value="autopilot_motors_on ? -MAX_PPRZ : -MAX_PPRZ"/>-->
   </command_laws>
@@ -122,7 +122,7 @@
     <define name="FILT_CUTOFF" value="5.0"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN" value="{0.1, 0.1, 0.045, 0.045}"/>
+    <define name="ACT_DYN" value="{0.1, 0.1, 0.04, 0.04}"/>
     <define name="ACT_RATE_LIMIT" value="{170, 170, 9600, 9600}"/>
     <define name="ACT_IS_SERVO" value="{1, 1, 0, 0}"/>
 
@@ -288,9 +288,7 @@
       <define name="IMU_MPU9250_ACCEL_RANGE" value="MPU9250_ACCEL_RANGE_16G" />
     </module>
 
-    <module name="servo_tester">
-      <!--<define name="SERVO_TESTER_PERIODIC_FREQ" value="500"/>-->
-    </module>
+    <!--<module name="servo_tester"/>-->
 
     <module name="air_data">
       <define name="USE_AIRSPEED_AIR_DATA" value="FALSE"/>
