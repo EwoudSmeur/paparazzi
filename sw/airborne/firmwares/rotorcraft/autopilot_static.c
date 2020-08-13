@@ -110,6 +110,8 @@ void autopilot_static_init(void)
 #include "modules/actuators/esc_dshot.h"
 #include "subsystems/datalink/downlink.h"
 #include "modules/servo_tester/servo_tester.h"
+#include "state.h"
+#include "subsystems/actuators.h"
 extern uint8_t index_last_telemetry;
 extern DshotTelemetry * esc_telem;
 extern uint16_t tlmreq1;
@@ -122,24 +124,33 @@ void autopilot_static_periodic(void)
 #ifndef SITL
 
 #define LOG_LENGTH_INT 9
-#define LOG_LENGTH_FLOAT 0
+#define LOG_LENGTH_FLOAT 7
 
   int32_t sd_buffer_i[LOG_LENGTH_INT] = {0};
   float sd_buffer_f[LOG_LENGTH_FLOAT] = {0};
 
   static uint32_t log_counter = 0;
 
-  sd_buffer_i[0] = log_counter;
-  sd_buffer_i[1] = tlmreq1;
-  sd_buffer_i[2] = esc_telem->temp;
-  sd_buffer_i[3] = esc_telem->voltage;
-  sd_buffer_i[4] = esc_telem->current;
-  sd_buffer_i[5] = esc_telem->consumption;
-  sd_buffer_i[6] = esc_telem->rpm;
-  sd_buffer_i[7] = index_last_telemetry;
-  sd_buffer_i[8] = tlmreq2;
+  struct FloatQuat *quat = stateGetNedToBodyQuat_f();
+  struct FloatRates *body_rates_f = stateGetBodyRates_f();
 
-  /*sd_buffer_f[0] = body_rates_f->p;*/
+  sd_buffer_i[0] = log_counter;
+  sd_buffer_i[1] = actuators_pprz[0];
+  sd_buffer_i[2] = actuators_pprz[1];
+  sd_buffer_i[3] = actuators_pprz[2];
+  sd_buffer_i[4] = actuators_pprz[3];
+  sd_buffer_i[5] = stab_att_sp_quat.qi;
+  sd_buffer_i[6] = stab_att_sp_quat.qx;
+  sd_buffer_i[7] = stab_att_sp_quat.qy;
+  sd_buffer_i[8] = stab_att_sp_quat.qz;
+
+  sd_buffer_f[0] = body_rates_f->p;
+  sd_buffer_f[1] = body_rates_f->q;
+  sd_buffer_f[2] = body_rates_f->r;
+  sd_buffer_f[3] = quat->qi;
+  sd_buffer_f[4] = quat->qx;
+  sd_buffer_f[5] = quat->qy;
+  sd_buffer_f[6] = quat->qz;
 
   sdLogWriteRaw(pprzLogFile, (uint8_t*) sd_buffer_i, LOG_LENGTH_INT*4);
   sdLogWriteRaw(pprzLogFile, (uint8_t*) sd_buffer_f, LOG_LENGTH_FLOAT*4);
