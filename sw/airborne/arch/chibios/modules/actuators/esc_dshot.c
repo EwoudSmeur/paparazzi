@@ -308,8 +308,8 @@ void dshotSendFrame(DSHOTDriver *driver)
       driver->dshotMotors.onGoingQry = true;
       const uint32_t index = (driver->dshotMotors.currentTlmQry + 1) % DSHOT_CHANNELS;
       driver->dshotMotors.currentTlmQry = index;
-      /*setDshotPacketTlm(&driver->dshotMotors.dp[index], true);*/
-      driver->dshotMotors.dp[index].telemetryRequest = 1;
+      setDshotPacketTlm(&driver->dshotMotors.dp[index], true);
+      /*driver->dshotMotors.dp[index].telemetryRequest = 1;*/
       chMBPostTimeout(&driver->mb, driver->dshotMotors.currentTlmQry, TIME_IMMEDIATE);
     }
 
@@ -341,7 +341,7 @@ uint32_t dshotGetCrcErrorsCount(DSHOTDriver *driver)
  * @return    pointer on a telemetry structure
  * @api
  */
-DshotTelemetry *dshotGetTelemetry(const DSHOTDriver *driver, const uint32_t index)
+DshotTelemetry *dshotGetTelemetry(DSHOTDriver *driver, const uint32_t index)
 {
   return &driver->dshotMotors.dt[index];
 }
