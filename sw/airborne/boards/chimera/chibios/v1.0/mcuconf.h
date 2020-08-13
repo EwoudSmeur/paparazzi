@@ -305,7 +305,7 @@
 /*
  * SERIAL driver system settings.
  */
-#if USE_UART1
+#if TRUE //USE_UART1
 #define STM32_SERIAL_USE_USART1             TRUE
 #else
 #define STM32_SERIAL_USE_USART1             FALSE

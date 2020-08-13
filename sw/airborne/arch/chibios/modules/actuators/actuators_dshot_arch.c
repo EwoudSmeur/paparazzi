@@ -31,6 +31,13 @@
 #include "mcu_periph/gpio.h"
 #include BOARD_CONFIG
 
+uint16_t volt = 0;
+uint8_t temp = 0;
+uint16_t rpm0 = 0;
+uint8_t *data;
+uint32_t crc_err = 0;
+bool ongoing = 0;
+
 uint16_t actuators_dshot_values[ACTUATORS_DSHOT_NB];
 
 #if DSHOT_CONF_TIM1
@@ -136,6 +143,12 @@ void actuators_dshot_arch_commit(void)
 {
 #ifdef DSHOT_SERVO_0
   dshotSetThrottle(&DSHOT_SERVO_0_DRIVER, DSHOT_SERVO_0_CHANNEL, actuators_dshot_values[DSHOT_SERVO_0]);
+ /*volt = dshotGetTelemetry(&DSHOTD3, 0)->voltage;*/
+ /*temp = dshotGetTelemetry(&DSHOTD3, 0)->temp;*/
+ /*rpm0 = dshotGetTelemetry(&DSHOTD3, 0)->rpm;*/
+ data = dshotGetTelemetry(&DSHOTD3, 0)->rawData;
+ crc_err = DSHOTD3.crc_errors;
+ ongoing = DSHOTD3.dshotMotors.onGoingQry;
 #endif
 #ifdef DSHOT_SERVO_1
   dshotSetThrottle(&DSHOT_SERVO_1_DRIVER, DSHOT_SERVO_1_CHANNEL, actuators_dshot_values[DSHOT_SERVO_1]);

@@ -118,9 +118,31 @@ void autopilot_static_init(void)
 }
 
 
+#include "arch/chibios/modules/actuators/actuators_dshot_arch.h"
+#include "subsystems/datalink/downlink.h"
+#include "modules/actuators/actuators_dshot.h"
+
+extern uint16_t volt;
+extern uint8_t temp;
+extern uint16_t rpm0;
+
+extern uint8_t *data;
+extern uint32_t crc_err;
+extern bool ongoing;
+
+extern uint16_t succescount;
+extern uint16_t totalcount;
+
 #define NAV_PRESCALER (PERIODIC_FREQUENCY / NAV_FREQ)
 void autopilot_static_periodic(void)
 {
+
+  uint16_t test2 = succescount;//rpm
+  /*float rpm = rpm0;*/
+  float test = (float) totalcount;
+  RunOnceEvery(NAV_PRESCALER, DOWNLINK_SEND_MOTOR(DefaultChannel, DefaultDevice, &test2, &test););
+  RunOnceEvery(NAV_PRESCALER, DOWNLINK_SEND_PAYLOAD(DefaultChannel, DefaultDevice, 9, data););
+
 
   RunOnceEvery(NAV_PRESCALER, compute_dist2_to_home());
 

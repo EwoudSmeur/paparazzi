@@ -121,9 +121,9 @@ static size_t getTimerWidth(const PWMDriver *pwmp);
  */
 void dshotStart(DSHOTDriver *driver, const DSHOTConfig *config)
 {
-  _Static_assert((void *) &driver->dsdb == (void *) &driver->dsdb.widths16);
-  _Static_assert((void *) &driver->dsdb.widths32 == (void *) &driver->dsdb.widths16);
-  
+  /*_Static_assert((void *) &driver->dsdb == (void *) &driver->dsdb.widths16);*/
+  /*_Static_assert((void *) &driver->dsdb.widths32 == (void *) &driver->dsdb.widths16);*/
+
   memset((void *) &driver->dsdb, 0, sizeof(driver->dsdb));
   const size_t timerWidthInBytes = getTimerWidth(config->pwmp);
 
@@ -196,6 +196,7 @@ void dshotStart(DSHOTDriver *driver, const DSHOTConfig *config)
   driver->config->pwmp->tim->DCR = DCR_DBL | DCR_DBA(driver->config->pwmp); // enable bloc register DMA transaction
   pwmChangePeriod(driver->config->pwmp, DSHOT_PWM_PERIOD);
 
+  driver->dshotMotors.onGoingQry = false;
   for (size_t j = 0; j < DSHOT_CHANNELS; j++) {
     pwmEnableChannel(driver->config->pwmp, j, 0);
     driver->dshotMotors.dp[j] =  makeDshotPacket(0, 0);
@@ -294,6 +295,8 @@ void dshotSendThrottles(DSHOTDriver *driver, const  uint16_t throttles[DSHOT_CHA
   dshotSendFrame(driver);
 }
 
+uint16_t succescount = 0;
+
 /**
  * @brief   send throttle  order
  *
@@ -309,6 +312,7 @@ void dshotSendFrame(DSHOTDriver *driver)
       driver->dshotMotors.onGoingQry = true;
       const uint32_t index = (driver->dshotMotors.currentTlmQry + 1) % DSHOT_CHANNELS;
       driver->dshotMotors.currentTlmQry = index;
+      succescount = index;
       setDshotPacketTlm(&driver->dshotMotors.dp[index], true);
       chMBPostTimeout(&driver->mb, driver->dshotMotors.currentTlmQry, TIME_IMMEDIATE);
     }
@@ -341,7 +345,7 @@ uint32_t dshotGetCrcErrorsCount(DSHOTDriver *driver)
  * @return    pointer on a telemetry structure
  * @api
  */
-const DshotTelemetry *dshotGetTelemetry(const DSHOTDriver *driver, const uint32_t index)
+DshotTelemetry *dshotGetTelemetry(DSHOTDriver *driver, const uint32_t index)
 {
   return &driver->dshotMotors.dt[index];
 }
@@ -461,6 +465,8 @@ static size_t   getTimerWidth(const PWMDriver *pwmp)
 #                 \__|  |_| |_| |_|     \___|  \__,_|  \__,_|  |___/
 */
 
+uint16_t totalcount = 0;
+
 static noreturn void dshotTlmRec(void *arg)
 {
   DSHOTDriver *driver = (DSHOTDriver *) arg;
@@ -469,11 +475,14 @@ static noreturn void dshotTlmRec(void *arg)
 
   chRegSetThreadName("dshotTlmRec");
   while (true) {
+    totalcount += 1;
     chMBFetchTimeout(&driver->mb, (msg_t *) &escIdx, TIME_INFINITE);
+    totalcount += 1;
     const uint32_t idx = escIdx;
     const bool success =
       (sdReadTimeout(driver->config->tlm_sd, driver->dshotMotors.dt[idx].rawData, sizeof(DshotTelemetry),
                      TIME_MS2I(DSHOT_TELEMETRY_TIMEOUT_MS)) == sizeof(DshotTelemetry));
+    totalcount += 1;
     if (!success ||
         (calculateCrc8(driver->dshotMotors.dt[idx].rawData,
                        sizeof(driver->dshotMotors.dt[idx].rawData)) != driver->dshotMotors.dt[idx].crc8)) {
@@ -482,6 +491,8 @@ static noreturn void dshotTlmRec(void *arg)
       memset(driver->dshotMotors.dt[idx].rawData, 0U, sizeof(DshotTelemetry));
       // count errors
       driver->crc_errors++;
+
+      /*succescount += 1;*/
     }
     driver->dshotMotors.onGoingQry = false;
   }
