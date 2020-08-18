@@ -28,5 +28,4 @@
 #ifndef ACTUATORS_DSHOT_H
 #define ACTUATORS_DSHOT_H
 
-
 #endif /* ACTUATORS_DSHOT_ARCH_H */

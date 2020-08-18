@@ -106,6 +106,7 @@ void autopilot_static_init(void)
   autopilot_arming_init();
 }
 
+#ifndef SITL
 #include "arch/chibios/modules/actuators/actuators_dshot_arch.h"
 #include "modules/actuators/esc_dshot.h"
 #include "subsystems/datalink/downlink.h"
@@ -116,6 +117,7 @@ extern uint8_t index_last_telemetry;
 extern DshotTelemetry * esc_telem;
 extern uint16_t tlmreq1;
 extern uint16_t tlmreq2;
+#endif
 
 #define NAV_PRESCALER (PERIODIC_FREQUENCY / NAV_FREQ)
 void autopilot_static_periodic(void)
