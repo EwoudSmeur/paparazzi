@@ -15,8 +15,8 @@
   </section>
 
   <servos driver="Pwm">
-    <servo name="ELEVON_LEFT"  no="4" min="1000" neutral="1500" max="2000"/> <!--neutral 1526-->
-    <servo name="ELEVON_RIGHT" no="5" min="1000" neutral="1500" max="2000"/> <!--neutral 1515-->
+    <servo name="ELEVON_RIGHT"  no="4" min="1000" neutral="1500" max="2000"/> <!--neutral 1526-->
+    <servo name="ELEVON_LEFT" no="5" min="1000" neutral="1500" max="2000"/> <!--neutral 1515-->
     <!--<servo name="SERVO_TEST" no="4" min="1000" neutral="1500" max="2000"/>-->
   </servos>
 
