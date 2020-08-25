@@ -40,7 +40,7 @@
 #define IMU_MPU9250_ACCEL_LOWPASS_FILTER MPU9250_DLPF_ACCEL_41HZ
 #define IMU_MPU9250_SMPLRT_DIV 9
 PRINT_CONFIG_MSG("Gyro/Accel output rate is 100Hz at 1kHz internal sampling")
-#elif PERIODIC_FREQUENCY == 512
+#elif PERIODIC_FREQUENCY == 512 || PERIODIC_FREQUENCY == 500
 /* Accelerometer: Bandwidth 184Hz, Delay 5.8ms
  * Gyroscope: Bandwidth 250Hz, Delay 0.97ms sampling 8kHz
  * Output rate: 2kHz
