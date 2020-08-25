@@ -125,8 +125,8 @@ void autopilot_static_periodic(void)
 
 #ifndef SITL
 
-#define LOG_LENGTH_INT 9
-#define LOG_LENGTH_FLOAT 7
+#define LOG_LENGTH_INT 13
+#define LOG_LENGTH_FLOAT 17
 
   int32_t sd_buffer_i[LOG_LENGTH_INT] = {0};
   float sd_buffer_f[LOG_LENGTH_FLOAT] = {0};
@@ -135,6 +135,8 @@ void autopilot_static_periodic(void)
 
   struct FloatQuat *quat = stateGetNedToBodyQuat_f();
   struct FloatRates *body_rates_f = stateGetBodyRates_f();
+  struct NedCoor_f *accelned = stateGetAccelNed_f();
+  float airspeed = stateGetAirspeed_f();
 
   sd_buffer_i[0] = log_counter;
   sd_buffer_i[1] = actuators_pprz[0];
@@ -145,6 +147,8 @@ void autopilot_static_periodic(void)
   sd_buffer_i[6] = stab_att_sp_quat.qx;
   sd_buffer_i[7] = stab_att_sp_quat.qy;
   sd_buffer_i[8] = stab_att_sp_quat.qz;
+  sd_buffer_i[11] = esc_telem->rpm;
+  sd_buffer_i[12] = index_last_telemetry;
 
   sd_buffer_f[0] = body_rates_f->p;
   sd_buffer_f[1] = body_rates_f->q;
@@ -153,6 +157,16 @@ void autopilot_static_periodic(void)
   sd_buffer_f[4] = quat->qx;
   sd_buffer_f[5] = quat->qy;
   sd_buffer_f[6] = quat->qz;
+  sd_buffer_f[7] = stateGetPositionNed_f()->x;
+  sd_buffer_f[8] = stateGetPositionNed_f()->y;
+  sd_buffer_f[9] = stateGetPositionNed_f()->z;
+  sd_buffer_f[10] = stateGetSpeedNed_f()->x;
+  sd_buffer_f[11] = stateGetSpeedNed_f()->y;
+  sd_buffer_f[12] = stateGetSpeedNed_f()->z;
+  sd_buffer_f[13] = accelned->x;
+  sd_buffer_f[14] = accelned->y;
+  sd_buffer_f[15] = accelned->z;
+  sd_buffer_f[16] = airspeed;
 
   sdLogWriteRaw(pprzLogFile, (uint8_t*) sd_buffer_i, LOG_LENGTH_INT*4);
   sdLogWriteRaw(pprzLogFile, (uint8_t*) sd_buffer_f, LOG_LENGTH_FLOAT*4);
