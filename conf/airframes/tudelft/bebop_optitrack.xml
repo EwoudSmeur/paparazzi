@@ -38,6 +38,7 @@
       <define name="GUIDANCE_INDI_THRUST_DYNAMICS" value="0.1"/-->
       <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
     </module>
+    <module name ="traffic_info"/>
   </firmware>
 
  <modules main_freq="512">
