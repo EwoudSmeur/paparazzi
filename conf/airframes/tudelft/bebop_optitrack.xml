@@ -6,11 +6,15 @@
   </description>
   <firmware name="rotorcraft">
     <target name="ap" board="bebop"/>
-    <!--target name="nps" board="pc">
+    <configure name="HOST" value="192.168.1.$(AC_ID)"/>
+    <configure name="MODEM_HOST" value="192.168.1.255"/>
+    <configure name="MODEM_BROADCAST" value="TRUE"/>
+    
+    <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
       <module name="udp"/>
-    </target-->
-
+      <define name="INDI_RPM_FEEDBACK" value="FALSE"/>
+    </target>
     <!-- Subsystem section -->
     <module name="telemetry" type="transparent_udp"/>
     <module name="radio_control" type="datalink"/>
@@ -18,7 +22,7 @@
     <module name="imu" type="bebop"/>
     <module name="gps" type="datalink"/>
     <module name="stabilization" type="indi">
-      <define name="INDI_RPM_FEEDBACK" value="TRUE"/>
+      <define name="INDI_RPM_FEEDBACK" value="FALSE"/>
     </module>
     <module name="ahrs" type="int_cmpl_quat">
       <!-- Use the optitrack heading instead of magnetometer -->
@@ -29,7 +33,23 @@
     <module name="logger_file">
       <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
     </module>
+    <module name="guidance" type="indi">
+      <!--define name="GUIDANCE_INDI_SPECIFIC_FORCE_GAIN" value="-500.0"/>
+      <define name="GUIDANCE_INDI_THRUST_DYNAMICS" value="0.1"/-->
+      <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
+    </module>
   </firmware>
+
+ <modules main_freq="512">
+    <module name="fc_rotor"/>
+    <module name="geo_mag"/>
+    <module name="air_data"/>
+    <module name="send_imu_mag_current"/>
+    <!--module name="logger_file">
+      <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
+    </module-->
+</modules>
+
 
   <commands>
     <axis name="PITCH" failsafe_value="0"/>
@@ -159,6 +179,8 @@
     <define name="ACTUATOR_NAMES" value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]"/>
     <define name="JSBSIM_MODEL" value="simple_x_quad_ccw" type="string"/>
     <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
+    <define name="NO_MOTOR_MIXING" value="TRUE"/>
+
   </section>
   <include href="conf/simulator/gazebo/airframes/bebop.xml"/>
 
