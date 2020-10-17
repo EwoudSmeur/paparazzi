@@ -1,0 +1,32 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="sys_id_base" dir="system_identification">
+  <doc>
+    <description>
+      Sys ID module that bypasses all control to give inputs directly to the actuators.
+    </description>
+  </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings NAME="SysID">
+        <dl_setting var="ctrl_module_demo_pr_ff_gain" min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="pr_ff"/>
+        <dl_setting var="ctrl_module_demo_pr_d_gain"  min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="pr_d"/>
+        <dl_setting var="ctrl_module_demo_y_ff_gain"  min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="y_ff"/>
+        <dl_setting var="ctrl_module_demo_y_d_gain"   min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="y_d"/>
+        <dl_setting var="signal_type" min="0" step="1" max="2" values="Chirp|doublet|multistep" module="system_identification/sys_id_base" shortname="type"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+
+  <header>
+    <file name="sys_id_base.h"/>
+  </header>
+
+  <periodic fun="sys_id_base_periodic()" autorun="TRUE" period="0.002" />
+
+  <makefile>
+    <file name="sys_id_base.c"/>
+  </makefile>
+
+</module>
+

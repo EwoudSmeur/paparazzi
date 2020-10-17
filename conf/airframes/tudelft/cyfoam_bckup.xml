@@ -15,8 +15,8 @@
   </section>
 
   <servos driver="Pwm">
-    <servo name="ELEVON_RIGHT"  no="4" min="1000" neutral="1500" max="2000"/> <!--neutral 1526-->
-    <servo name="ELEVON_LEFT" no="5" min="1000" neutral="1500" max="2000"/> <!--neutral 1515-->
+    <servo name="ELEVON_LEFT"  no="4" min="1000" neutral="1500" max="2000"/> <!--neutral 1526-->
+    <servo name="ELEVON_RIGHT" no="5" min="1000" neutral="1500" max="2000"/> <!--neutral 1515-->
     <!--<servo name="SERVO_TEST" no="4" min="1000" neutral="1500" max="2000"/>-->
   </servos>
 
@@ -66,13 +66,6 @@
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="94." unit="deg"/>
     <define name="BODY_TO_IMU_PSI"   value="0." unit="deg"/>
-
-    <define name="ACCEL_X_NEUTRAL" value="-36"/>
-    <define name="ACCEL_Y_NEUTRAL" value="15"/>
-    <define name="ACCEL_Z_NEUTRAL" value="6"/>
-    <define name="ACCEL_X_SENS" value="4.89017376083" integer="16"/>
-    <define name="ACCEL_Y_SENS" value="4.89744265597" integer="16"/>
-    <define name="ACCEL_Z_SENS" value="4.88213266266" integer="16"/>
   </section>
 
   <section name="AUTOPILOT">
@@ -235,8 +228,6 @@
       <define name="INDI_FUNCTIONS_RC_CHANNEL" value="4"/>
     </target>
 
-    <module name="sys_id_base"/>
-
     <!--<module name="gps" type="ubx_ucenter"/>-->
     <module name="tlsf"/>
     <module name="pprzlog">
@@ -256,6 +247,7 @@
       <define name="USE_PWM_INPUT1" value="PWM_PULSE_TYPE_ACTIVE_LOW"/>
       <define name="USE_PWM_INPUT2" value="PWM_PULSE_TYPE_ACTIVE_LOW"/>
     </module>
+
 
     <module name="actuators"     type="dshot"/>
 
@@ -294,7 +286,6 @@
     <module name="imu" type="chimera">
       <define name="IMU_MPU9250_GYRO_RANGE" value="MPU9250_GYRO_RANGE_2000" />
       <define name="IMU_MPU9250_ACCEL_RANGE" value="MPU9250_ACCEL_RANGE_16G" />
-      <define name="IMU" value="MPU9250_ACCEL_RANGE_16G" />
     </module>
 
     <!--<module name="servo_tester"/>-->
