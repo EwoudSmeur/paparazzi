@@ -9,11 +9,28 @@
   <settings>
     <dl_settings>
       <dl_settings NAME="SysID">
-        <dl_setting var="ctrl_module_demo_pr_ff_gain" min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="pr_ff"/>
-        <dl_setting var="ctrl_module_demo_pr_d_gain"  min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="pr_d"/>
-        <dl_setting var="ctrl_module_demo_y_ff_gain"  min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="y_ff"/>
-        <dl_setting var="ctrl_module_demo_y_d_gain"   min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="y_d"/>
-        <dl_setting var="signal_type" min="0" step="1" max="2" values="Chirp|doublet|multistep" module="system_identification/sys_id_base" shortname="type"/>
+        <dl_setting var="ctrl_module_demo_pr_ff_gain" type="float" min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="pr_ff"/>
+        <dl_setting var="ctrl_module_demo_pr_d_gain" type="float" min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="pr_d"/>
+        <dl_setting var="ctrl_module_demo_y_ff_gain" type="float"  min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="y_ff"/>
+        <dl_setting var="ctrl_module_demo_y_d_gain" type="float"   min="0" step="0.01" max="1" module="system_identification/sys_id_base" shortname="y_d"/>
+        <dl_setting var="actuators_combination" type="uint8_t" min="0" step="1" max="3" values="Elevons|Motors|Elevons-Motors|Motors-Elevons" module="system_identification/sys_id_base" shortname="Actuators combination"/>
+        <dl_setting var="signal_type_elevons" type="uint8_t" min="0" step="1" max="2" values="Doublet|1123|Chirp" module="system_identification/sys_id_base" shortname="Signal type elevons"/>
+        <dl_setting var="increase_first_elevons" type="uint8_t" min="0" step="1" max="1" values="False|True" module="system_identification/sys_id_base" shortname="Increase first elevons"/>
+        <dl_setting var="amplitude_elevons" type="int16_t" min="0" step="1" max="9600" module="system_identification/sys_id_base" shortname="Amplitude elevons"/>
+        <dl_setting var="timestep_elevons" type="float" min="0.1" step="0.1" max="5" module="system_identification/sys_id_base" shortname="Time step elevons"/>
+        <dl_setting var="fstart_chirp_elevons" type="float" min="0.05" step="0.05" max="20" module="system_identification/sys_id_base" shortname="Fstart elevons"/>
+        <dl_setting var="fend_chirp_elevons" type="float" min="0.1" step="0.1" max="20" module="system_identification/sys_id_base" shortname="Fend elevons"/>
+        <dl_setting var="length_chirp_elevons" type="float" min="0.1" step="0.1" max="10" module="system_identification/sys_id_base" shortname="Length chirp elevons"/>
+        <dl_setting var="chirp_noise_ratio_elevons" type="float" min="0" step="0.01" max="0.5" module="system_identification/sys_id_base" shortname="Noise chirp elevons"/>
+        <dl_setting var="signal_type_motors" type="uint8_t" min="0" step="1" max="2" values="Doublet|1123|Chirp" module="system_identification/sys_id_base" shortname="Signal type motors"/>
+        <dl_setting var="increase_first_motors" type="uint8_t" min="0" step="1" max="1" values="False|True" module="system_identification/sys_id_base" shortname="Increase first motors"/>
+        <dl_setting var="amplitude_motors" type="int16_t" min="0" step="1" max="9600" module="system_identification/sys_id_base" shortname="Amplitude motors"/>
+        <dl_setting var="timestep_motors" type="float" min="0.1" step="0.1" max="5" module="system_identification/sys_id_base" shortname="Time step motors"/>
+        <dl_setting var="fstart_chirp_motors" type="float" min="0.05" step="0.05" max="20" module="system_identification/sys_id_base" shortname="Fstart motors"/>
+        <dl_setting var="fend_chirp_motors" type="float" min="0.1" step="0.1" max="20" module="system_identification/sys_id_base" shortname="Fstart motors"/>
+        <dl_setting var="length_chirp_motors" type="float" min="0.1" step="0.1" max="10" module="system_identification/sys_id_base" shortname="Length chirp motors"/>
+        <dl_setting var="chirp_noise_ratio_motors" type="float" min="0" step="0.01" max="0.5" module="system_identification/sys_id_base" shortname="Noise chirp motors"/>
+        <dl_setting var="time_shift" type="float" min="0" step="0.1" max="5" module="system_identification/sys_id_base" shortname="Time shift"/>
       </dl_settings>
     </dl_settings>
   </settings>
@@ -22,9 +39,11 @@
     <file name="sys_id_base.h"/>
   </header>
 
-  <periodic fun="sys_id_base_periodic()" autorun="TRUE" period="0.002" />
+  <init fun="sys_id_base_periodic_init()"/>
+  <periodic fun="sys_id_base_periodic()" autorun="TRUE" freq="500" />
 
   <makefile>
+    <file name="pprz_random.c" dir="math"/>
     <file name="sys_id_base.c"/>
   </makefile>
 

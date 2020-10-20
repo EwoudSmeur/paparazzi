@@ -36,6 +36,8 @@
 #include "mcu_periph/sys_time.h"
 #include "state.h"
 #include "generated/airframe.h"
+#include "subsystems/actuators.h"
+
 #ifdef COMMAND_THRUST
 #include "firmwares/rotorcraft/stabilization.h"
 #else
@@ -68,7 +70,7 @@ static void file_logger_write_header(FILE *file) {
   fprintf(file, "att_phi,att_theta,att_psi,");
   fprintf(file, "rate_p,rate_q,rate_r,");
 #ifdef COMMAND_THRUST
-  fprintf(file, "cmd_thrust,cmd_roll,cmd_pitch,cmd_yaw\n");
+  fprintf(file, "elevon_left,elevon_right,motor_right,motor_left\n");
 #else
   fprintf(file, "h_ctl_aileron_setpoint,h_ctl_elevator_setpoint\n");
 #endif
@@ -93,8 +95,8 @@ static void file_logger_write_row(FILE *file) {
   fprintf(file, "%f,%f,%f,", rates->p, rates->q, rates->r);
 #ifdef COMMAND_THRUST
   fprintf(file, "%d,%d,%d,%d\n",
-      stabilization_cmd[COMMAND_THRUST], stabilization_cmd[COMMAND_ROLL],
-      stabilization_cmd[COMMAND_PITCH], stabilization_cmd[COMMAND_YAW]);
+      actuators_pprz[0], actuators_pprz[1],
+      actuators_pprz[2], actuators_pprz[3]);
 #else
   fprintf(file, "%d,%d\n", h_ctl_aileron_setpoint, h_ctl_elevator_setpoint);
 #endif

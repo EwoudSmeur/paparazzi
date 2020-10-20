@@ -28,14 +28,35 @@
 #define SYS_ID_BASE_H
 
 #include <std.h>
+#include "paparazzi.h"
 
 // Settings
 extern float ctrl_module_demo_pr_ff_gain;  // Pitch/Roll
 extern float ctrl_module_demo_pr_d_gain;
 extern float ctrl_module_demo_y_ff_gain;   // Yaw
 extern float ctrl_module_demo_y_d_gain;
-extern int16_t signal_type;
 
+extern uint8_t actuators_combination;
+
+extern uint8_t signal_type_elevons;
+extern uint8_t increase_first_elevons;
+extern pprz_t amplitude_elevons;
+extern float timestep_elevons;
+extern float fstart_chirp_elevons;
+extern float fend_chirp_elevons;
+extern float length_chirp_elevons;
+extern float chirp_noise_ratio_elevons;
+
+extern uint8_t signal_type_motors;
+extern uint8_t increase_first_motors;
+extern pprz_t amplitude_motors;
+extern float timestep_motors;
+extern float fstart_chirp_motors;
+extern float fend_chirp_motors;
+extern float length_chirp_motors;
+extern float chirp_noise_ratio_motors;
+
+extern float time_shift;
 
 // Bypass all controllers
 #define GUIDANCE_H_MODE_MODULE_SETTING GUIDANCE_H_MODE_MODULE
@@ -51,6 +72,8 @@ extern void guidance_h_module_run(bool in_flight);
 extern void guidance_v_module_init(void);
 extern void guidance_v_module_enter(void);
 extern void guidance_v_module_run(bool in_flight);
+
+extern void sys_id_base_periodic_init(void);
 extern void sys_id_base_periodic(void);
 
 #endif /* SYS_ID_BASE_H */
