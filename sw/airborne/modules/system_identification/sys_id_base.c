@@ -319,7 +319,7 @@ void sys_id_base_run(bool in_flight __attribute__((unused)))
     delta_input_elevons = sid_signal_generator(&signal_elevons,time);
   }
 
-  float total_input_le = final_trim[0] + delta_input_elevons;
+  float total_input_le = final_trim[0] - delta_input_elevons;
   float total_input_re = final_trim[1] + delta_input_elevons;
   float total_input_rm = final_trim[2] + delta_input_motors;
   float total_input_lm = final_trim[3] + delta_input_motors;

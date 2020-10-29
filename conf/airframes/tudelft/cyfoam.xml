@@ -258,7 +258,9 @@
       <define name="USE_PWM_INPUT2" value="PWM_PULSE_TYPE_ACTIVE_LOW"/>
     </module>
 
-    <module name="actuators"     type="dshot"/>
+    <module name="actuators"     type="dshot">
+      <define name="DSHOT_SPEED" value="150"/>
+    </module>
 
     <module name="actuators"     type="pwm">
       <define name="SERVO_HZ" value="400"/>

@@ -147,6 +147,8 @@ void autopilot_static_periodic(void)
   sd_buffer_i[6] = stab_att_sp_quat.qx;
   sd_buffer_i[7] = stab_att_sp_quat.qy;
   sd_buffer_i[8] = stab_att_sp_quat.qz;
+  sd_buffer_i[9] = 33;
+  sd_buffer_i[10] = 44;
   sd_buffer_i[11] = esc_telem->rpm;
   sd_buffer_i[12] = index_last_telemetry;
 

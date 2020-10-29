@@ -303,15 +303,14 @@ void dshotSendThrottles(DSHOTDriver *driver, const  uint16_t throttles[DSHOT_CHA
 void dshotSendFrame(DSHOTDriver *driver)
 {
   if (driver->dmap.state == DMA_READY) {
-    if ((driver->config->tlm_sd != NULL) &&
-        (driver->dshotMotors.onGoingQry == false)) {
+    if ((driver->config->tlm_sd != NULL) && (driver->dshotMotors.onGoingQry == false)) {
       driver->dshotMotors.onGoingQry = true;
-      const uint32_t index = (driver->dshotMotors.currentTlmQry + 1) % DSHOT_CHANNELS;
-      driver->dshotMotors.currentTlmQry = index;
-      setDshotPacketTlm(&driver->dshotMotors.dp[index], true);
+      //volatile uint8_t index = 1; // (driver->dshotMotors.currentTlmQry + 1) % DSHOT_CHANNELS;
+      driver->dshotMotors.currentTlmQry = 0; // (driver->dshotMotors.currentTlmQry + 1) % DSHOT_CHANNELS;
+      setDshotPacketTlm(&driver->dshotMotors.dp[driver->dshotMotors.currentTlmQry], true);
       /*driver->dshotMotors.dp[index].telemetryRequest = 1;*/
       chMBPostTimeout(&driver->mb, driver->dshotMotors.currentTlmQry, TIME_IMMEDIATE);
-    }
+   } 
 
     buildDshotDmaBuffer(&driver->dshotMotors, driver->config->dma_buf, getTimerWidth(driver->config->pwmp));
     dmaStartTransfert(&driver->dmap,

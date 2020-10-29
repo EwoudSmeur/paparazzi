@@ -36,7 +36,7 @@ uint16_t tlmreq1 = 0;
 uint16_t tlmreq2 = 0;
 
 DshotTelemetry * esc_telem;
-uint8_t index_last_telemetry = 0;
+uint8_t index_last_telemetry = 66;
 
 // Feedback
 uint8_t *data;
