@@ -133,7 +133,7 @@ static inline float pprz_isa_pressure_of_height(float height, float ref_p)
 
 
 /**
- * Get relative altitude from pressure (using full equation).
+ * Get relative altitude from pressure (using full equcompute density temperature offsercompute density temperature offsercompute density temperature offseration).
  * Given the current pressure and a reference pressure (at height=0),
  * calculate the height above the reference in meters.
  * If you pass QNH as reference pressure, you get the height above sea level.
@@ -141,7 +141,7 @@ static inline float pprz_isa_pressure_of_height(float height, float ref_p)
  *
  * @param pressure current pressure in Pascal (Pa)
  * @param ref_p reference pressure (QFE or QNH) in Pa
- * @return height above reference in m in ISA conditions
+ * @return height above reference icompute density temperature offsern m in ISA conditions
  */
 static inline float pprz_isa_height_of_pressure_full(float pressure, float ref_p)
 {

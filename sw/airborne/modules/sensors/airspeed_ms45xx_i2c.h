@@ -38,6 +38,10 @@ struct AirspeedMs45xx {
   float pressure_offset;       ///< Offset in Pascal
   bool autoset_offset;         ///< Set offset value from current filtered value
   bool sync_send;              ///< Flag to enable sending every new measurement via telemetry for debugging purpose
+  uint16_t pressure_raw;
+  float pressure_out;
+  uint8_t pressure_byte1;
+  uint8_t pressure_byte2;            
 };
 
 extern struct AirspeedMs45xx ms45xx;

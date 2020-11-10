@@ -190,7 +190,12 @@ void ms45xx_i2c_init(void)
   ms45xx.pressure_scale = MS45XX_PRESSURE_SCALE;
   ms45xx.pressure_offset = MS45XX_PRESSURE_OFFSET;
   ms45xx.airspeed_scale = MS45XX_AIRSPEED_SCALE;
+  ms45xx.autoset_offset = true;
   ms45xx.sync_send = MS45XX_SYNC_SEND;
+  ms45xx.pressure_raw = 0;
+  ms45xx.pressure_byte1 = 0;
+  ms45xx.pressure_byte2 = 0;
+  ms45xx.pressure_out = 0.;
 
   ms45xx_trans.status = I2CTransDone;
   // setup low pass filter with time constant and 100Hz sampling freq
@@ -238,6 +243,11 @@ void ms45xx_i2c_event(void)
        */
 
       float p_out = (p_raw * ms45xx.pressure_scale) - ms45xx.pressure_offset;
+      ms45xx.pressure_raw = p_raw;
+      ms45xx.pressure_out = p_out;
+      ms45xx.pressure_byte1 = ms45xx_trans.buf[0];
+      ms45xx.pressure_byte2 = ms45xx_trans.buf[1];
+
 #ifdef USE_AIRSPEED_LOWPASS_FILTER
       ms45xx.pressure = update_butterworth_2_low_pass(&ms45xx_filter, p_out);
 #else

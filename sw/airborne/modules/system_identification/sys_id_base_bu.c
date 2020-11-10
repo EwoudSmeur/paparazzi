@@ -185,13 +185,9 @@ void sys_id_base_enter(void)
     {
       signal_motors.time_start += ((7 * signal_elevons.timestep) + time_shift);
     }
-    else if (signal_elevons.signal_type == 2)
-    {
-      signal_motors.time_start += (signal_elevons.length_chirp + time_shift);
-    }
     else
     {
-      signal_motors.time_start += ((4 * signal_elevons.timestep) + time_shift);
+      signal_motors.time_start += (signal_elevons.length_chirp + time_shift);
     }
   }
 
@@ -205,13 +201,9 @@ void sys_id_base_enter(void)
     {
       signal_elevons.time_start += ((7 * signal_motors.timestep) + time_shift);
     }
-    else if (signal_motors.signal_type == 2)
+    else
     {
       signal_elevons.time_start += (signal_motors.length_chirp + time_shift);
-    }
-    else 
-    {
-      signal_elevons.time_start += ((4 * signal_motors.timestep) + time_shift);
     } 
   }
 }
@@ -273,7 +265,7 @@ float sid_signal_generator(struct signal_config_t *signal, float current_time)
         }
       }
     }
-    else if (signal->signal_type == 2)
+    else
     {
       if (elapsed_time <= signal->length_chirp)
       {
@@ -293,35 +285,6 @@ float sid_signal_generator(struct signal_config_t *signal, float current_time)
       float delta_noise_normalized = signal->chirp_noise_ratio * (update_first_order_low_pass(&signal->filter_noise, rand_gaussian()));
       delta_input_normalized = delta_sweep_normalized + delta_noise_normalized;
       }
-    }
-    else
-    {
-      
-      if (elapsed_time < (4 * signal->timestep))
-      {
-        if (elapsed_time < signal->timestep)
-        {
-          delta_input_normalized = -1.f;
-        }
-        else if (elapsed_time < (2 * signal->timestep))
-        {
-          delta_input_normalized = 1.f;
-        }
-        else if (elapsed_time < (3 * signal->timestep))
-        {
-          delta_input_normalized = -1.f;
-        }
-        else
-        {
-          delta_input_normalized = 1.f;
-        }
-        
-        if (signal->increase_first == 1)
-        {
-          delta_input_normalized = -(delta_input_normalized);
-        }
-      }
-       
     }
     
   delta_input = (signal->amplitude) * delta_input_normalized;
@@ -345,10 +308,15 @@ void sys_id_base_run(bool in_flight __attribute__((unused)))
   {
     delta_input_motors = sid_signal_generator(&signal_motors,time);
   }
-  else
+  else if (actuators_combination == 2)
   {
     delta_input_elevons = sid_signal_generator(&signal_elevons,time);
     delta_input_motors = sid_signal_generator(&signal_motors,time);
+  }
+  else
+  {
+    delta_input_motors = sid_signal_generator(&signal_motors,time);
+    delta_input_elevons = sid_signal_generator(&signal_elevons,time);
   }
 
   float total_input_le = final_trim[0] - delta_input_elevons;
