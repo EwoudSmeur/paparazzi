@@ -6,24 +6,15 @@
 
 <airframe name="foam cylone">
 
-  <section name="CONFIG_BOARD">
-    <define name="USE_PWM0"     value="FALSE"/>
-    <define name="USE_PWM1"     value="FALSE"/>
-    <define name="USE_PWM2"     value="FALSE"/>
-    <define name="USE_PWM3"     value="FALSE"/>
-    <!--<define name="STM32_PWM_USE_TIM3"     value="TRUE"/>-->
-  </section>
-
   <servos driver="Pwm">
-    <servo name="ELEVON_RIGHT"  no="4" min="1000" neutral="1500" max="2000"/> <!--neutral 1526-->
-    <servo name="ELEVON_LEFT" no="5" min="1000" neutral="1500" max="2000"/> <!--neutral 1515-->
-    <!--<servo name="SERVO_TEST" no="4" min="1000" neutral="1500" max="2000"/>-->
-  </servos>
-
-  <servos driver="DShot">
-    <servo name="RM" no="0" min="0" neutral="100" max="1900"/>
-    <servo name="LM" no="1" min="0" neutral="100" max="1900"/>
-    <!--<servo name="SERVO_TEST" no="1" min="0" neutral="0" max="1900"/>-->
+    <servo name="ELEVON_LEFT"  no="0" min="1000" neutral="1500" max="2000"/> <!--neutral 1526-->
+    <servo name="ELEVON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/> <!--neutral 1515-->
+    <servo name="RM" no="2" min="1000" neutral="1100" max="2000"/>
+    <servo name="ELEVON_LEFT"  no="1" min="1000" neutral="1500" max="2000"/> <!--neutral 1526-->
+    <servo name="ELEVON_RIGHT" no="2" min="1000" neutral="1500" max="2000"/> <!--neutral 1515-->
+    <servo name="RM" no="4" min="1000" neutral="1100" max="2000"/>
+    <servo name="LM" no="3" min="1000" neutral="1100" max="2000"/>
+     <!--<servo name="SERVO_TEST" no="4" min="1000" neutral="1500" max="2000"/>-->
   </servos>
 
   <commands>
