@@ -7,9 +7,6 @@
 <airframe name="foam cylone">
 
   <servos driver="Pwm">
-    <servo name="ELEVON_LEFT"  no="0" min="1000" neutral="1500" max="2000"/> <!--neutral 1526-->
-    <servo name="ELEVON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/> <!--neutral 1515-->
-    <servo name="RM" no="2" min="1000" neutral="1100" max="2000"/>
     <servo name="ELEVON_LEFT"  no="1" min="1000" neutral="1500" max="2000"/> <!--neutral 1526-->
     <servo name="ELEVON_RIGHT" no="2" min="1000" neutral="1500" max="2000"/> <!--neutral 1515-->
     <servo name="RM" no="4" min="1000" neutral="1100" max="2000"/>
@@ -247,10 +244,6 @@
     <module name="pwm_meas">
       <define name="USE_PWM_INPUT1" value="PWM_PULSE_TYPE_ACTIVE_LOW"/>
       <define name="USE_PWM_INPUT2" value="PWM_PULSE_TYPE_ACTIVE_LOW"/>
-    </module>
-
-    <module name="actuators"     type="dshot">
-      <define name="DSHOT_SPEED" value="150"/>
     </module>
 
     <module name="actuators"     type="pwm">
