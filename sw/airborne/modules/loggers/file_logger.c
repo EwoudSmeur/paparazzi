@@ -33,6 +33,8 @@
 #include <unistd.h>
 #include "std.h"
 
+#include "subsystems/gps.h"
+
 #include "mcu_periph/sys_time.h"
 #include "state.h"
 #include "generated/airframe.h"
@@ -68,10 +70,11 @@ static void file_logger_write_header(FILE *file) {
   fprintf(file, "att_phi,att_theta,att_psi,");
   fprintf(file, "rate_p,rate_q,rate_r,");
 #ifdef COMMAND_THRUST
-  fprintf(file, "cmd_thrust,cmd_roll,cmd_pitch,cmd_yaw\n");
+  fprintf(file, "cmd_thrust,cmd_roll,cmd_pitch,cmd_yaw,");
 #else
-  fprintf(file, "h_ctl_aileron_setpoint,h_ctl_elevator_setpoint\n");
+  fprintf(file, "h_ctl_aileron_setpoint,h_ctl_elevator_setpoint,");
 #endif
+  fprintf(file, "x_gps_raw, y_gps_raw, z_gps_raw,\n");
 }
 
 /** Write CSV row
@@ -92,12 +95,13 @@ static void file_logger_write_row(FILE *file) {
   fprintf(file, "%f,%f,%f,", att->phi, att->theta, att->psi);
   fprintf(file, "%f,%f,%f,", rates->p, rates->q, rates->r);
 #ifdef COMMAND_THRUST
-  fprintf(file, "%d,%d,%d,%d\n",
+  fprintf(file, "%d,%d,%d,%d,",
       stabilization_cmd[COMMAND_THRUST], stabilization_cmd[COMMAND_ROLL],
       stabilization_cmd[COMMAND_PITCH], stabilization_cmd[COMMAND_YAW]);
 #else
-  fprintf(file, "%d,%d\n", h_ctl_aileron_setpoint, h_ctl_elevator_setpoint);
+  fprintf(file, "%d,%d,", h_ctl_aileron_setpoint, h_ctl_elevator_setpoint);
 #endif
+  fprintf(file, "%d,%d,%d,\n", gps.ecef_pos.x, gps.ecef_pos.y, gps.ecef_pos.z);
 }
 
 
