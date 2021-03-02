@@ -22,7 +22,7 @@
 
 from __future__ import print_function
 from __future__ import unicode_literals
-from __builtin__ import bytes
+from builtins import bytes
 import socket
 import telnetlib
 import os
