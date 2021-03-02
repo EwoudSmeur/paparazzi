@@ -19,8 +19,8 @@
       <module name="udp"/>
       <define name="INDI_RPM_FEEDBACK" value="FALSE"/>
       <module name="logger_file">
-			<define name="FILE_LOGGER_PATH" value="/home/mavlab/Desktop/logs_roderick"/>
-	  </module>
+        <define name="FILE_LOGGER_PATH" value="/home/mavlab/Desktop/logs_roderick"/>
+      </module>
     </target>
     <!-- Subsystem section -->
     <module name="telemetry" type="transparent_udp"/>
