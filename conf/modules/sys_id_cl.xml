@@ -1,0 +1,52 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="sys_id_cl" dir="system_identification">
+  <doc>
+    <description>
+      Sys ID module for the Cyclone in closed-loop mode.
+    </description>
+  </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings NAME="SysID CL">
+        <dl_setting var="ctrl_module_demo_pr_ff_gain" type="float" min="0" step="0.01" max="1" module="system_identification/sys_id_cl" shortname="pr_ff"/>
+        <dl_setting var="ctrl_module_demo_pr_d_gain" type="float" min="0" step="0.01" max="1" module="system_identification/sys_id_cl" shortname="pr_d"/>
+        <dl_setting var="ctrl_module_demo_y_ff_gain" type="float"  min="0" step="0.01" max="1" module="system_identification/sys_id_cl" shortname="y_ff"/>
+        <dl_setting var="ctrl_module_demo_y_d_gain" type="float"   min="0" step="0.01" max="1" module="system_identification/sys_id_cl" shortname="y_d"/>
+        <dl_setting var="time_roll_0" type="float" min="0" step="0.1" max="3" module="system_identification/sys_id_cl" shortname="Time supress roll"/>
+        <dl_setting var="actuators_combination" type="uint8_t" min="0" step="1" max="4" values="Pitch|Thrust|Pitch-Thrust|Thrust-Pitch|Combined" module="system_identification/sys_id_cl" shortname="Actuators combination"/>
+        <dl_setting var="signal_type_pitch" type="uint8_t" min="0" step="1" max="3" values="Doublet|1123|Chirp|Walsh" module="system_identification/sys_id_cl" shortname="Signal type ppitch"/>
+        <dl_setting var="increase_first_pitch" type="uint8_t" min="0" step="1" max="1" values="False|True" module="system_identification/sys_id_cl" shortname="Increase first pitch"/>
+        <dl_setting var="amplitude_pitch" type="int16_t" min="0" step="1" max="30" module="system_identification/sys_id_cl" shortname="Amplitude pitch"/>
+        <dl_setting var="timestep_pitch" type="float" min="0.1" step="0.05" max="5" module="system_identification/sys_id_cl" shortname="Time step pitch"/>
+        <dl_setting var="fstart_chirp_pitch" type="float" min="0.05" step="0.05" max="20" module="system_identification/sys_id_cl" shortname="Fstart pitch"/>
+        <dl_setting var="fend_chirp_pitch" type="float" min="0.1" step="0.1" max="20" module="system_identification/sys_id_cl" shortname="Fend pitch"/>
+        <dl_setting var="length_chirp_pitch" type="float" min="0.1" step="0.1" max="10" module="system_identification/sys_id_cl" shortname="Length chirp pitch"/>
+        <dl_setting var="chirp_noise_ratio_pitch" type="float" min="0" step="0.01" max="0.5" module="system_identification/sys_id_cl" shortname="Noise chirp pitch"/>
+        <dl_setting var="signal_type_thrust" type="uint8_t" min="0" step="1" max="3" values="Doublet|1123|Chirp|Walsh" module="system_identification/sys_id_cl" shortname="Signal type thrust"/>
+        <dl_setting var="increase_first_thrust" type="uint8_t" min="0" step="1" max="1" values="False|True" module="system_identification/sys_id_cl" shortname="Increase first thrust"/>
+        <dl_setting var="amplitude_thrust" type="int16_t" min="0" step="1" max="9600" module="system_identification/sys_id_cl" shortname="Amplitude thrust"/>
+        <dl_setting var="timestep_thrust" type="float" min="0.1" step="0.05" max="5" module="system_identification/sys_id_cl" shortname="Time step thrust"/>
+        <dl_setting var="fstart_chirp_thrust" type="float" min="0.05" step="0.05" max="20" module="system_identification/sys_id_cl" shortname="Fstart thrust"/>
+        <dl_setting var="fend_chirp_thrust" type="float" min="0.1" step="0.1" max="20" module="system_identification/sys_id_cl" shortname="Fstart thrust"/>
+        <dl_setting var="length_chirp_thrust" type="float" min="0.1" step="0.1" max="10" module="system_identification/sys_id_cl" shortname="Length chirp thrust"/>
+        <dl_setting var="chirp_noise_ratio_thrust" type="float" min="0" step="0.01" max="0.5" module="system_identification/sys_id_cl" shortname="Noise chirp thrust"/>
+        <dl_setting var="time_shift" type="float" min="0" step="0.1" max="5" module="system_identification/sys_id_cl" shortname="Time shift"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+
+  <header>
+    <file name="sys_id_cl.h"/>
+  </header>
+
+  <init fun="sys_id_cl_periodic_init()"/>
+  <periodic fun="sys_id_cl_periodic()" autorun="TRUE" freq="500" />
+
+  <makefile>
+    <file name="pprz_random.c" dir="math"/>
+    <file name="sys_id_cl.c"/>
+  </makefile>
+
+</module>
+
