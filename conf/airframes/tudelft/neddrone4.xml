@@ -26,7 +26,7 @@
         <define name="MS45XX_I2C_DEV" value="i2c4"/>
       </module>
 
-      <!--module name="scheduling_indi_simple"/-->
+      <module name="scheduling_indi_simple"/>
 
       <!-- Forward FuelCell data back to the GCS -->
       <!--module name="generic_uart_sensor"/-->
@@ -49,7 +49,7 @@
       <module name="radio_control" type="datalink"/>
       <module name="fdm" type="jsbsim"/>
 
-      <module name="scheduling_indi_simple"/>
+      <!--module name="scheduling_indi_simple"/-->
 
       <module name="logger_file">
         <define name="FILE_LOGGER_PATH" value="/home/ewoud/Documents"/>
