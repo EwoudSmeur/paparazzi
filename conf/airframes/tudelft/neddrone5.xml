@@ -27,7 +27,7 @@
         <define name="MS45XX_I2C_DEV" value="i2c4"/>
       </module>
 
-      <module name="scheduling_indi_simple"/-->
+      <!--module name="scheduling_indi_simple"/-->
 
       <!-- Forward FuelCell data back to the GCS -->
       <!--module name="generic_uart_sensor"/-->
@@ -50,7 +50,7 @@
       <module name="radio_control" type="datalink"/>
       <module name="fdm" type="jsbsim"/>
 
-      <!--module name="scheduling_indi_simple"/-->
+      <module name="scheduling_indi_simple"/>
 
       <module name="logger_file">
         <define name="FILE_LOGGER_PATH" value="/home/ewoud/Documents"/>
@@ -143,8 +143,8 @@
     <servo name="MOTOR_10" no="3" min="-8191" neutral="1500" max="8191"/>
     <servo name="MOTOR_11" no="4" min="-8191" neutral="1500" max="8191"/>
     <servo name="MOTOR_12" no="5" min="-8191" neutral="1500" max="8191"/>
-    <servo name="AIL_3" no="6" min="6000" neutral="0" max="6000"/>
-    <servo name="FLAP_3" no="7" min="6000" neutral="0" max="6000"/>
+    <servo name="AIL_3" no="6" min="6000" neutral="0" max="-6000"/>
+    <servo name="FLAP_3" no="7" min="6000" neutral="0" max="-6000"/>
     <servo name="FLAP_4" no="8" min="-6000" neutral="0" max="6000"/>
     <servo name="AIL_4" no="9" min="-6000" neutral="0" max="6000"/>
   </servos>
