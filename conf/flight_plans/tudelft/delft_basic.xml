@@ -18,12 +18,23 @@
     <waypoint name="CAM" x="14.2" y="-29.4"/>
     <waypoint name="TD" x="5.6" y="-10.9"/>
   </waypoints>
+  <sectors>
+    <sector color="red" name="Flyzone">
+      <corner name="p1"/>
+      <corner name="p2"/>
+      <corner name="p3"/>
+      <corner name="p4"/>
+    </sector>
+  </sectors>
   <exceptions>
     <!-- RC-Loss -->
     <exception cond="((radio_control.status == RC_REALLY_LOST) &&
       !(IndexOfBlock('Takeoff') > nav_block) &&
       !(nav_block >= IndexOfBlock('land here')) &&
       (autopilot_in_flight() == true) )" deroute="ComeBackAndLand"/>
+
+    <!--Soft geofence-->
+    <exception cond="Or(!InsideFlyzone(GetPosX(), GetPosY()), GetPosAlt() > GetAltRef() + 1500) && !(nav_block == IndexOfBlock('Wait GPS')) && !(nav_block == IndexOfBlock('Geo init')) && !(nav_block == IndexOfBlock('Holding point'))" deroute="safe"/>
 
     <!-- GPS loss -->
     <!-- Not done from flight plan, main.c goes to AP_MODE_FAILSAFE hardcoded -->
@@ -70,6 +81,10 @@
       <exception cond="stateGetPositionEnu_f()->z > 2.0" deroute="Standby"/>
       <call_once fun="NavSetWaypointHere(WP_CLIMB)"/>
       <stay climb="nav_climb_vspeed" vmode="climb" wp="CLIMB"/>
+    </block>
+    <block name="safe">
+      <set var="autopilot_mode_auto2" value="AP_MODE_NAV"/>
+      <stay wp="STDBY"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <stay wp="STDBY"/>
