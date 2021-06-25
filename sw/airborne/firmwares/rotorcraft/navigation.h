@@ -42,6 +42,9 @@
 
 #define NAV_FREQ 16
 
+extern int32_t thrust_val;
+extern bool motors_on;
+
 extern struct EnuCoor_i navigation_target;
 extern struct EnuCoor_i navigation_carrot;
 

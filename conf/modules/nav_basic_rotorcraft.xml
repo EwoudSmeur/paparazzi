@@ -14,6 +14,8 @@
         <dl_setting var="nav_radius" MIN="-50" STEP="0.1" MAX="50" unit="m"/>
         <dl_setting var="nav_climb_vspeed" MIN="0" STEP="0.1" MAX="10.0" unit="m/s" param="NAV_CLIMB_VSPEED"/>
         <dl_setting var="nav_descend_vspeed" MIN="-10.0" STEP="0.1" MAX="0.0" unit="m/s" param="NAV_DESCEND_VSPEED"/>
+        <dl_setting var="thrust_val" MIN="30" STEP="10" MAX="60" values="30|40|50|60"/>
+        <dl_setting var="motors_on" MIN="0" STEP="1" MAX="1" values="OFF|ON"/>
       </dl_settings>
     </dl_settings>
   </settings>

@@ -76,6 +76,9 @@
 #define CLOSE_TO_WAYPOINT (15 << INT32_POS_FRAC)
 #define CARROT_DIST (12 << INT32_POS_FRAC)
 
+int32_t thrust_val = 0;
+bool motors_on = 0;
+
 bool force_forward = false;
 
 struct FloatVect2 line_vect, to_end_vect;
