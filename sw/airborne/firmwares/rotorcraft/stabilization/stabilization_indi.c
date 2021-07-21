@@ -479,7 +479,7 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
 
   // WLS Control Allocator
   num_iter =
-    wls_alloc(indi_du, indi_v, du_min, du_max, Bwls, 0, 0, Wv, 0, du_pref, 10000, 10);
+    wls_alloc(indi_du, indi_v, du_min, du_max, Bwls, 0, 0, Wv, 0, du_pref, 10000, 1);
 #endif
 
   // Add the increments to the actuators

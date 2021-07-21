@@ -26,7 +26,7 @@
         <define name="AIRSPEED_ETS_SCALE" value="1.24"/>
       </module>
 
-      <module name="scheduling_indi_simple"/>
+      <!-- <module name="scheduling_indi_simple"/> -->
 
       <!-- Forward FuelCell data back to the GCS -->
       <!--module name="generic_uart_sensor"/-->
@@ -49,7 +49,7 @@
       <module name="radio_control" type="datalink"/>
       <module name="fdm" type="jsbsim"/>
 
-      <module name="scheduling_indi_simple"/>
+      <!-- <module name="scheduling_indi_simple"/> -->
 
       <module name="logger_file">
         <define name="FILE_LOGGER_PATH" value="/home/ewoud/Documents"/>
@@ -74,7 +74,9 @@
     <module name="gps"           type="datalink"/>
     <!--module name="gps"           type="ublox"/>
     <module name="gps"           type="ubx_ucenter"/-->
-    <module name="stabilization" type="indi_simple"/>
+    <module name="stabilization" type="indi">
+      <configure name="INDI_NUM_ACT" value="20"/>
+    </module>
     <module name="stabilization" type="rate_indi"/>
     <module name="ins"           type="ekf2" />
     
@@ -116,6 +118,8 @@
       <define name="GUIDANCE_INDI_FILTER_CUTOFF" value="0.5"/>
       <define name="GUIDANCE_INDI_LINE_GAIN" value="0.2"/>
       <define name="GUIDANCE_INDI_MIN_THROTTLE" value="2500"/>
+      <define name="GUIDANCE_INDI_MIN_THROTTLE_FWD" value="2500"/>
+      <define name="GUIDANCE_INDI_THRUST_DYNAMICS" value="0.06"/>
     </module>
 
     <module name="motor_mixing"/>
@@ -277,15 +281,21 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness (hover) -->
-    <define name="G1_P" value="0.0030"/>
+    <!-- <define name="G1_P" value="0.0030"/>
     <define name="G1_Q" value="0.0035"/>
     <define name="G1_R" value="0.0004"/>
-    <define name="G2_R" value="0.00015"/>
+    <define name="G2_R" value="0.00015"/> -->
+    <define name="G1_ROLL" value="{18.f, -18.f, -18.f , 18.f,18.f, -18.f, -18.f , 18.f,18.f, -18.f, -18.f , 18.f,18.f, -18.f, -18.f , 18.f,18.f, -18.f, -18.f , 18.f}"/>
+    <define name="G1_PITCH" value="{15.f , 15.f, -15.f, -15.f, 15.f , 15.f, -15.f, -15.f,15.f , 15.f, -15.f, -15.f,15.f , 15.f, -15.f, -15.f,15.f , 15.f, -15.f, -15.f}"/>
+    <define name="G1_YAW" value="{0.65f, -0.65f, 0.65f, -0.65f,0.65f, -0.65f, 0.65f, -0.65f,0.65f, -0.65f, 0.65f, -0.65f,0.65f, -0.65f, 0.65f, -0.65f,0.65f, -0.65f, 0.65f, -0.65f}"/>
+    <define name="G1_THRUST" value="{-.7f, -.7f, -.7f, -.7f,-.7f, -.7f, -.7f, -.7f,-.7f, -.7f, -.7f, -.7f,-.7f, -.7f, -.7f, -.7f,-.7f, -.7f, -.7f, -.7f}"/>
+    <!--Counter torque effect of spinning up a rotor-->
+    <define name="G2" value="{110.f,   -110.f,   110.f,   -110.f,110.f,   -110.f,   110.f,   -110.f,110.f,   -110.f,   110.f,   -110.f,110.f,   -110.f,   110.f,   -110.f,110.f,   -110.f,   110.f,   -110.f}"/>
 
     <!-- control effectiveness (forward) -->
-    <define name="FORWARD_G1_P" value="0.0020"/>
+    <!-- <define name="FORWARD_G1_P" value="0.0020"/>
     <define name="FORWARD_G1_Q" value="0.0077"/>
-    <define name="FORWARD_G1_R" value="0.004"/>
+    <define name="FORWARD_G1_R" value="0.004"/> -->
 
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="30.0"/>
@@ -308,9 +318,9 @@
     <define name="FILT_CUTOFF_R" value="4.0"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN_P" value="0.0354"/>
-    <define name="ACT_DYN_Q" value="0.0354"/>
-    <define name="ACT_DYN_R" value="0.0354"/>
+    <define name="ACT_DYN" value="{0.08f, 0.08f, 0.08f, 0.08f,0.08f, 0.08f, 0.08f, 0.08f,0.08f, 0.08f, 0.08f, 0.08f,0.08f, 0.08f, 0.08f, 0.08f,0.08f, 0.08f, 0.08f, 0.08f}"/>
+    <define name="ACT_RATE_LIMIT" value="{9600, 9600,9600, 9600,9600, 9600,9600, 9600,9600, 9600,9600, 9600,9600, 9600,9600, 9600,9600, 9600,9600, 9600}"/>
+    <define name="ACT_IS_SERVO" value="{1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1}"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
