@@ -21,6 +21,8 @@
         <configure name="SBUS_PORT" value="UART3"/>
       </module>
 
+      <module name="sys_mon"/>
+
       <module name="airspeed_ets.xml">
         <configure name="AIRSPEED_ETS_I2C_DEV" value="I2C4"/>
         <define name="AIRSPEED_ETS_SCALE" value="1.24"/>

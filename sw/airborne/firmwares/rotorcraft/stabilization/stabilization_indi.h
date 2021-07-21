@@ -43,6 +43,8 @@ struct Indi_gains {
   struct FloatRates rate;
 };
 
+extern int num_iterations;
+
 extern struct Indi_gains indi_gains;
 
 extern void stabilization_indi_init(void);
