@@ -106,10 +106,81 @@ void autopilot_static_init(void)
   autopilot_arming_init();
 }
 
+#ifndef SITL
+#include "arch/chibios/modules/actuators/actuators_dshot_arch.h"
+#include "modules/actuators/esc_dshot.h"
+#include "subsystems/datalink/downlink.h"
+#include "modules/servo_tester/servo_tester.h"
+#include "state.h"
+#include "subsystems/actuators.h"
+#include "modules/sensors/airspeed_ms45xx_i2c.h"
+#include "mcu_periph/pwm_input.h"
+
+extern uint8_t index_last_telemetry;
+extern DshotTelemetry * esc_telem;
+extern uint16_t tlmreq1;
+extern uint16_t tlmreq2;
+#endif
 
 #define NAV_PRESCALER (PERIODIC_FREQUENCY / NAV_FREQ)
 void autopilot_static_periodic(void)
 {
+
+#ifndef SITL
+
+#define LOG_LENGTH_INT 13
+#define LOG_LENGTH_FLOAT 18
+
+  int32_t sd_buffer_i[LOG_LENGTH_INT] = {0};
+  float sd_buffer_f[LOG_LENGTH_FLOAT] = {0};
+
+  static uint32_t log_counter = 0;
+
+  struct FloatQuat *quat = stateGetNedToBodyQuat_f();
+  struct FloatRates *body_rates_f = stateGetBodyRates_f();
+  struct NedCoor_f *accelned = stateGetAccelNed_f();
+  float airspeed = stateGetAirspeed_f();
+
+  sd_buffer_i[0] = log_counter;
+  sd_buffer_i[1] = actuators_pprz[0];
+  sd_buffer_i[2] = actuators_pprz[1];
+  sd_buffer_i[3] = actuators_pprz[2];
+  sd_buffer_i[4] = actuators_pprz[3];
+  sd_buffer_i[5] = stab_att_sp_quat.qi;
+  sd_buffer_i[6] = stab_att_sp_quat.qx;
+  sd_buffer_i[7] = stab_att_sp_quat.qy;
+  sd_buffer_i[8] = stab_att_sp_quat.qz;
+  sd_buffer_i[9] = get_pwm_input_duty_in_usec(PWM_INPUT1);
+  sd_buffer_i[10] = ms45xx.pressure_raw;
+  sd_buffer_i[11] = ms45xx.pressure_byte1;
+  sd_buffer_i[12] = ms45xx.pressure_byte2;
+
+  sd_buffer_f[0] = body_rates_f->p;
+  sd_buffer_f[1] = body_rates_f->q;
+  sd_buffer_f[2] = body_rates_f->r;
+  sd_buffer_f[3] = quat->qi;
+  sd_buffer_f[4] = quat->qx;
+  sd_buffer_f[5] = quat->qy;
+  sd_buffer_f[6] = quat->qz;
+  sd_buffer_f[7] = stateGetPositionNed_f()->x;
+  sd_buffer_f[8] = stateGetPositionNed_f()->y;
+  sd_buffer_f[9] = stateGetPositionNed_f()->z;
+  sd_buffer_f[10] = stateGetSpeedNed_f()->x;
+  sd_buffer_f[11] = stateGetSpeedNed_f()->y;
+  sd_buffer_f[12] = stateGetSpeedNed_f()->z;
+  sd_buffer_f[13] = accelned->x;
+  sd_buffer_f[14] = accelned->y;
+  sd_buffer_f[15] = accelned->z;
+  sd_buffer_f[16] = airspeed;
+  sd_buffer_f[17] = ms45xx.pressure_out;
+
+
+  sdLogWriteRaw(pprzLogFile, (uint8_t*) sd_buffer_i, LOG_LENGTH_INT*4);
+  sdLogWriteRaw(pprzLogFile, (uint8_t*) sd_buffer_f, LOG_LENGTH_FLOAT*4);
+  log_counter += 1;
+#endif
+
+  /*RunOnceEvery(NAV_PRESCALER, DOWNLINK_SEND_PAYLOAD(DefaultChannel, DefaultDevice, 9, data););*/
 
   RunOnceEvery(NAV_PRESCALER, compute_dist2_to_home());
 
