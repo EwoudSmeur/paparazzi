@@ -44,19 +44,19 @@
           <table>
             <independentVar lookup="row">aero/alpha-deg</independentVar>
             <tableData>
-             -180    5
-             -160    4
+             -180    1.1
+             -160    1
              -98     0.27
              -92     0.24
              -88     0.225
              -84     0.24
              -78     0.27
-             -20     4
-             0       5
-             20      4
+             -20     1
+             0       1.1
+             20      1
              90      0.3
-             160     4
-             180     5
+             160     1
+             180     1.1
             </tableData>
           </table>
           <value>2.0</value>
@@ -73,7 +73,7 @@
            <property>aero/qbar-psf</property>
            <property>metrics/Sw-sqft</property>
            <property>aero/beta-rad</property>
-           <value>-4</value>
+           <value>-0</value>
        </product>
     </function>
 
