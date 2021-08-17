@@ -128,8 +128,8 @@ void autopilot_static_periodic(void)
 
 #ifndef SITL
 
-#define LOG_LENGTH_INT 13
-#define LOG_LENGTH_FLOAT 18
+#define LOG_LENGTH_INT 10
+#define LOG_LENGTH_FLOAT 17
 
   int32_t sd_buffer_i[LOG_LENGTH_INT] = {0};
   float sd_buffer_f[LOG_LENGTH_FLOAT] = {0};
@@ -151,9 +151,6 @@ void autopilot_static_periodic(void)
   sd_buffer_i[7] = stab_att_sp_quat.qy;
   sd_buffer_i[8] = stab_att_sp_quat.qz;
   sd_buffer_i[9] = get_pwm_input_duty_in_usec(PWM_INPUT1);
-  sd_buffer_i[10] = ms45xx.pressure_raw;
-  sd_buffer_i[11] = ms45xx.pressure_byte1;
-  sd_buffer_i[12] = ms45xx.pressure_byte2;
 
   sd_buffer_f[0] = body_rates_f->p;
   sd_buffer_f[1] = body_rates_f->q;
@@ -172,7 +169,6 @@ void autopilot_static_periodic(void)
   sd_buffer_f[14] = accelned->y;
   sd_buffer_f[15] = accelned->z;
   sd_buffer_f[16] = airspeed;
-  sd_buffer_f[17] = ms45xx.pressure_out;
 
 
   sdLogWriteRaw(pprzLogFile, (uint8_t*) sd_buffer_i, LOG_LENGTH_INT*4);
