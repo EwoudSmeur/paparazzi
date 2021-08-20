@@ -1,6 +1,6 @@
 <!--Mini-Cyclone EPP Airframe
   Chimera AP
-	Xbee API 
+	Xbee API
 	Ublox M8T
 	SBUS Futaba -->
 
@@ -70,7 +70,7 @@
 
   <section name="ctrl_eff_scheduling" prefix="FWD_">
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1_ROLL"   value="{    0,     0, -13.0,  13.0}"/>
+    <define name="G1_ROLL"   value="{    0,     0, -12.6,  12.6}"/>
     <define name="G1_PITCH"  value="{-12.0,  12.0,     0,     0}"/>
     <define name="G1_YAW"    value="{-20.0, -20.0,   0.0,   0.0}"/>
     <define name="G1_THRUST" value="{    0,     0,  -0.9,  -0.9}"/>
@@ -88,9 +88,9 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1_ROLL"   value="{   0,    0,  -13.3,  13.3}"/>
-    <define name="G1_PITCH"  value="{-2.1,  2.1,      0,     0}"/>
-    <define name="G1_YAW"    value="{-2.0, -2.0,    0.0,   0.0}"/>
+    <define name="G1_ROLL"   value="{   0,    0,  -12.6,  12.6}"/>
+    <define name="G1_PITCH"  value="{-2.5,  2.5,      0,     0}"/>
+    <define name="G1_YAW"    value="{-2.2, -2.2,    0.0,   0.0}"/>
     <define name="G1_THRUST" value="{   0,    0,   -1.1,  -1.1}"/>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{0, 0, 0, 0}"/>
@@ -189,7 +189,7 @@
       </module>
 
       <module name="ctrl_effectiveness_scheduling">
-        <define name="SQUARED_ROLL_EFF" value="0.0018"/>
+        <define name="SQUARED_ROLL_EFF" value="0.0025"/>
         <define name="PITCH_EFF_AT_60" value="4.0"/>
         <define name="YAW_EFF_AT_60" value="8.0"/>
         <!--function of the form: A + B*airspeed^2-->
