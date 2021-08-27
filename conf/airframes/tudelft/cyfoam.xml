@@ -208,7 +208,7 @@
       <module name="udp"/>
       <module name="radio_control" type="datalink"/>
       <module name="logger_file">
-        <define name="FILE_LOGGER_PATH" value="/home/ewoud/Documents"/>
+        <define name="FILE_LOGGER_PATH" value="/home/ewoud/"/>
       </module>
 
       <!--Switch advanced INDI scheduling functions on or off-->
@@ -239,7 +239,6 @@
 
     <module name="actuators"     type="pwm">
       <define name="SERVO_HZ" value="400"/>
-      <!--define name="USE_SERVOS_7AND8"/-->
     </module>
 
     <module name="mag" type="hmc58xx">
