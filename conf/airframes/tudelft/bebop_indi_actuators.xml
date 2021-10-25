@@ -17,6 +17,8 @@
 
     <!--define name="USE_SONAR" value="TRUE"/-->
 
+    <module name="attitude_tracker"/>
+
 	<!-- Subsystem section -->
     <module name="telemetry" type="transparent_udp"/>
     <module name="radio_control" type="datalink"/>

@@ -1,0 +1,29 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="attitude_tracker" dir="nav" task="control">
+  <doc>
+    <description> External attitude tracker
+      This module lets you track an external attitude through the flight plan
+      - Receives an external attitude and thrust command message
+      - Implements a function that can be called from the flight plan to set the attitude reference
+      - Implements a function that can be called from the flight plan to run the attitude controller
+    </description>
+  </doc>
+  <dep>
+    <depends>@navigation</depends>
+  </dep>
+  <header>
+    <file name="attitude_tracker.h"/>
+  </header>
+  
+  <datalink message="TARGET_ATT" fun="at_read_msg(buf)"/>
+  
+  <makefile>
+    <file name="attitude_tracker.c"/>
+    <define name="GUIDANCE_H_MODE_MODULE_SETTING" value="GUIDANCE_H_MODE_MODULE"/>
+    <define name="GUIDANCE_V_MODE_MODULE_SETTING" value="GUIDANCE_V_MODE_MODULE"/>
+    <test firmware="rotorcraft">
+    </test>
+  </makefile>
+</module>
+
