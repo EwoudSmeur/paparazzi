@@ -108,19 +108,27 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness -->
-    <define name="G1_ROLL" value="{20 , -20, -20 , 20 }"/>
-    <define name="G1_PITCH" value="{14 , 14, -14 , -14 }"/>
-    <define name="G1_YAW" value="{-1, 1, -1, 1}"/>
+    <define name="G1_ROLL" value="{5 , -5, -5 , 5 }"/>
+    <define name="G1_PITCH" value="{9 , 9, -9 , -9 }"/>
+    <define name="G1_YAW" value="{-0.5, 0.5, -0.5, 0.5}"/>
     <define name="G1_THRUST" value="{-.4, -.4, -.4, -.4}"/>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{-61.2093,   65.3670,  -65.7419,   65.4516}"/>
 
+    <!-- control effectiveness -->
+    <!-- <define name="G1_ROLL" value="{13 , -13, -13 , 13 }"/>
+    <define name="G1_PITCH" value="{9 , 9, -9 , -9 }"/>
+    <define name="G1_YAW" value="{-0.5, 0.5, -0.5, 0.5}"/>
+    <define name="G1_THRUST" value="{-.4, -.4, -.4, -.4}"/> -->
+    <!--Counter torque effect of spinning up a rotor-->
+    <!-- <define name="G2" value="{-61.2093,   65.3670,  -65.7419,   65.4516}"/> -->
+
     <!-- reference acceleration for attitude control -->
-    <define name="REF_ERR_P" value="100.0"/>
-    <define name="REF_ERR_Q" value="100.0"/>
-    <define name="REF_ERR_R" value="100.0"/>
-    <define name="REF_RATE_P" value="14.0"/>
-    <define name="REF_RATE_Q" value="14.0"/>
+    <define name="REF_ERR_P" value="300.0"/>
+    <define name="REF_ERR_Q" value="300.0"/>
+    <define name="REF_ERR_R" value="200.0"/>
+    <define name="REF_RATE_P" value="20.0"/>
+    <define name="REF_RATE_Q" value="20.0"/>
     <define name="REF_RATE_R" value="14.0"/>
 
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
@@ -172,7 +180,7 @@
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
-    <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+    <define name="MODE_AUTO2" value="AP_MODE_KILL"/>
 
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
   </section>
