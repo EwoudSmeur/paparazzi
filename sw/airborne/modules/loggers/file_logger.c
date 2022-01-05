@@ -43,15 +43,13 @@
 #include "firmwares/fixedwing/stabilization/stabilization_adaptive.h"
 #endif
 
-
 /** Set the default File logger path to the USB drive */
 #ifndef FILE_LOGGER_PATH
-#define FILE_LOGGER_PATH /data/video/usb
+#define FILE_LOGGER_PATH / data / video / usb
 #endif
 
 /** The file pointer */
 static FILE *file_logger = NULL;
-
 
 /** Logging functions */
 
@@ -61,17 +59,14 @@ static FILE *file_logger = NULL;
  * line.
  * @param file Log file pointer
  */
-static void file_logger_write_header(FILE *file) {
+static void file_logger_write_header(FILE *file)
+{
   fprintf(file, "time,");
-  fprintf(file, "pos_x,pos_y,pos_z,");
-  fprintf(file, "vel_x,vel_y,vel_z,");
   fprintf(file, "att_phi,att_theta,att_psi,");
   fprintf(file, "rate_p,rate_q,rate_r,");
-#ifdef COMMAND_THRUST
-  fprintf(file, "cmd_thrust,cmd_roll,cmd_pitch,cmd_yaw\n");
-#else
-  fprintf(file, "h_ctl_aileron_setpoint,h_ctl_elevator_setpoint\n");
-#endif
+  fprintf(file, "acc_x,acc_y,acc_z,");
+  fprintf(file, "act_state[0],act_state[1],act_state[2],act_state[3],");
+  fprintf(file, "act_pprz[0],act_pprz[1],act_pprz[2],act_pprz[3],");
 }
 
 /** Write CSV row
@@ -80,35 +75,31 @@ static void file_logger_write_header(FILE *file) {
  * end of the line.
  * @param file Log file pointer
  */
-static void file_logger_write_row(FILE *file) {
-  struct NedCoor_f *pos = stateGetPositionNed_f();
-  struct NedCoor_f *vel = stateGetSpeedNed_f();
+static void file_logger_write_row(FILE *file)
+{
   struct FloatEulers *att = stateGetNedToBodyEulers_f();
   struct FloatRates *rates = stateGetBodyRates_f();
+  struct Int32Vect3 *accel = stateGetAccelBody_i();
 
   fprintf(file, "%f,", get_sys_time_float());
-  fprintf(file, "%f,%f,%f,", pos->x, pos->y, pos->z);
-  fprintf(file, "%f,%f,%f,", vel->x, vel->y, vel->z);
   fprintf(file, "%f,%f,%f,", att->phi, att->theta, att->psi);
   fprintf(file, "%f,%f,%f,", rates->p, rates->q, rates->r);
-#ifdef COMMAND_THRUST
-  fprintf(file, "%d,%d,%d,%d\n",
-      stabilization_cmd[COMMAND_THRUST], stabilization_cmd[COMMAND_ROLL],
-      stabilization_cmd[COMMAND_PITCH], stabilization_cmd[COMMAND_YAW]);
-#else
-  fprintf(file, "%d,%d\n", h_ctl_aileron_setpoint, h_ctl_elevator_setpoint);
+  fprintf(file, "%d,%d,%d,", accel->x, accel->y, accel->z);
+  fprintf(file, "%f,%f,%f,%f", actuator_state[0], actuator_state[1], actuator_state[2], actuator_state[3]);
+  fprintf(file, "%f,%f,%f,%f\n", actuators_pprz[0], actuators_pprz[1], actuators_pprz[2], actuators_pprz[3]);
 #endif
 }
-
 
 /** Start the file logger and open a new file */
 void file_logger_start(void)
 {
   // Create output folder if necessary
-  if (access(STRINGIFY(FILE_LOGGER_PATH), F_OK)) {
+  if (access(STRINGIFY(FILE_LOGGER_PATH), F_OK))
+  {
     char save_dir_cmd[256];
     sprintf(save_dir_cmd, "mkdir -p %s", STRINGIFY(FILE_LOGGER_PATH));
-    if (system(save_dir_cmd) != 0) {
+    if (system(save_dir_cmd) != 0)
+    {
       printf("[file_logger] Could not create log file directory %s.\n", STRINGIFY(FILE_LOGGER_PATH));
       return;
     }
@@ -117,7 +108,7 @@ void file_logger_start(void)
   // Get current date/time for filename
   char date_time[80];
   time_t now = time(0);
-  struct tm  tstruct;
+  struct tm tstruct;
   tstruct = *localtime(&now);
   strftime(date_time, sizeof(date_time), "%Y%m%d-%H%M%S", &tstruct);
 
@@ -126,7 +117,8 @@ void file_logger_start(void)
 
   // Check for available files
   sprintf(filename, "%s/%s.csv", STRINGIFY(FILE_LOGGER_PATH), date_time);
-  while ((file_logger = fopen(filename, "r"))) {
+  while ((file_logger = fopen(filename, "r")))
+  {
     fclose(file_logger);
 
     sprintf(filename, "%s/%s_%05d.csv", STRINGIFY(FILE_LOGGER_PATH), date_time, counter);
@@ -134,7 +126,8 @@ void file_logger_start(void)
   }
 
   file_logger = fopen(filename, "w");
-  if(!file_logger) {
+  if (!file_logger)
+  {
     printf("[file_logger] ERROR opening log file %s!\n", filename);
     return;
   }
@@ -147,7 +140,8 @@ void file_logger_start(void)
 /** Stop the logger an nicely close the file */
 void file_logger_stop(void)
 {
-  if (file_logger != NULL) {
+  if (file_logger != NULL)
+  {
     fclose(file_logger);
     file_logger = NULL;
   }
@@ -156,7 +150,8 @@ void file_logger_stop(void)
 /** Log the values to a csv file    */
 void file_logger_periodic(void)
 {
-  if (file_logger == NULL) {
+  if (file_logger == NULL)
+  {
     return;
   }
   file_logger_write_row(file_logger);
