@@ -69,6 +69,9 @@ static void file_logger_write_header(FILE *file)
   fprintf(file, "act_pprz[0],act_pprz[1],act_pprz[2],act_pprz[3],");
 }
 
+#include "modules/actuators/actuators.h"
+extern float actuator_state[4];
+
 /** Write CSV row
  * Write values at this timestamp to log file. Make sure that the printf's match
  * the column headers of file_logger_write_header! Don't forget the \n at the
@@ -86,8 +89,7 @@ static void file_logger_write_row(FILE *file)
   fprintf(file, "%f,%f,%f,", rates->p, rates->q, rates->r);
   fprintf(file, "%d,%d,%d,", accel->x, accel->y, accel->z);
   fprintf(file, "%f,%f,%f,%f", actuator_state[0], actuator_state[1], actuator_state[2], actuator_state[3]);
-  fprintf(file, "%f,%f,%f,%f\n", actuators_pprz[0], actuators_pprz[1], actuators_pprz[2], actuators_pprz[3]);
-#endif
+  fprintf(file, "%d,%d,%d,%d\n", actuators_pprz[0], actuators_pprz[1], actuators_pprz[2], actuators_pprz[3]);
 }
 
 /** Start the file logger and open a new file */
