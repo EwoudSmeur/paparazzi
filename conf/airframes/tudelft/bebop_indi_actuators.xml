@@ -108,7 +108,7 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness -->
-    <define name="G1_ROLL" value="{5 , -5, -5 , 5 }"/>
+    <define name="G1_ROLL" value="{6 , -6, -6 , 6 }"/>
     <define name="G1_PITCH" value="{9 , 9, -9 , -9 }"/>
     <define name="G1_YAW" value="{-0.5, 0.5, -0.5, 0.5}"/>
     <define name="G1_THRUST" value="{-.4, -.4, -.4, -.4}"/>
@@ -127,8 +127,8 @@
     <define name="REF_ERR_P" value="300.0"/>
     <define name="REF_ERR_Q" value="300.0"/>
     <define name="REF_ERR_R" value="200.0"/>
-    <define name="REF_RATE_P" value="20.0"/>
-    <define name="REF_RATE_Q" value="20.0"/>
+    <define name="REF_RATE_P" value="28.0"/>
+    <define name="REF_RATE_Q" value="28.0"/>
     <define name="REF_RATE_R" value="14.0"/>
 
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
