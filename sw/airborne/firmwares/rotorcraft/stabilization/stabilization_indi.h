@@ -29,16 +29,19 @@
 // Scaling for the control effectiveness to make it readible
 #define INDI_G_SCALING 1000.0
 
-extern struct Int32Quat   stab_att_sp_quat;  ///< with #INT32_QUAT_FRAC
+extern struct Int32Quat stab_att_sp_quat;    ///< with #INT32_QUAT_FRAC
 extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
 extern float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
 extern float actuator_state_filt_vect[INDI_NUM_ACT];
 
 extern bool indi_use_adaptive;
 
+extern float coordinated_turn_airspeed;
+
 extern float *Bwls[INDI_OUTPUTS];
 
-struct Indi_gains {
+struct Indi_gains
+{
   struct FloatRates att;
   struct FloatRates rate;
 };
@@ -55,4 +58,3 @@ extern void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_fl
 extern void stabilization_indi_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn);
 
 #endif /* STABILIZATION_INDI */
-
