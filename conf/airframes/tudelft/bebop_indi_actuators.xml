@@ -178,11 +178,13 @@
 
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
-    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
+    <!-- <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/> -->
+    <define name="MODE_MANUAL" value="AP_MODE_FWD"/>
     <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
     <define name="MODE_AUTO2" value="AP_MODE_KILL"/>
 
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
+    <define name="COORDINATED_TURN_AIRSPEED" value="2.0"/>
   </section>
 
   <section name="BAT">

@@ -66,7 +66,7 @@ static void file_logger_write_header(FILE *file)
   fprintf(file, "rate_p,rate_q,rate_r,");
   fprintf(file, "acc_x,acc_y,acc_z,");
   fprintf(file, "act_state[0],act_state[1],act_state[2],act_state[3],");
-  fprintf(file, "act_pprz[0],act_pprz[1],act_pprz[2],act_pprz[3],");
+  fprintf(file, "act_pprz[0],act_pprz[1],act_pprz[2],act_pprz[3]\n");
 }
 
 #include "modules/actuators/actuators.h"
@@ -88,7 +88,7 @@ static void file_logger_write_row(FILE *file)
   fprintf(file, "%f,%f,%f,", att->phi, att->theta, att->psi);
   fprintf(file, "%f,%f,%f,", rates->p, rates->q, rates->r);
   fprintf(file, "%d,%d,%d,", accel->x, accel->y, accel->z);
-  fprintf(file, "%f,%f,%f,%f", actuator_state[0], actuator_state[1], actuator_state[2], actuator_state[3]);
+  fprintf(file, "%f,%f,%f,%f,", actuator_state[0], actuator_state[1], actuator_state[2], actuator_state[3]);
   fprintf(file, "%d,%d,%d,%d\n", actuators_pprz[0], actuators_pprz[1], actuators_pprz[2], actuators_pprz[3]);
 }
 
