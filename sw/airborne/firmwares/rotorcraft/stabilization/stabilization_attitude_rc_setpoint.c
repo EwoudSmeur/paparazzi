@@ -308,6 +308,11 @@ void stabilization_attitude_read_rc_setpoint_eulers_f(struct FloatEulers *sp, bo
         omega = 9.81 / coordinated_turn_airspeed * 1.72305 * ((sp->phi > 0) - (sp->phi < 0));
       }
 
+#ifdef FWD_SIDESLIP_GAIN
+      // Add sideslip correction
+      omega -= accely_filt.o[0] * fwd_sideslip_gain;
+#endif
+
       sp->psi += omega * dt;
     }
 #ifdef STABILIZATION_ATTITUDE_SP_PSI_DELTA_LIMIT

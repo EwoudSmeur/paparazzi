@@ -37,6 +37,8 @@ extern float actuator_state_filt_vect[INDI_NUM_ACT];
 extern bool indi_use_adaptive;
 
 extern float coordinated_turn_airspeed;
+extern Butterworth2LowPass accely_filt;
+extern float fwd_sideslip_gain;
 
 extern float *Bwls[INDI_OUTPUTS];
 

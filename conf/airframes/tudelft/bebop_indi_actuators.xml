@@ -185,6 +185,7 @@
 
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
     <define name="COORDINATED_TURN_AIRSPEED" value="2.0"/>
+    <define name="FWD_SIDESLIP_GAIN" value="0.0"/>
   </section>
 
   <section name="BAT">
