@@ -71,7 +71,7 @@
   <section name="ctrl_eff_scheduling" prefix="FWD_">
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
     <define name="G1_ROLL"   value="{    0,     0, -12.6,  12.6}"/>
-    <define name="G1_PITCH"  value="{-12.0,  12.0,     0,     0}"/>
+    <define name="G1_PITCH"  value="{-14.0,  14.0,     0,     0}"/>
     <define name="G1_YAW"    value="{-20.0, -20.0,   0.0,   0.0}"/>
     <define name="G1_THRUST" value="{    0,     0,  -0.9,  -0.9}"/>
   </section>
@@ -194,7 +194,7 @@
         <define name="YAW_EFF_AT_60" value="8.0"/>
         <!--function of the form: A + B*airspeed^2-->
         <define name="CE_PITCH_A" value="4.5"/>
-        <define name="CE_PITCH_B" value="0.01"/>
+        <define name="CE_PITCH_B" value="0.04"/>
         <define name="CE_YAW_A" value="5.631"/>
         <define name="CE_YAW_B" value="0.0515"/>
       </module>
