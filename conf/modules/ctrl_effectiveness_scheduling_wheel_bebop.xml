@@ -1,0 +1,18 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="ctrl_effectiveness_scheduling_wheel_bebop" dir="ctrl">
+  <doc>
+    <description>
+      Changing the control effectiveness depending on ground contact
+      of a bebop with a wheel.
+    </description>
+  </doc>
+  <header>
+    <file name="ctrl_effectiveness_scheduling_wheel_bebop.h"/>
+  </header>
+  <init fun="ctrl_eff_scheduling_init()"/>
+  <periodic fun="ctrl_eff_scheduling_periodic()" freq="100"/>
+  <makefile>
+    <file name="ctrl_effectiveness_scheduling_wheel_bebop.c"/>
+  </makefile>
+</module>
