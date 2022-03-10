@@ -44,12 +44,12 @@
     <!--<define name= "MAG_Z_CURRENT_COEF" value="-0.0001088"/>-->
 
     <!--Mag of gps-->
-    <define name="MAG_X_NEUTRAL" value="21"/>
-    <define name="MAG_Y_NEUTRAL" value="-206"/>
-    <define name="MAG_Z_NEUTRAL" value="104"/>
-    <define name="MAG_X_SENS" value="3.58153558634" integer="16"/>
-    <define name="MAG_Y_SENS" value="3.58800117886" integer="16"/>
-    <define name="MAG_Z_SENS" value="3.57182532939" integer="16"/>
+<define name="MAG_X_NEUTRAL" value="194"/>
+<define name="MAG_Y_NEUTRAL" value="-305"/>
+<define name="MAG_Z_NEUTRAL" value="-334"/>
+<define name="MAG_X_SENS" value="3.343457443595507" integer="16"/>
+<define name="MAG_Y_SENS" value="3.3446242493478024" integer="16"/>
+<define name="MAG_Z_SENS" value="3.336237392370175" integer="16"/>
 
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="94." unit="deg"/>
