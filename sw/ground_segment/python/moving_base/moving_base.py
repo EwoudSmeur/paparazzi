@@ -52,7 +52,7 @@ class UAV:
         self.timeout = 0
 
 class Base:
-    def __init__(self, freq=10., use_ground_ref=False, ignore_geo_fence=False, verbose=False):
+    def __init__(self, freq=1., use_ground_ref=False, ignore_geo_fence=False, verbose=False):
         self.step = 1. / freq
         self.use_ground_ref = use_ground_ref
         self.enabled = True # run sim by default
@@ -65,6 +65,7 @@ class Base:
         self.lat = 38.08000040764657 #deg
         self.lon = -9.1 #deg
         self.altitude = 2.0 # starts from 1 m high
+        self.heading = 0 # start facing north
 
         # Start IVY interface
         self._interface = IvyMessagesInterface("Moving Base")
@@ -149,6 +150,7 @@ class Base:
             msg['speed'] = self.speed
             msg['climb'] = 0
             msg['course'] = self.course
+            msg['heading'] = self.heading
             self._interface.send(msg)
 
     def run(self):
@@ -163,6 +165,8 @@ class Base:
 
                 # Send base position
                 if self.enabled:
+                    self.heading = self.heading + self.step*90
+                    self.speed = 0
                     dn = self.speed*m.cos(self.course/180.0*m.pi)
                     de = self.speed*m.sin(self.course/180.0*m.pi)
                     self.move_base(self.step*dn,self.step*de)

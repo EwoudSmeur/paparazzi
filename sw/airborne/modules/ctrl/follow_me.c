@@ -109,6 +109,8 @@ void follow_me_periodic(void)
 
   cur_targetpos_heading = ground_heading;
   diff_targetpos_heading = cur_targetpos_heading - last_targetpos_heading;
+  float cos_heading = cosf(diff_targetpos_heading/180.*M_PI);
+  float sin_heading = sinf(diff_targetpos_heading/180.*M_PI);
 
   // Only move if we had a previous location
   VECT3_COPY(last_targetpos, cur_targetpos);
@@ -128,8 +130,6 @@ void follow_me_periodic(void)
     wp_new_enu.z = wp_enu->z;
 
     // Rotate the waypoint
-    float cos_heading = cosf(diff_targetpos_heading/180.*M_PI);
-    float sin_heading = sinf(diff_targetpos_heading/180.*M_PI);
     wp_new_enu.x = ((wp_new_enu.x - cur_targetpos.x) * cos_heading) + ((wp_new_enu.y - cur_targetpos.y) * sin_heading) + cur_targetpos.x;
     wp_new_enu.y = (-(wp_new_enu.x - cur_targetpos.x) * sin_heading) + ((wp_new_enu.y - cur_targetpos.y) * cos_heading) + cur_targetpos.y;
 
