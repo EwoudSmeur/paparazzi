@@ -374,7 +374,7 @@
         <define name="REF_ERR_P"                    value="40.0"/>
         <define name="REF_ERR_Q"                    value="32.0"/>
         <define name="REF_ERR_R"                    value="23.0"/>
-        <define name="REF_RATE_P"                   value="7.0"/>
+        <define name="REF_RATE_P"                   value="5.5"/>
         <define name="REF_RATE_Q"                   value="7.2"/>
         <define name="REF_RATE_R"                   value="3.9"/>
 
