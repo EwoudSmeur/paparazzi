@@ -42,6 +42,7 @@
 #include "modules/actuators/actuators.h"
 #include "modules/core/abi.h"
 #include "filters/low_pass_filter.h"
+#include "filters/second_order_filter.h"
 #include "math/wls/wls_alloc.h"
 #include <stdio.h>
 
@@ -276,6 +277,8 @@ static struct FirstOrderLowPass rates_filt_fo[3];
 #endif
 struct FloatVect3 body_accel_f;
 
+struct SecondOrderFilter structural_mode_filter;
+
 void init_filters(void);
 void sum_g1_g2(void);
 
@@ -284,7 +287,7 @@ void sum_g1_g2(void);
 static void send_eff_mat_g_indi(struct transport_tx *trans, struct link_device *dev)
 {
   float zero = 0.0;
-  pprz_msg_send_EFF_MAT_G(trans, dev, AC_ID, 
+  pprz_msg_send_EFF_MAT_G(trans, dev, AC_ID,
                                    1, &zero,
                                    1, &zero,
                                    1, &zero,
@@ -341,7 +344,7 @@ void stabilization_indi_init(void)
   // Initialize filters
   init_filters();
 
-#if STABILIZATION_INDI_RPM_FEEDBACK 
+#if STABILIZATION_INDI_RPM_FEEDBACK
   AbiBindMsgACT_FEEDBACK(STABILIZATION_INDI_ACT_FEEDBACK_ID, &act_feedback_ev, act_feedback_cb);
 #endif
   AbiBindMsgTHRUST(THRUST_INCREMENT_ID, &thrust_ev, thrust_cb);
@@ -450,6 +453,10 @@ void init_filters(void)
   init_first_order_low_pass(&rates_filt_fo[1], time_constants[1], sample_time, stateGetBodyRates_f()->q);
   init_first_order_low_pass(&rates_filt_fo[2], time_constants[2], sample_time, stateGetBodyRates_f()->r);
 #endif
+
+  float a[2] = {-0.7612, 0.2759};
+  float b[3] = {3.141, -5.064, 2.438};
+  init_second_order_filter(&structural_mode_filter, a, b, 0.f);
 }
 
 /**
@@ -637,8 +644,12 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
     }
   }
 
+  float indi_roll = (angular_accel_ref.p - use_increment * angular_acceleration[0]);
+
+  // Test out roll structural mode filter
+  indi_v[0] = update_second_order_filter(&structural_mode_filter, indi_roll);
+
   // The control objective in array format
-  indi_v[0] = (angular_accel_ref.p - use_increment * angular_acceleration[0]);
   indi_v[1] = (angular_accel_ref.q - use_increment * angular_acceleration[1]);
   indi_v[2] = (angular_accel_ref.r - use_increment * angular_acceleration[2] + g2_times_du);
   indi_v[3] = v_thrust.z;
