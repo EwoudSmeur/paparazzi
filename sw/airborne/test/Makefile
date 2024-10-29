@@ -4,7 +4,7 @@ Q=@
 
 
 CC = gcc
-CFLAGS = -std=c99 -I.. -I../../include -Wall
+CFLAGS = -std=c99 -I.. -I../../include -Wall -g -O0
 #CFLAGS += -DDEBUG
 CFLAGS += -DCA_N_U=6
 CFLAGS += -DCA_N_V=4
@@ -30,6 +30,9 @@ test_alloc: test_alloc.c ../math/wls/wls_alloc.c ../math/qr_solve/r8lib_min.c ..
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) -DWLS_N_U=8 -DWLS_N_V=4
 
 test_tt: test_tilt_twist.c ../math/pprz_algebra_float.c
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+test_dubins: test_dubins.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.exe : %.c

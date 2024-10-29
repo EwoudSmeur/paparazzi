@@ -9,7 +9,11 @@
                 "limitSymbolsToIncludedHeaders": true
             },
             "includePath": [
-                "${workspaceFolder}"
+                "${workspaceFolder}/**",
+                "/home/ewoud/paparazzi/sw/include",
+                "/home/ewoud/paparazzi/sw/airborne/modules/guidance",
+                "/home/ewoud/paparazzi/sw/airborne/modules",
+                "/home/ewoud/paparazzi/sw/airborne"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/arm-none-eabi-gcc",

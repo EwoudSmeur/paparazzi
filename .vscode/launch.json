@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "C Debug with Makefile",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/sw/airborne/test/test_dubins", // specify the path to your compiled executable
+        "args": [], // add any program arguments here
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}/sw/airborne/test",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb", // or "lldb" for macOS
+        "sourceFileMap": {
+          "/home/ewoud/paparazzi/airborne/modules/guidance": "${workspaceFolder}/sw/airborne/modules/guidance"
+        },
+        "setupCommands": [
+          {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+          }
+        ],
+        "preLaunchTask": "build" // add this task to run makefile before debugging
+      }
+    ]
+  }

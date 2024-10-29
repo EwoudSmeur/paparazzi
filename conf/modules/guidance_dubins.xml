@@ -1,0 +1,19 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="nav_survey_hybrid" dir="nav" task="control">
+  <doc>
+    <description>
+      Connect waypoints with circles and lines.
+    </description>
+  </doc>
+  <dep>
+    <depends>@navigation</depends>
+  </dep>
+  <header>
+    <file name="dubins.h"/>
+  </header>
+  <makefile target="ap|nps">
+    <file name="dubins.c"/>
+    <test firmware="rotorcraft"/>
+  </makefile>
+</module>
