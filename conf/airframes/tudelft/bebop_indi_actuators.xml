@@ -15,6 +15,9 @@
       <define name="STABILIZATION_INDI_RPM_FEEDBACK" value="FALSE"/>
     </target>
 
+    <autopilot name="rotorcraft_control_loop"/>
+    <module name="ctrl_module_outerloop_demo"/>
+
     <!--define name="USE_SONAR" value="TRUE"/-->
 
 	<!-- Subsystem section -->
