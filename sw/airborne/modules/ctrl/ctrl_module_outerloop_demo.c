@@ -36,6 +36,8 @@
 
 #include "modules/datalink/downlink.h"
 
+#include "modules/datalink/downlink.h"
+
 // Own Variables
 
 struct ctrl_module_demo_struct {
@@ -115,6 +117,11 @@ float* guidance_function(float d_accel_ref[3])
       d_accel_ref_b[i] += rot->m[i * 3 + j] * d_accel_ref[j];  // Hopefully no problems with how the rotation matrix is accessed.
     }
   }
+
+float xx=55,yy=66,zz=77;
+xx = d_accel_ref_b[1];
+
+  DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice, &xx, &yy, &zz);
 
   // Inverse of the control effectiveness matrix. The inverse is directly computed here.
   float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, -1}};
