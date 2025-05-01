@@ -55,6 +55,7 @@ float comode_time = 0;
 void ctrl_module_init(void)
 {
   stabilization_attitude_rc_setpoint_init(&ctrl.rc_sp);
+  printf("WORKING");
 }
 
 void guidance_module_enter(void)
@@ -69,21 +70,191 @@ void guidance_module_enter(void)
   guidance_v_mode_changed(GUIDANCE_V_MODE_HOVER);
 }
 
+
+// accel_d - desired acceleration
+float* guidance_function(float d_accel_ref[3])
+{
+  // Get current angles
+  struct FloatEulers *att = stateGetNedToBodyEulers_f();
+  float roll_c = att->phi;
+  float pitch_c = att->theta; 
+  float yaw_c = att->psi; 
+
+  // Get current angular rates
+  struct FloatRates *rates = stateGetBodyRates_f();
+  float roll_rate_c = rates->p;
+  float pitch_rate_c = rates->q; 
+  float yaw_rate_c = rates->r; 
+
+  // Setting fixed values for motor force constant and mass. Not sure if these are accurate.
+  float mot_force_constant = 0.01;
+  float mass = 0.4;
+
+  // GET THRUST. Setting to 0.1 for now, probably have to change.
+  float T = 0.1;
+
+  // Stop thrust from being too small
+  // if (T < 0.1f) {
+  //   T = 0.1f;
+  // }
+
+  // GET D_ACCEL_REF 
+
+
+  //float d_accel_ref = accel_d - accel_a; //desired accel - actual acceleration. Desired acceleration is an input
+  // float d_accel_ref[3];
+  // d_accel_ref[0] = 1.0;
+  // d_accel_ref[1] = 0.0;
+  // d_accel_ref[2] = 0.0;
+
+  // Rotation matrix, replacing eul2rotm(eulerzyx,"ZYX"). This gets the desired acceleration in the body frame
+  struct FloatRMat *rot = stateGetNedToBodyRMat_f();
+
+  // Calculate d_accel_ref_b via "matrix" calculation with for loops: rot * d_accel_ref_b 
+  float d_accel_ref_b[3];
+  for (int i = 0; i < 3; i++) {
+    d_accel_ref_b[i] = 0;
+    for (int j = 0; j < 3; j++) {
+      //d_accel_ref_b[i] += rot[j][i] * d_accel_ref[j]; 
+      d_accel_ref_b[i] += rot->m[i * 3 + j] * d_accel_ref[j];  // Hopefully no problems with how the rotation matrix is accessed.
+    }
+  }
+
+  // Inverse of the control effectiveness matrix. The inverse is directly computed here.
+  float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, -1}};
+
+  // Calculate dcmd via "matrix" calculation with for loops: dcmd = B_inverse * d_accel_ref_b * mass;
+  float dcmd[3];
+  for (int i = 0; i < 3; i++) {
+    dcmd[i] = 0;
+    for (int j = 0; j < 3; j++) {
+      dcmd[i] += B_inverse[i][j] * d_accel_ref_b[j];
+    }
+    dcmd[i] *= mass;
+  }
+
+  // HOMEMADE QUATERNION. Not sure if there is a nice function somewhere in papparazi for this already
+  // Reference: https://stengel.mycpanel.princeton.edu/Quaternions.pdf
+  // Precompute trigonometric functions
+  float sin_theta = sinf(pitch_c);
+  float cos_theta = cosf(pitch_c);
+  float sin_phi = sinf(roll_c);
+  float cos_phi = cosf(roll_c);
+
+  // Compute body rates and assign roll rate, pitch rate, and T_out from quaternion
+  float p_ref = roll_rate_c - sin_theta * 0;
+  float q_ref = cos_phi * pitch_rate_c + sin_phi * cos_theta * 0;
+  float r_ref = -sin_phi * pitch_rate_c + cos_phi * cos_theta * 0;
+
+  // Make array to return
+  static float array[3];
+  array[0] = p_ref;
+  array[1] = q_ref;
+  array[2] = T + dcmd[2];
+
+  return array;
+}
+
+
 void guidance_module_run(bool in_flight)
 {
   stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot_in_flight(), false, false, &radio_control);
 
   // YOUR NEW HORIZONTAL OUTERLOOP CONTROLLER GOES HERE
   // ctrl.cmd = CallMyNewHorizontalOuterloopControl(ctrl);
-  float roll = 0.0;
-  float pitch = 0.0;
 
-  ctrl.cmd.phi = ANGLE_BFP_OF_REAL(roll);
-  ctrl.cmd.theta = ANGLE_BFP_OF_REAL(pitch);
+  // // DESIRED TRAJECTORY
+  static int counter = 0;
+  counter +=1;
+
+  // Put in desired acceleration. Can change to acceleraiton later 
+  static float accel_d[3];
+ // accel_d[0] = sinf(counter/500.0);
+  accel_d[0] = 0.0;
+ // accel_d[1] = 0.0;
+  accel_d[1] = sinf(counter/500.0);
+  accel_d[2] = 0.0;
+
+  // Current accelerations
+  struct NedCoor_i *accel_actual = stateGetAccelNed_i();
+  float accel_a[3];
+  accel_a[0] = accel_actual->x;
+  accel_a[1] = accel_actual->y;
+  accel_a[2] = accel_actual->z;
+
+  // d_accel_ref
+  static float d_accel_ref[3];
+  d_accel_ref[0] = accel_d[0] - accel_a[0];
+  d_accel_ref[1] = accel_d[1] - accel_a[1];
+  d_accel_ref[2] = accel_d[2] - accel_a[2];
+
+
+  // CONTROL LAW
+  // Get current angles and angular velocities
+  struct FloatRates *rates = stateGetBodyRates_f();
+  float* rates_ref = guidance_function(d_accel_ref);
+
+
+  // Reference rates
+  float roll_v_ref = rates_ref[0];
+  float pitch_v_ref = rates_ref[1];
+  // float roll_v_ref = 0.0;
+  // float pitch_v_ref = 0.0;
+  float yaw_v_ref = 0.0; //Keep at zero, at least for now.
+
+  float T_cmd = rates_ref[2];
+  //float T_cmd = 0.05;
+
+  // Make vector u, holding the roll rates and T_cmd
+  float u[4] = {roll_v_ref, pitch_v_ref, yaw_v_ref, T_cmd};
+
+  // B_pseudo_inverse is defined using the values seen in Matlab
+  float B_pseudo_inverse[4][4] = {{-0.25, -0.25, -2.5, 25.0}, {0.25, -0.25, 2.5, 25.0}, {0.25, 0.25, -2.5, 25.0}, {-0.25, 0.25, 2.5, 25.0}};
+
+  // Calculate delta_u. Doing this manually.
+  float delta_u[4];
+
+  // Matrix multiplication with B_pseudo_inverse to calculate delta_u
+  for (int i = 0; i < 4; i++) {
+    delta_u[i] = 0;  // Initialize the result element
+    for (int j = 0; j < 4; j++) {
+      delta_u[i] += B_pseudo_inverse[i][j] * u[j];
+    }
+  }
+
+  // Send control to the drone
+  ctrl.cmd.phi = ANGLE_BFP_OF_REAL(delta_u[0]);
+  ctrl.cmd.theta = ANGLE_BFP_OF_REAL(delta_u[1]);
+  ctrl.cmd.psi = ANGLE_BFP_OF_REAL(delta_u[2]);
 
   struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&(ctrl.cmd));
   struct ThrustSetpoint th = guidance_v_run(in_flight);
+
   // execute attitude stabilization:
   stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
+
+
+  //  struct FloatEulers* att = stateGetNedToBodyEulers_f();
+  //  struct FloatRates* rates = stateGetBodyRates_f();
+
+  // static int counter = 0;
+  // counter +=1;
+
+  // float roll = sinf(counter/500.0);
+  // float pitch = sinf(counter/500.0);
+  //OR
+  // Desired rates. To be replaced by desired trajectory, with "guidance" function to determine this from position description
+  // float roll_v_d = (0.5/512.0)*cosf(counter/512.0);
+  // float pitch_v_d = (-0.5/512.0)*sinf(counter/512.0);
+  // float yaw_v_d = 0.0;
+
+  // ctrl.cmd.phi = ANGLE_BFP_OF_REAL(roll);
+  // ctrl.cmd.theta = ANGLE_BFP_OF_REAL(pitch);
+
+  // struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&(ctrl.cmd));
+  // struct ThrustSetpoint th = guidance_v_run(in_flight);
+
+  // // execute attitude stabilization:
+  // stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
 }
 

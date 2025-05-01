@@ -7,18 +7,28 @@
   <firmware name="rotorcraft">
     <target name="ap" board="bebop">
       <define name="STABILIZATION_INDI_RPM_FEEDBACK" value="TRUE"/>
+
+    module name="logger_file">
+      <define name="LOGGER_FILE_PATH" value="/home/t"/>
+    </module
     </target>
 
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
       <module name="udp"/>
       <define name="STABILIZATION_INDI_RPM_FEEDBACK" value="FALSE"/>
+      <module name="logger_file">
+        <define name="LOGGER_FILE_PATH" value="/home/t/paparazzi/var/logs/"/>
+      </module>
     </target>
 
     <autopilot name="rotorcraft_control_loop"/>
     <module name="ctrl_module_outerloop_demo"/>
 
     <!--define name="USE_SONAR" value="TRUE"/-->
+
+    <autopilot name="rotorcraft_control_loop"/>
+    <module name="ctrl_module_outerloop_demo"/>
 
 	<!-- Subsystem section -->
     <module name="telemetry" type="transparent_udp"/>
@@ -43,9 +53,6 @@
 
     <module name="geo_mag"/>
     <module name="air_data"/>
-    <!--module name="logger_file">
-      <define name="LOGGER_FILE_PATH" value="/data/ftp/internal_000"/>
-    </module-->
   </firmware>
 
   <commands>
@@ -181,7 +188,7 @@
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-    <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
+    <define name="MODE_AUTO1" value="AP_MODE_MODULE "/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
 
   </section>
