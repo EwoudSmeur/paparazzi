@@ -34,6 +34,8 @@
 #include "modules/radio_control/radio_control.h"
 #include "autopilot.h"
 
+#include "modules/datalink/downlink.h"
+
 // Own Variables
 
 struct ctrl_module_demo_struct {
@@ -120,6 +122,11 @@ float* guidance_function(float d_accel_ref[3])
     }
   }
 
+float xx=55,yy=66,zz=77;
+xx = d_accel_ref_b[1];
+
+  DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice, &xx, &yy, &zz);
+
   // Inverse of the control effectiveness matrix. The inverse is directly computed here.
   float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, -1}};
 
@@ -136,6 +143,9 @@ float* guidance_function(float d_accel_ref[3])
   // HOMEMADE QUATERNION. Not sure if there is a nice function somewhere in papparazi for this already
   // Reference: https://stengel.mycpanel.princeton.edu/Quaternions.pdf
   // Precompute trigonometric functions
+
+  float_quat_of_eulers_zxy(struct FloatQuat *q, struct FloatEulers *e) //ASK EWOUD ABOUT ZYX VS ZXY 
+
   float sin_theta = sinf(pitch_c);
   float cos_theta = cosf(pitch_c);
   float sin_phi = sinf(roll_c);
