@@ -8,9 +8,9 @@
     <target name="ap" board="bebop">
       <define name="STABILIZATION_INDI_RPM_FEEDBACK" value="TRUE"/>
 
-    module name="logger_file">
+    <module name="logger_file">
       <define name="LOGGER_FILE_PATH" value="/home/t"/>
-    </module
+    </module>
     </target>
 
     <target name="nps" board="pc">
