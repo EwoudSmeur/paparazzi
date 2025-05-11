@@ -88,26 +88,20 @@ float* guidance_function(float d_accel_ref[3])
   float pitch_rate_c = rates->q; 
   float yaw_rate_c = rates->r; 
 
+  // DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice,  &roll_c, &pitch_c, &yaw_c, &roll_rate_c, &pitch_rate_c, &yaw_rate_c);
+
+
   // Setting fixed values for motor force constant and mass. Not sure if these are accurate.
   float mot_force_constant = 0.01;
   float mass = 0.4;
 
-  // GET THRUST. Setting to 0.1 for now, probably have to change.
-  float T = 0.1;
+  // GET THRUST. Hard-coding as a constant for now, probably have to change.
+  float T = 3.9;
 
   // Stop thrust from being too small
   // if (T < 0.1f) {
   //   T = 0.1f;
   // }
-
-  // GET D_ACCEL_REF 
-
-
-  //float d_accel_ref = accel_d - accel_a; //desired accel - actual acceleration. Desired acceleration is an input
-  // float d_accel_ref[3];
-  // d_accel_ref[0] = 1.0;
-  // d_accel_ref[1] = 0.0;
-  // d_accel_ref[2] = 0.0;
 
   // Rotation matrix, replacing eul2rotm(eulerzyx,"ZYX"). This gets the desired acceleration in the body frame
   struct FloatRMat *rot = stateGetNedToBodyRMat_f();
@@ -122,13 +116,9 @@ float* guidance_function(float d_accel_ref[3])
     }
   }
 
-float xx=55,yy=66,zz=77;
-xx = d_accel_ref_b[1];
-
-  DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice, &xx, &yy, &zz);
-
   // Inverse of the control effectiveness matrix. The inverse is directly computed here.
   float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, -1}};
+
 
   // Calculate dcmd via "matrix" calculation with for loops: dcmd = B_inverse * d_accel_ref_b * mass;
   float dcmd[3];
@@ -140,31 +130,19 @@ xx = d_accel_ref_b[1];
     dcmd[i] *= mass;
   }
 
-  // HOMEMADE QUATERNION. Not sure if there is a nice function somewhere in papparazi for this already
-  // Reference: https://stengel.mycpanel.princeton.edu/Quaternions.pdf
-  // Precompute trigonometric functions
-
-  float_quat_of_eulers_zxy(struct FloatQuat *q, struct FloatEulers *e) //ASK EWOUD ABOUT ZYX VS ZXY 
-
-  float sin_theta = sinf(pitch_c);
-  float cos_theta = cosf(pitch_c);
-  float sin_phi = sinf(roll_c);
-  float cos_phi = cosf(roll_c);
-
-  // Compute body rates and assign roll rate, pitch rate, and T_out from quaternion
-  float p_ref = roll_rate_c - sin_theta * 0;
-  float q_ref = cos_phi * pitch_rate_c + sin_phi * cos_theta * 0;
-  float r_ref = -sin_phi * pitch_rate_c + cos_phi * cos_theta * 0;
+  // Quaternion
+  struct FloatQuat q[4];
+  struct FloatEulers e = {0.0, dcmd[2], dcmd[1]};
+  float_quat_of_eulers_zxy(&q, &e); //ASK EWOUD ABOUT ZYX VS ZXY 
 
   // Make array to return
   static float array[3];
-  array[0] = p_ref;
-  array[1] = q_ref;
+  array[0] = 5*2*q->qx;
+  array[1] = -5*2*q->qy;
   array[2] = T + dcmd[2];
 
   return array;
 }
-
 
 void guidance_module_run(bool in_flight)
 {
@@ -173,16 +151,15 @@ void guidance_module_run(bool in_flight)
   // YOUR NEW HORIZONTAL OUTERLOOP CONTROLLER GOES HERE
   // ctrl.cmd = CallMyNewHorizontalOuterloopControl(ctrl);
 
-  // // DESIRED TRAJECTORY
+  // DESIRED TRAJECTORY
   static int counter = 0;
   counter +=1;
 
-  // Put in desired acceleration. Can change to acceleraiton later 
+  // Put in desired acceleration. Can change to position later 
   static float accel_d[3];
- // accel_d[0] = sinf(counter/500.0);
-  accel_d[0] = 0.0;
- // accel_d[1] = 0.0;
+  accel_d[0] = cosf(counter/500.0);
   accel_d[1] = sinf(counter/500.0);
+  //accel_d[1] = sinf(counter/500.0);
   accel_d[2] = 0.0;
 
   // Current accelerations
@@ -200,9 +177,9 @@ void guidance_module_run(bool in_flight)
 
 
   // CONTROL LAW
-  // Get current angles and angular velocities
-  struct FloatRates *rates = stateGetBodyRates_f();
+  // Get results of guidance function
   float* rates_ref = guidance_function(d_accel_ref);
+  
 
 
   // Reference rates
@@ -212,8 +189,11 @@ void guidance_module_run(bool in_flight)
   // float pitch_v_ref = 0.0;
   float yaw_v_ref = 0.0; //Keep at zero, at least for now.
 
-  float T_cmd = rates_ref[2];
-  //float T_cmd = 0.05;
+  //float T_cmd = rates_ref[2];
+  float T_cmd = 3.9; //Hard-coding as a constant for now. probably will have to change
+
+  DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice,  &roll_v_ref, &pitch_v_ref, &yaw_v_ref, &T_cmd, &T_cmd, &T_cmd);
+
 
   // Make vector u, holding the roll rates and T_cmd
   float u[4] = {roll_v_ref, pitch_v_ref, yaw_v_ref, T_cmd};
