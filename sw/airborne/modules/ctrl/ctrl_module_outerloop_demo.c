@@ -37,7 +37,11 @@
 #include "modules/datalink/downlink.h"
 
 #include "modules/datalink/downlink.h"
+#include "mcu_periph/sys_time.h"
+#include <math.h>
 
+
+#include <stdio.h>
 // Own Variables
 
 struct ctrl_module_demo_struct {
@@ -46,6 +50,7 @@ struct ctrl_module_demo_struct {
 
 // Output command
   struct Int32Eulers cmd;
+  // struct Int32Rates cmd;
 
 } ctrl;
 
@@ -59,13 +64,13 @@ float comode_time = 0;
 void ctrl_module_init(void)
 {
   stabilization_attitude_rc_setpoint_init(&ctrl.rc_sp);
-  printf("WORKING");
 }
 
 void guidance_module_enter(void)
 {
   // Store current heading
   ctrl.cmd.psi = stateGetNedToBodyEulers_i()->psi;
+  // ctrl.cmd.r = stateGetBodyRates_f()->r;
 
   // Convert RC to setpoint
   stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot_in_flight(), false, false, &radio_control);
@@ -75,88 +80,11 @@ void guidance_module_enter(void)
 }
 
 
-// accel_d - desired acceleration
-float* guidance_function(float d_accel_ref[3])
-{
-  // Get current angles
-  struct FloatEulers *att = stateGetNedToBodyEulers_f();
-  float roll_c = att->phi;
-  float pitch_c = att->theta; 
-  float yaw_c = att->psi; 
-
-  // Get current angular rates
-  struct FloatRates *rates = stateGetBodyRates_f();
-  float roll_rate_c = rates->p;
-  float pitch_rate_c = rates->q; 
-  float yaw_rate_c = rates->r; 
-
-  // DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice,  &roll_c, &pitch_c, &yaw_c, &roll_rate_c, &pitch_rate_c, &yaw_rate_c);
-
-
-  // Setting fixed values for motor force constant and mass. Not sure if these are accurate.
-  float mot_force_constant = 0.01;
-  float mass = 0.4;
-
-  // GET THRUST. Hard-coding as a constant for now, probably have to change.
-  float T = 3.9;
-
-  // Stop thrust from being too small
-  // if (T < 0.1f) {
-  //   T = 0.1f;
-  // }
-
-  // Rotation matrix, replacing eul2rotm(eulerzyx,"ZYX"). This gets the desired acceleration in the body frame
-  struct FloatRMat *rot = stateGetNedToBodyRMat_f();
-
-  // Calculate d_accel_ref_b via "matrix" calculation with for loops: rot * d_accel_ref_b 
-  float d_accel_ref_b[3];
-  for (int i = 0; i < 3; i++) {
-    d_accel_ref_b[i] = 0;
-    for (int j = 0; j < 3; j++) {
-      //d_accel_ref_b[i] += rot[j][i] * d_accel_ref[j]; 
-      d_accel_ref_b[i] += rot->m[i * 3 + j] * d_accel_ref[j];  // Hopefully no problems with how the rotation matrix is accessed.
-    }
-  }
-
-float xx=55,yy=66,zz=77;
-xx = d_accel_ref_b[1];
-
-  DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice, &xx, &yy, &zz);
-
-  // Inverse of the control effectiveness matrix. The inverse is directly computed here.
-  float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, -1}};
-
-
-  // Calculate dcmd via "matrix" calculation with for loops: dcmd = B_inverse * d_accel_ref_b * mass;
-  float dcmd[3];
-  for (int i = 0; i < 3; i++) {
-    dcmd[i] = 0;
-    for (int j = 0; j < 3; j++) {
-      dcmd[i] += B_inverse[i][j] * d_accel_ref_b[j];
-    }
-    dcmd[i] *= mass;
-  }
-
-  // Quaternion
-  struct FloatQuat q[4];
-  struct FloatEulers e = {0.0, dcmd[2], dcmd[1]};
-  float_quat_of_eulers_zxy(&q, &e); //ASK EWOUD ABOUT ZYX VS ZXY 
-
-  // Make array to return
-  static float array[3];
-  array[0] = 5*2*q->qx;
-  array[1] = -5*2*q->qy;
-  array[2] = T + dcmd[2];
-
-  return array;
-}
+float* guidance_function(float d_accel_ref[3]);
 
 void guidance_module_run(bool in_flight)
 {
   stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot_in_flight(), false, false, &radio_control);
-
-  // YOUR NEW HORIZONTAL OUTERLOOP CONTROLLER GOES HERE
-  // ctrl.cmd = CallMyNewHorizontalOuterloopControl(ctrl);
 
   // DESIRED TRAJECTORY
   static int counter = 0;
@@ -164,44 +92,75 @@ void guidance_module_run(bool in_flight)
 
   // Put in desired acceleration. Can change to position later 
   static float accel_d[3];
-  accel_d[0] = cosf(counter/500.0);
-  accel_d[1] = sinf(counter/500.0);
-  //accel_d[1] = sinf(counter/500.0);
+  // accel_d[0] = sinf(counter/500.0);
+  accel_d[0] = 0.0;
+  accel_d[1] = 0.0;
+  // accel_d[1] = - 5.0 * cosf(counter/500.0);
+  // accel_d[1] = sinf(counter/500.0 - M_PI/2);
   accel_d[2] = 0.0;
 
   // Current accelerations
-  struct NedCoor_i *accel_actual = stateGetAccelNed_i();
+  struct NedCoor_f *accel_actual = stateGetAccelNed_f();
+  //struct EcefCoor_f *accel_actual = stateGetAccelEcef_f();
   float accel_a[3];
   accel_a[0] = accel_actual->x;
   accel_a[1] = accel_actual->y;
   accel_a[2] = accel_actual->z;
 
+  //---------------------SELF-DONE LOGGING-------------------
+  const char *path = "/home/t/paparazzi/output.txt";
+  // Try to open the file in "read" mode to check if it already exists
+  FILE *check = fopen(path, "r");
+  bool file_exists = (check != NULL);
+  if (check) fclose(check);
+
+  // Open the file in "append" mode so we don't overwrite existing data
+  FILE *file = fopen(path, "a");
+  if (file == NULL) {
+      perror("Error opening file");
+  }
+
+  // Write header only if the file did not exist before
+  if (!file_exists) {
+      fprintf(file, "Time,accel_a[0],accel_a[1],accel_a[2]\n");
+  }
+
+  // Write the current data values to the file
+  // fprintf(file, "%f,%f,%f,%f\n", get_sys_time_float(), roll_v_ref, pitch_v_ref, yaw_v_ref);
+  fprintf(file, "%d,%f,%f,%f\n", counter, accel_a[0],accel_a[1],accel_a[2]);
+
+  // Close the file
+  fclose(file);
+  //-----------------END SELF-MADE LOGGING---------------
+
+  // Setting fixed values for mass. Not sure if this is accurate.
+  float mass = 0.4;
+
   // d_accel_ref
   static float d_accel_ref[3];
   d_accel_ref[0] = accel_d[0] - accel_a[0];
   d_accel_ref[1] = accel_d[1] - accel_a[1];
-  d_accel_ref[2] = accel_d[2] - accel_a[2];
+  d_accel_ref[2] = accel_d[2] - accel_a[2] + 9.81*mass; //Compensating for downwards gravity, working in NED frame
 
 
   // CONTROL LAW
   // Get results of guidance function
-  float* rates_ref = guidance_function(d_accel_ref);
+  float* rates_guidance = guidance_function(d_accel_ref);
+
+   // Get current angular rates
+  struct FloatRates *rates_actual = stateGetBodyRates_f();
+  float rates_a[3];
+  rates_a[0] = rates_actual->p;
+  rates_a[1] = rates_actual->q; 
+  rates_a[2] = rates_actual->r; 
   
+  // Reference rates (difference between guidance calculated rates and actual rates)
+  float roll_v_ref = 9*(rates_guidance[0] - rates_a[0]);
+  float pitch_v_ref = 9*(rates_guidance[1] - rates_a[1]);
+  float yaw_v_ref = 9*(0.0 - rates_a[2]); //Keep input yaw rate at zero, at least for now.
 
-
-  // Reference rates
-  float roll_v_ref = rates_ref[0];
-  float pitch_v_ref = rates_ref[1];
-  // float roll_v_ref = 0.0;
-  // float pitch_v_ref = 0.0;
-  float yaw_v_ref = 0.0; //Keep at zero, at least for now.
-
-  //float T_cmd = rates_ref[2];
-  float T_cmd = 3.9; //Hard-coding as a constant for now. probably will have to change
-
-  DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice,  &roll_v_ref, &pitch_v_ref, &yaw_v_ref, &T_cmd, &T_cmd, &T_cmd);
-
-
+  float T_cmd = rates_guidance[2];
+  
   // Make vector u, holding the roll rates and T_cmd
   float u[4] = {roll_v_ref, pitch_v_ref, yaw_v_ref, T_cmd};
 
@@ -219,39 +178,121 @@ void guidance_module_run(bool in_flight)
     }
   }
 
-  // Send control to the drone
+  // Send control to the drone (angles)
   ctrl.cmd.phi = ANGLE_BFP_OF_REAL(delta_u[0]);
   ctrl.cmd.theta = ANGLE_BFP_OF_REAL(delta_u[1]);
-  ctrl.cmd.psi = ANGLE_BFP_OF_REAL(delta_u[2]);
+  // ctrl.cmd.psi = ANGLE_BFP_OF_REAL(delta_u[2]);
+  ctrl.cmd.psi = ANGLE_BFP_OF_REAL(0.0);
+
+  // ctrl.cmd.phi = ANGLE_BFP_OF_REAL(0.0);
+  // ctrl.cmd.theta = ANGLE_BFP_OF_REAL(0.0);
+  // ctrl.cmd.psi = ANGLE_BFP_OF_REAL(0.0);
+
+  // Send control to the drone (angular rates)
+  // Get current angles
+  // struct FloatEulers *att = stateGetNedToBodyEulers_f();
+  // float yaw_c = att->psi; 
+
+  // ctrl.cmd.p = RATE_BFP_OF_REAL(rates_guidance[0] - rates_a[0]);
+  // ctrl.cmd.q = RATE_BFP_OF_REAL(rates_guidance[1] - rates_a[1]);
+  // // ctrl.cmd.r = RATE_BFP_OF_REAL(0.0 - rates_a[2]);
+  // ctrl.cmd.r = RATE_BFP_OF_REAL(-3*yaw_c - rates_a[2]);
+
+  // ctrl.cmd.p = RATE_BFP_OF_REAL(0.0);
+  // ctrl.cmd.q = RATE_BFP_OF_REAL(0.0);
+  // // ctrl.cmd.r = RATE_BFP_OF_REAL(0.0 - rates_a[2]);
+  // ctrl.cmd.r = RATE_BFP_OF_REAL(0.0);
 
   struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&(ctrl.cmd));
+  // struct StabilizationSetpoint sp = stab_sp_from_rates_i(&(ctrl.cmd));
   struct ThrustSetpoint th = guidance_v_run(in_flight);
 
   // execute attitude stabilization:
   stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
-
-
-  //  struct FloatEulers* att = stateGetNedToBodyEulers_f();
-  //  struct FloatRates* rates = stateGetBodyRates_f();
-
-  // static int counter = 0;
-  // counter +=1;
-
-  // float roll = sinf(counter/500.0);
-  // float pitch = sinf(counter/500.0);
-  //OR
-  // Desired rates. To be replaced by desired trajectory, with "guidance" function to determine this from position description
-  // float roll_v_d = (0.5/512.0)*cosf(counter/512.0);
-  // float pitch_v_d = (-0.5/512.0)*sinf(counter/512.0);
-  // float yaw_v_d = 0.0;
-
-  // ctrl.cmd.phi = ANGLE_BFP_OF_REAL(roll);
-  // ctrl.cmd.theta = ANGLE_BFP_OF_REAL(pitch);
-
-  // struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&(ctrl.cmd));
-  // struct ThrustSetpoint th = guidance_v_run(in_flight);
-
-  // // execute attitude stabilization:
-  // stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
 }
 
+float* guidance_function(float d_accel_ref[3])
+{
+  // Setting fixed values for mass. Not sure if this is accurate.
+  float mass = 0.4;
+
+  // Get thrust. Hard-coding as a constant needed for a hover to counteract gravity for now, probably have to change.
+  float T = mass*9.81; //IS THERE A WAY TO GET THRUST IN PPRZ
+
+  // Rotation matrix, replacing eul2rotm(eulerzyx,"ZYX"). This gets the desired acceleration in the body frame
+  struct FloatRMat *rot = stateGetNedToBodyRMat_f(); //I'm guessing this might be zyx, which matches the "unlabelled" function float_quat_of_eulers 
+
+  // Calculate d_accel_ref_b via "matrix" calculation: rot * d_accel_ref_b 
+  float d_accel_ref_b[3];
+  for (int i = 0; i < 3; i++) {
+    d_accel_ref_b[i] = 0;
+    for (int j = 0; j < 3; j++) {
+      d_accel_ref_b[i] += rot->m[i * 3 + j] * d_accel_ref[j];  // Hopefully no problems with how the rotation matrix is accessed.
+    }
+  }
+
+  // Inverse of the control effectiveness matrix. The inverse is directly computed here.
+  float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, -1}};
+
+  // Calculate dcmd via "matrix" calculation: dcmd = B_inverse * d_accel_ref_b * mass;
+  float dcmd[3];
+  for (int i = 0; i < 3; i++) {
+    dcmd[i] = 0;
+    for (int j = 0; j < 3; j++) {
+      dcmd[i] += B_inverse[i][j] * d_accel_ref_b[j];
+    }
+    dcmd[i] *= mass;
+  }
+
+  // Quaternion
+  struct FloatQuat q; //quat output
+  // struct FloatEulers e = {0.0, dcmd[1], dcmd[0]}; //euler input
+  struct FloatEulers e;
+  e.psi = 0.0;        
+  e.theta = dcmd[1]; 
+  e.phi = dcmd[0]; 
+  // struct FloatEulers e = {dcmd[0], dcmd[1], dcmd[2]}; //euler input
+  //ASK EWOUD ABOUT ZYX VS ZXY 
+  float_quat_of_eulers(&q, &e); //This function employs ZYX, as in MATLab
+  // float_quat_of_eulers_zxy(&q, &e);
+
+  // Make array to return
+  static float array[3];
+  array[0] = 5*2*q.qx;
+  array[1] = -5*2*q.qy;
+  array[2] = T + dcmd[2];
+
+  return array;
+}
+
+
+
+
+
+//   //---------------------SELF-DONE LOGGING-------------------
+//   const char *path = "/home/t/output.csv";
+//  // Try to open the file in "read" mode to check if it already exists
+//   FILE *check = fopen(path, "r");
+//   bool file_exists = (check != NULL);
+//   if (check) fclose(check);
+
+//   // Open the file in "append" mode so we don't overwrite existing data
+//   FILE *file = fopen(path, "a");
+//   if (file == NULL) {
+//       perror("Error opening file");
+//       return 1;
+//   }
+
+//   // If file is new, write the header row
+//   if (!file_exists) {
+//       fprintf(file, "roll_c,pitch_c,yaw_c,roll_rate_c,pitch_rate_c,yaw_rate_c\n");
+//   }
+
+//   // Write the current data values to the file
+//   fprintf(file, "%f,%f,%f,%f,%f,%f,%f\n", get_sys_time_float(), roll_c, pitch_c, yaw_c, roll_rate_c, pitch_rate_c, yaw_rate_c);
+
+//   // Close the file
+//   fclose(file);
+//   //-----------------END SELF-MADE LOGGING---------------
+
+// DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice,  &roll_v_ref, &pitch_v_ref, &yaw_v_ref, &T_cmd, &T_cmd, &T_cmd);
