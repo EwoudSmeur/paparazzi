@@ -49,8 +49,8 @@ struct ctrl_module_demo_struct {
   struct AttitudeRCInput rc_sp;
 
 // Output command
-  struct Int32Eulers cmd;
-  // struct Int32Rates cmd;
+  // struct Int32Eulers cmd;
+  struct FloatRates cmd;
 
 } ctrl;
 
@@ -69,8 +69,8 @@ void ctrl_module_init(void)
 void guidance_module_enter(void)
 {
   // Store current heading
-  ctrl.cmd.psi = stateGetNedToBodyEulers_i()->psi;
-  // ctrl.cmd.r = stateGetBodyRates_f()->r;
+  // ctrl.cmd.psi = stateGetNedToBodyEulers_i()->psi;
+  ctrl.cmd.r = stateGetBodyRates_f()->r;
 
   // Convert RC to setpoint
   stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot_in_flight(), false, false, &radio_control);
@@ -92,8 +92,8 @@ void guidance_module_run(bool in_flight)
 
   // Put in desired acceleration. Can change to position later 
   static float accel_d[3];
-  // accel_d[0] = sinf(counter/500.0);
-  accel_d[0] = 0.0;
+  accel_d[0] = sinf(counter/500.0);
+  // accel_d[0] = 0.0;
   accel_d[1] = 0.0;
   // accel_d[1] = - 5.0 * cosf(counter/500.0);
   // accel_d[1] = sinf(counter/500.0 - M_PI/2);
@@ -140,7 +140,7 @@ void guidance_module_run(bool in_flight)
   static float d_accel_ref[3];
   d_accel_ref[0] = accel_d[0] - accel_a[0];
   d_accel_ref[1] = accel_d[1] - accel_a[1];
-  d_accel_ref[2] = accel_d[2] - accel_a[2] + 9.81*mass; //Compensating for downwards gravity, working in NED frame
+  d_accel_ref[2] = accel_d[2] - accel_a[2]; 
 
 
   // CONTROL LAW
@@ -154,35 +154,12 @@ void guidance_module_run(bool in_flight)
   rates_a[1] = rates_actual->q; 
   rates_a[2] = rates_actual->r; 
   
-  // Reference rates (difference between guidance calculated rates and actual rates)
-  float roll_v_ref = 9*(rates_guidance[0] - rates_a[0]);
-  float pitch_v_ref = 9*(rates_guidance[1] - rates_a[1]);
-  float yaw_v_ref = 9*(0.0 - rates_a[2]); //Keep input yaw rate at zero, at least for now.
-
-  float T_cmd = rates_guidance[2];
-  
-  // Make vector u, holding the roll rates and T_cmd
-  float u[4] = {roll_v_ref, pitch_v_ref, yaw_v_ref, T_cmd};
-
-  // B_pseudo_inverse is defined using the values seen in Matlab
-  float B_pseudo_inverse[4][4] = {{-0.25, -0.25, -2.5, 25.0}, {0.25, -0.25, 2.5, 25.0}, {0.25, 0.25, -2.5, 25.0}, {-0.25, 0.25, 2.5, 25.0}};
-
-  // Calculate delta_u. Doing this manually.
-  float delta_u[4];
-
-  // Matrix multiplication with B_pseudo_inverse to calculate delta_u
-  for (int i = 0; i < 4; i++) {
-    delta_u[i] = 0;  // Initialize the result element
-    for (int j = 0; j < 4; j++) {
-      delta_u[i] += B_pseudo_inverse[i][j] * u[j];
-    }
-  }
 
   // Send control to the drone (angles)
-  ctrl.cmd.phi = ANGLE_BFP_OF_REAL(delta_u[0]);
-  ctrl.cmd.theta = ANGLE_BFP_OF_REAL(delta_u[1]);
-  // ctrl.cmd.psi = ANGLE_BFP_OF_REAL(delta_u[2]);
-  ctrl.cmd.psi = ANGLE_BFP_OF_REAL(0.0);
+  // ctrl.cmd.phi = ANGLE_BFP_OF_REAL(delta_u[0]);
+  // ctrl.cmd.theta = ANGLE_BFP_OF_REAL(delta_u[1]);
+  // // ctrl.cmd.psi = ANGLE_BFP_OF_REAL(delta_u[2]);
+  // ctrl.cmd.psi = ANGLE_BFP_OF_REAL(0.0);
 
   // ctrl.cmd.phi = ANGLE_BFP_OF_REAL(0.0);
   // ctrl.cmd.theta = ANGLE_BFP_OF_REAL(0.0);
@@ -190,21 +167,17 @@ void guidance_module_run(bool in_flight)
 
   // Send control to the drone (angular rates)
   // Get current angles
-  // struct FloatEulers *att = stateGetNedToBodyEulers_f();
-  // float yaw_c = att->psi; 
+  struct FloatEulers *att = stateGetNedToBodyEulers_f();
+  float yaw_c = att->psi; 
 
-  // ctrl.cmd.p = RATE_BFP_OF_REAL(rates_guidance[0] - rates_a[0]);
-  // ctrl.cmd.q = RATE_BFP_OF_REAL(rates_guidance[1] - rates_a[1]);
-  // // ctrl.cmd.r = RATE_BFP_OF_REAL(0.0 - rates_a[2]);
-  // ctrl.cmd.r = RATE_BFP_OF_REAL(-3*yaw_c - rates_a[2]);
+  ctrl.cmd.p = rates_guidance[0];
+  ctrl.cmd.q = rates_guidance[1];
+  // ctrl.cmd.r = RATE_BFP_OF_REAL(0.0 - rates_a[2]);
+  ctrl.cmd.r = 0.0;
 
-  // ctrl.cmd.p = RATE_BFP_OF_REAL(0.0);
-  // ctrl.cmd.q = RATE_BFP_OF_REAL(0.0);
-  // // ctrl.cmd.r = RATE_BFP_OF_REAL(0.0 - rates_a[2]);
-  // ctrl.cmd.r = RATE_BFP_OF_REAL(0.0);
 
-  struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&(ctrl.cmd));
-  // struct StabilizationSetpoint sp = stab_sp_from_rates_i(&(ctrl.cmd));
+  // struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&(ctrl.cmd));
+  struct StabilizationSetpoint sp = stab_sp_from_rates_f(&(ctrl.cmd));
   struct ThrustSetpoint th = guidance_v_run(in_flight);
 
   // execute attitude stabilization:
@@ -220,8 +193,9 @@ float* guidance_function(float d_accel_ref[3])
   float T = mass*9.81; //IS THERE A WAY TO GET THRUST IN PPRZ
 
   // Rotation matrix, replacing eul2rotm(eulerzyx,"ZYX"). This gets the desired acceleration in the body frame
-  struct FloatRMat *rot = stateGetNedToBodyRMat_f(); //I'm guessing this might be zyx, which matches the "unlabelled" function float_quat_of_eulers 
+  struct FloatRMat *rot = stateGetNedToBodyRMat_f(); 
 
+  // PPRZ ALGEBRA MATRICES
   // Calculate d_accel_ref_b via "matrix" calculation: rot * d_accel_ref_b 
   float d_accel_ref_b[3];
   for (int i = 0; i < 3; i++) {
@@ -235,7 +209,7 @@ float* guidance_function(float d_accel_ref[3])
   float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, -1}};
 
   // Calculate dcmd via "matrix" calculation: dcmd = B_inverse * d_accel_ref_b * mass;
-  float dcmd[3];
+  float dcmd[3]; //MYB PUT LIMIT (45DEG)
   for (int i = 0; i < 3; i++) {
     dcmd[i] = 0;
     for (int j = 0; j < 3; j++) {
