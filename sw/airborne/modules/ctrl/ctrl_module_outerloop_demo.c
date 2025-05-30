@@ -116,12 +116,18 @@ void guidance_module_run(bool in_flight)
   pos_error[1] = pos_ref[1] - pos_a[1];
   pos_error[2] = pos_ref[2] - pos_a[2];
 
-  // Computed velocity from position via for loop. This outputs the desired velocity
+  // // Computed velocity from position via for loop. This outputs the desired velocity
+  // float vel_ref[3];
+  // for (int i = 0; i < 3; i++) {
+  //     vel_ref[i] = (pos_error[i] - pos_error_prev[i]) / dt;   // Numerical differentiation to get velocity
+  //     pos_error_prev[i] = pos_error[i]; // Update previous position
+  // }
+
+  // Trying to compute velocity as a gain times the position error. This is done in the MatLAB file
   float vel_ref[3];
   for (int i = 0; i < 3; i++) {
-      vel_ref[i] = (pos_error[i] - pos_error_prev[i]) / dt;   // Numerical differentiation to get velocity
-      pos_error_prev[i] = pos_error[i]; // Update previous position
-  }
+      vel_ref[i] = (pos_error[i] - pos_error_prev[i]) * 0.6;   // Gain to get velocity
+  } 
 
   // Current speeds - plots give negative values, so I'm guessing that it is velocity and not speed
   struct NedCoor_f *vel_actual = stateGetSpeedNed_f();
@@ -136,12 +142,18 @@ void guidance_module_run(bool in_flight)
   vel_error[1] = vel_ref[1] - vel_a[1];
   vel_error[2] = vel_ref[2] - vel_a[2];
 
-  // Computed acceleration from velocity via for loop. This outputs the desired acceleration
+  // // Computed acceleration from velocity via for loop. This outputs the desired acceleration
+  // float accel_ref[3];
+  // for (int i = 0; i < 3; i++) {
+  //     accel_ref[i] = (vel_error[i] - vel_error_prev[i]) / dt;   // Numerical differentiation to get acceleration
+  //     vel_error_prev[i] = vel_error_prev[i]; // Update previous velocity
+  // }
+
+  // Trying to compute acceleration as a gain times the velocity error. This is done in the MatLAB file
   float accel_ref[3];
   for (int i = 0; i < 3; i++) {
-      accel_ref[i] = (vel_error[i] - vel_error_prev[i]) / dt;   // Numerical differentiation to get acceleration
-      vel_error_prev[i] = vel_error_prev[i]; // Update previous velocity
-  }
+      accel_ref[i] = (vel_error[i] - vel_error_prev[i]) * 1.8;   // Gain to get velocity
+  } 
   
       //---------------------SELF-DONE LOGGING-------------------
   const char *path = "/home/t/paparazzi/output.txt";
@@ -158,12 +170,12 @@ void guidance_module_run(bool in_flight)
 
   // Write header only if the file did not exist before
   if (!file_exists) {
-      fprintf(file, "Time, pos_error[0], pos_a[0], pos_ref[0], vel_ref[0]\n");
+      fprintf(file, "Time, pos_a[0], pos_ref[0], vel_ref[0]\n");
   }
 
   // Write the current data values to the file
   // fprintf(file, "%f,%f,%f,%f\n", get_sys_time_float(), roll_v_ref, pitch_v_ref, yaw_v_ref);
-  fprintf(file, "%d,%f,%f,%f,%f\n", counter, pos_error[0], pos_a[0], pos_ref[0], vel_ref[0]);
+  fprintf(file, "%d,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], vel_ref[0]);
 
   // Close the file
   fclose(file);
