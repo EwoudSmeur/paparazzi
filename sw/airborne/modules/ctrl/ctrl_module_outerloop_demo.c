@@ -43,6 +43,9 @@
 
 #include <stdio.h>
 // Own Variables
+static float pos_diff_prev[3] = {0.0, 0.0, 0.0};  // A static variable used to get positional feedback. This is updated iteratively in the guidance_module_run function
+static float vel_diff_prev[3] = {0.0, 0.0, 0.0};  // A static variable used to get velocity feedback. This is updated iteratively in the guidance_module_run function
+
 
 struct ctrl_module_demo_struct {
 // RC Inputs
@@ -86,28 +89,61 @@ void guidance_module_run(bool in_flight)
 {
   stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot_in_flight(), false, false, &radio_control);
 
+  // float time = get_sys_time_float();
+  // printf("%f\n", time);
   // DESIRED TRAJECTORY
   static int counter = 0;
-  counter +=1;
+  static float dt = 0.003908;
+  counter += 1;
 
-  // Put in desired acceleration. Can change to position later 
-  static float accel_d[3];
-  accel_d[0] = sinf(counter/500.0);
-  // accel_d[0] = 0.0;
-  accel_d[1] = 0.0;
-  // accel_d[1] = - 5.0 * cosf(counter/500.0);
-  // accel_d[1] = sinf(counter/500.0 - M_PI/2);
-  accel_d[2] = 0.0;
+  // Desired position
+  static float pos_d[3];
+  pos_d[0] = sinf(counter/500.0);
+  // pos_d[0] = 10.0;
+  pos_d[1] = 0.0;
+  pos_d[2] = 10.0;
 
-  // Current accelerations
-  struct NedCoor_f *accel_actual = stateGetAccelNed_f();
-  //struct EcefCoor_f *accel_actual = stateGetAccelEcef_f();
-  float accel_a[3];
-  accel_a[0] = accel_actual->x;
-  accel_a[1] = accel_actual->y;
-  accel_a[2] = accel_actual->z;
+  // Current positions
+  struct NedCoor_f *pos_actual = stateGetPositionNed_f();
+  float pos_a[3];
+  pos_a[0] = pos_actual->x;
+  pos_a[1] = pos_actual->y;
+  pos_a[2] = pos_actual->z;
 
-  //---------------------SELF-DONE LOGGING-------------------
+  // Difference in positions
+  float pos_diff[3];
+  pos_diff[0] = pos_d[0] - pos_a[0];
+  pos_diff[1] = pos_d[1] - pos_a[1];
+  pos_diff[2] = pos_d[2] - pos_a[2];
+
+  // Computed velocity from position via for loop. This outputs the desired velocity
+  float vel_d[3];
+  for (int i = 0; i < 3; i++) {
+      vel_d[i] = (pos_diff[i] - pos_diff_prev[i]) / dt;   // Numerical differentiation to get velocity
+      pos_diff_prev[i] = pos_diff[i]; // Update previous position
+  }
+
+  // Current speeds - plots give negative values, so I'm guessing that it is velocity and not speed
+  struct NedCoor_f *vel_actual = stateGetSpeedNed_f();
+  float vel_a[3];
+  vel_a[0] = vel_actual->x;
+  vel_a[1] = vel_actual->y;
+  vel_a[2] = vel_actual->z;
+
+  // Difference in speeds
+  float vel_diff[3];
+  vel_diff[0] = vel_d[0] - vel_a[0];
+  vel_diff[1] = vel_d[1] - vel_a[1];
+  vel_diff[2] = vel_d[2] - vel_a[2];
+
+  // Computed acceleration from velocity via for loop. This outputs the desired acceleration
+  float accel_d[3];
+  for (int i = 0; i < 3; i++) {
+      accel_d[i] = (vel_diff[i] - vel_diff_prev[i]) / dt;   // Numerical differentiation to get acceleration
+      vel_diff_prev[i] = vel_diff_prev[i]; // Update previous velocity
+  }
+  
+      //---------------------SELF-DONE LOGGING-------------------
   const char *path = "/home/t/paparazzi/output.txt";
   // Try to open the file in "read" mode to check if it already exists
   FILE *check = fopen(path, "r");
@@ -122,16 +158,25 @@ void guidance_module_run(bool in_flight)
 
   // Write header only if the file did not exist before
   if (!file_exists) {
-      fprintf(file, "Time,accel_a[0],accel_a[1],accel_a[2]\n");
+      fprintf(file, "Time, pos_diff[0], pos_a[0], pos_d[0], vel_d[0]\n");
   }
 
   // Write the current data values to the file
   // fprintf(file, "%f,%f,%f,%f\n", get_sys_time_float(), roll_v_ref, pitch_v_ref, yaw_v_ref);
-  fprintf(file, "%d,%f,%f,%f\n", counter, accel_a[0],accel_a[1],accel_a[2]);
+  fprintf(file, "%d,%f,%f,%f,%f\n", counter, pos_diff[0], pos_a[0], pos_d[0], vel_d[0]);
 
   // Close the file
   fclose(file);
   //-----------------END SELF-MADE LOGGING---------------
+
+  // Current accelerations
+  struct NedCoor_f *accel_actual = stateGetAccelNed_f();
+  //struct EcefCoor_f *accel_actual = stateGetAccelEcef_f();
+  float accel_a[3];
+  accel_a[0] = accel_actual->x;
+  accel_a[1] = accel_actual->y;
+  accel_a[2] = accel_actual->z;
+
 
   // Setting fixed values for mass. Not sure if this is accurate.
   float mass = 0.4;
@@ -239,34 +284,5 @@ float* guidance_function(float d_accel_ref[3])
   return array;
 }
 
-
-
-
-
-//   //---------------------SELF-DONE LOGGING-------------------
-//   const char *path = "/home/t/output.csv";
-//  // Try to open the file in "read" mode to check if it already exists
-//   FILE *check = fopen(path, "r");
-//   bool file_exists = (check != NULL);
-//   if (check) fclose(check);
-
-//   // Open the file in "append" mode so we don't overwrite existing data
-//   FILE *file = fopen(path, "a");
-//   if (file == NULL) {
-//       perror("Error opening file");
-//       return 1;
-//   }
-
-//   // If file is new, write the header row
-//   if (!file_exists) {
-//       fprintf(file, "roll_c,pitch_c,yaw_c,roll_rate_c,pitch_rate_c,yaw_rate_c\n");
-//   }
-
-//   // Write the current data values to the file
-//   fprintf(file, "%f,%f,%f,%f,%f,%f,%f\n", get_sys_time_float(), roll_c, pitch_c, yaw_c, roll_rate_c, pitch_rate_c, yaw_rate_c);
-
-//   // Close the file
-//   fclose(file);
-//   //-----------------END SELF-MADE LOGGING---------------
 
 // DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice,  &roll_v_ref, &pitch_v_ref, &yaw_v_ref, &T_cmd, &T_cmd, &T_cmd);
