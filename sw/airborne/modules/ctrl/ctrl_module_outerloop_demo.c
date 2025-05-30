@@ -43,8 +43,8 @@
 
 #include <stdio.h>
 // Own Variables
-static float pos_diff_prev[3] = {0.0, 0.0, 0.0};  // A static variable used to get positional feedback. This is updated iteratively in the guidance_module_run function
-static float vel_diff_prev[3] = {0.0, 0.0, 0.0};  // A static variable used to get velocity feedback. This is updated iteratively in the guidance_module_run function
+static float pos_error_prev[3] = {0.0, 0.0, 0.0};  // A static variable used to get positional feedback. This is updated iteratively in the guidance_module_run function
+static float vel_error_prev[3] = {0.0, 0.0, 0.0};  // A static variable used to get velocity feedback. This is updated iteratively in the guidance_module_run function
 
 
 struct ctrl_module_demo_struct {
@@ -97,11 +97,11 @@ void guidance_module_run(bool in_flight)
   counter += 1;
 
   // Desired position
-  static float pos_d[3];
-  pos_d[0] = sinf(counter/500.0);
-  // pos_d[0] = 10.0;
-  pos_d[1] = 0.0;
-  pos_d[2] = 10.0;
+  static float pos_ref[3];
+  pos_ref[0] = sinf(counter/500.0);
+  // pos_ref[0] = 10.0;
+  pos_ref[1] = 0.0;
+  pos_ref[2] = 10.0;
 
   // Current positions
   struct NedCoor_f *pos_actual = stateGetPositionNed_f();
@@ -111,16 +111,16 @@ void guidance_module_run(bool in_flight)
   pos_a[2] = pos_actual->z;
 
   // Difference in positions
-  float pos_diff[3];
-  pos_diff[0] = pos_d[0] - pos_a[0];
-  pos_diff[1] = pos_d[1] - pos_a[1];
-  pos_diff[2] = pos_d[2] - pos_a[2];
+  float pos_error[3];
+  pos_error[0] = pos_ref[0] - pos_a[0];
+  pos_error[1] = pos_ref[1] - pos_a[1];
+  pos_error[2] = pos_ref[2] - pos_a[2];
 
   // Computed velocity from position via for loop. This outputs the desired velocity
-  float vel_d[3];
+  float vel_ref[3];
   for (int i = 0; i < 3; i++) {
-      vel_d[i] = (pos_diff[i] - pos_diff_prev[i]) / dt;   // Numerical differentiation to get velocity
-      pos_diff_prev[i] = pos_diff[i]; // Update previous position
+      vel_ref[i] = (pos_error[i] - pos_error_prev[i]) / dt;   // Numerical differentiation to get velocity
+      pos_error_prev[i] = pos_error[i]; // Update previous position
   }
 
   // Current speeds - plots give negative values, so I'm guessing that it is velocity and not speed
@@ -131,16 +131,16 @@ void guidance_module_run(bool in_flight)
   vel_a[2] = vel_actual->z;
 
   // Difference in speeds
-  float vel_diff[3];
-  vel_diff[0] = vel_d[0] - vel_a[0];
-  vel_diff[1] = vel_d[1] - vel_a[1];
-  vel_diff[2] = vel_d[2] - vel_a[2];
+  float vel_error[3];
+  vel_error[0] = vel_ref[0] - vel_a[0];
+  vel_error[1] = vel_ref[1] - vel_a[1];
+  vel_error[2] = vel_ref[2] - vel_a[2];
 
   // Computed acceleration from velocity via for loop. This outputs the desired acceleration
-  float accel_d[3];
+  float accel_ref[3];
   for (int i = 0; i < 3; i++) {
-      accel_d[i] = (vel_diff[i] - vel_diff_prev[i]) / dt;   // Numerical differentiation to get acceleration
-      vel_diff_prev[i] = vel_diff_prev[i]; // Update previous velocity
+      accel_ref[i] = (vel_error[i] - vel_error_prev[i]) / dt;   // Numerical differentiation to get acceleration
+      vel_error_prev[i] = vel_error_prev[i]; // Update previous velocity
   }
   
       //---------------------SELF-DONE LOGGING-------------------
@@ -158,12 +158,12 @@ void guidance_module_run(bool in_flight)
 
   // Write header only if the file did not exist before
   if (!file_exists) {
-      fprintf(file, "Time, pos_diff[0], pos_a[0], pos_d[0], vel_d[0]\n");
+      fprintf(file, "Time, pos_error[0], pos_a[0], pos_ref[0], vel_ref[0]\n");
   }
 
   // Write the current data values to the file
   // fprintf(file, "%f,%f,%f,%f\n", get_sys_time_float(), roll_v_ref, pitch_v_ref, yaw_v_ref);
-  fprintf(file, "%d,%f,%f,%f,%f\n", counter, pos_diff[0], pos_a[0], pos_d[0], vel_d[0]);
+  fprintf(file, "%d,%f,%f,%f,%f\n", counter, pos_error[0], pos_a[0], pos_ref[0], vel_ref[0]);
 
   // Close the file
   fclose(file);
@@ -183,9 +183,9 @@ void guidance_module_run(bool in_flight)
 
   // d_accel_ref
   static float d_accel_ref[3];
-  d_accel_ref[0] = accel_d[0] - accel_a[0];
-  d_accel_ref[1] = accel_d[1] - accel_a[1];
-  d_accel_ref[2] = accel_d[2] - accel_a[2]; 
+  d_accel_ref[0] = accel_ref[0] - accel_a[0];
+  d_accel_ref[1] = accel_ref[1] - accel_a[1];
+  d_accel_ref[2] = accel_ref[2] - accel_a[2]; 
 
 
   // CONTROL LAW
