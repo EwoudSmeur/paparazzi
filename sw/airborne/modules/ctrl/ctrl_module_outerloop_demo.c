@@ -115,13 +115,6 @@ void guidance_module_run(bool in_flight)
   pos_error[1] = pos_ref[1] - pos_a[1];
   pos_error[2] = pos_ref[2] - pos_a[2];
 
-  // // Computed velocity from position via for loop. This outputs the desired velocity
-  // float vel_ref[3];
-  // for (int i = 0; i < 3; i++) {
-  //     vel_ref[i] = (pos_error[i] - pos_error_prev[i]) / dt;   // Numerical differentiation to get velocity
-  //     pos_error_prev[i] = pos_error[i]; // Update previous position
-  // }
-
   // Trying to compute velocity as a gain times the position error. This is done in the MatLAB file
   float vel_ref[3];
   for (int i = 0; i < 3; i++) {
@@ -141,13 +134,6 @@ void guidance_module_run(bool in_flight)
   vel_error[1] = vel_ref[1] - vel_a[1];
   vel_error[2] = vel_ref[2] - vel_a[2];
 
-  // // Computed acceleration from velocity via for loop. This outputs the desired acceleration
-  // float accel_ref[3];
-  // for (int i = 0; i < 3; i++) {
-  //     accel_ref[i] = (vel_error[i] - vel_error_prev[i]) / dt;   // Numerical differentiation to get acceleration
-  //     vel_error_prev[i] = vel_error_prev[i]; // Update previous velocity
-  // }
-
   // Trying to compute acceleration as a gain times the velocity error. This is done in the MatLAB file
   float accel_ref[3];
   for (int i = 0; i < 3; i++) {
@@ -157,7 +143,6 @@ void guidance_module_run(bool in_flight)
 
   // Current accelerations
   struct NedCoor_f *accel_actual = stateGetAccelNed_f();
-  //struct EcefCoor_f *accel_actual = stateGetAccelEcef_f();
   float accel_a[3];
   accel_a[0] = accel_actual->x;
   accel_a[1] = accel_actual->y;
@@ -206,7 +191,6 @@ void guidance_module_run(bool in_flight)
   ctrl.cmd.r = 0.0;
 
 
-  // struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&(ctrl.cmd));
   struct StabilizationSetpoint sp = stab_sp_from_rates_f(&(ctrl.cmd));
   struct ThrustSetpoint th = guidance_v_run(in_flight);
 
