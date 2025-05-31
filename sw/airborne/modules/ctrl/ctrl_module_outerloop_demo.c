@@ -42,10 +42,6 @@
 
 
 #include <stdio.h>
-// Own Variables
-static float pos_error_prev[3] = {0.0, 0.0, 0.0};  // A static variable used to get positional feedback. This is updated iteratively in the guidance_module_run function
-static float vel_error_prev[3] = {0.0, 0.0, 0.0};  // A static variable used to get velocity feedback. This is updated iteratively in the guidance_module_run function
-
 
 struct ctrl_module_demo_struct {
 // RC Inputs
@@ -72,7 +68,6 @@ void ctrl_module_init(void)
 void guidance_module_enter(void)
 {
   // Store current heading
-  // ctrl.cmd.psi = stateGetNedToBodyEulers_i()->psi;
   ctrl.cmd.r = stateGetBodyRates_f()->r;
 
   // Convert RC to setpoint
@@ -89,8 +84,6 @@ void guidance_module_run(bool in_flight)
 {
   stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot_in_flight(), false, false, &radio_control);
 
-  // float time = get_sys_time_float();
-  // printf("%f\n", time);
   // DESIRED TRAJECTORY
   static int counter = 0;
   counter += 1;
@@ -139,7 +132,6 @@ void guidance_module_run(bool in_flight)
   for (int i = 0; i < 3; i++) {
       accel_ref[i] = (vel_error[i] - vel_error_prev[i]) * 3.0;   // Gain to get velocity
   } 
-  
 
   // Current accelerations
   struct NedCoor_f *accel_actual = stateGetAccelNed_f();
@@ -173,7 +165,6 @@ void guidance_module_run(bool in_flight)
   }
 
   // Write the current data values to the file
-  // fprintf(file, "%f,%f,%f,%f\n", get_sys_time_float(), roll_v_ref, pitch_v_ref, yaw_v_ref);
   fprintf(file, "%d,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], pos_a[1], pos_ref[1]);
 
   // Close the file
@@ -204,7 +195,7 @@ float* guidance_function(float d_accel_ref[3])
   float mass = 0.4;
 
   // Get thrust. Hard-coding as a constant needed for a hover to counteract gravity for now, probably have to change.
-  float T = mass*9.81; //IS THERE A WAY TO GET THRUST IN PPRZ
+  float T = mass*9.81; 
 
   // Rotation matrix, replacing eul2rotm(eulerzyx,"ZYX"). This gets the desired acceleration in the body frame
   struct FloatRMat *rot = stateGetNedToBodyRMat_f(); 
@@ -215,7 +206,7 @@ float* guidance_function(float d_accel_ref[3])
   for (int i = 0; i < 3; i++) {
     d_accel_ref_b[i] = 0;
     for (int j = 0; j < 3; j++) {
-      d_accel_ref_b[i] += rot->m[i * 3 + j] * d_accel_ref[j];  // Hopefully no problems with how the rotation matrix is accessed.
+      d_accel_ref_b[i] += rot->m[i * 3 + j] * d_accel_ref[j];  
     }
   }
 
@@ -224,6 +215,7 @@ float* guidance_function(float d_accel_ref[3])
 
   // Calculate dcmd via "matrix" calculation: dcmd = B_inverse * d_accel_ref_b * mass;
   float dcmd[3]; //MYB PUT LIMIT (45DEG)
+
   for (int i = 0; i < 3; i++) {
     dcmd[i] = 0;
     for (int j = 0; j < 3; j++) {
@@ -234,15 +226,11 @@ float* guidance_function(float d_accel_ref[3])
 
   // Quaternion
   struct FloatQuat q; //quat output
-  // struct FloatEulers e = {0.0, dcmd[1], dcmd[0]}; //euler input
   struct FloatEulers e;
   e.psi = 0.0;        
   e.theta = dcmd[1]; 
   e.phi = dcmd[0]; 
-  // struct FloatEulers e = {dcmd[0], dcmd[1], dcmd[2]}; //euler input
-  //ASK EWOUD ABOUT ZYX VS ZXY 
   float_quat_of_eulers(&q, &e); //This function employs ZYX, as in MATLab
-  // float_quat_of_eulers_zxy(&q, &e);
 
   // Make array to return
   static float array[3];
