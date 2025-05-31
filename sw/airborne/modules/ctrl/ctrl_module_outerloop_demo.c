@@ -93,14 +93,13 @@ void guidance_module_run(bool in_flight)
   // printf("%f\n", time);
   // DESIRED TRAJECTORY
   static int counter = 0;
-  static float dt = 0.003908;
   counter += 1;
 
   // Desired position
   static float pos_ref[3];
-  // pos_ref[0] = sinf(counter/500.0);
-  pos_ref[0] = 0.0;
-  pos_ref[1] = -20.0;
+  // pos_ref[0] = cosf(counter/500.0);
+  pos_ref[0] = 10.0;
+  pos_ref[1] = 0.0;
   pos_ref[2] = 10.0;
 
   // Current positions
@@ -164,10 +163,6 @@ void guidance_module_run(bool in_flight)
   accel_a[1] = accel_actual->y;
   accel_a[2] = accel_actual->z;
 
-
-  // Setting fixed values for mass. Not sure if this is accurate.
-  float mass = 0.4;
-
   // d_accel_ref
   static float d_accel_ref[3];
   d_accel_ref[0] = accel_ref[0] - accel_a[0];
@@ -189,12 +184,12 @@ void guidance_module_run(bool in_flight)
 
   // Write header only if the file did not exist before
   if (!file_exists) {
-      fprintf(file, "Time, pos_a[1], pos_ref[1], vel_a[1], vel_ref[1], accel_a[1], accel_ref[1]\n");
+      fprintf(file, "Time, pos_a[0], pos_ref[0], pos_a[1], pos_ref[1]\n");
   }
 
   // Write the current data values to the file
   // fprintf(file, "%f,%f,%f,%f\n", get_sys_time_float(), roll_v_ref, pitch_v_ref, yaw_v_ref);
-  fprintf(file, "%d,%f,%f,%f,%f,%f,%f\n", counter, pos_a[1], pos_ref[1], vel_a[1], vel_ref[1], accel_a[1], accel_ref[1]);
+  fprintf(file, "%d,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], pos_a[1], pos_ref[1]);
 
   // Close the file
   fclose(file);
@@ -204,33 +199,10 @@ void guidance_module_run(bool in_flight)
   // CONTROL LAW
   // Get results of guidance function
   float* rates_guidance = guidance_function(d_accel_ref);
-
-   // Get current angular rates
-  struct FloatRates *rates_actual = stateGetBodyRates_f();
-  float rates_a[3];
-  rates_a[0] = rates_actual->p;
-  rates_a[1] = rates_actual->q; 
-  rates_a[2] = rates_actual->r; 
   
-
-  // Send control to the drone (angles)
-  // ctrl.cmd.phi = ANGLE_BFP_OF_REAL(delta_u[0]);
-  // ctrl.cmd.theta = ANGLE_BFP_OF_REAL(delta_u[1]);
-  // // ctrl.cmd.psi = ANGLE_BFP_OF_REAL(delta_u[2]);
-  // ctrl.cmd.psi = ANGLE_BFP_OF_REAL(0.0);
-
-  // ctrl.cmd.phi = ANGLE_BFP_OF_REAL(0.0);
-  // ctrl.cmd.theta = ANGLE_BFP_OF_REAL(0.0);
-  // ctrl.cmd.psi = ANGLE_BFP_OF_REAL(0.0);
-
   // Send control to the drone (angular rates)
-  // Get current angles
-  struct FloatEulers *att = stateGetNedToBodyEulers_f();
-  float yaw_c = att->psi; 
-
   ctrl.cmd.p = rates_guidance[0];
   ctrl.cmd.q = rates_guidance[1];
-  // ctrl.cmd.r = RATE_BFP_OF_REAL(0.0 - rates_a[2]);
   ctrl.cmd.r = 0.0;
 
 
