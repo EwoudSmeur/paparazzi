@@ -98,9 +98,9 @@ void guidance_module_run(bool in_flight)
 
   // Desired position
   static float pos_ref[3];
-  pos_ref[0] = sinf(counter/500.0);
-  // pos_ref[0] = 10.0;
-  pos_ref[1] = 0.0;
+  // pos_ref[0] = sinf(counter/500.0);
+  pos_ref[0] = 0.0;
+  pos_ref[1] = -20.0;
   pos_ref[2] = 10.0;
 
   // Current positions
@@ -126,7 +126,7 @@ void guidance_module_run(bool in_flight)
   // Trying to compute velocity as a gain times the position error. This is done in the MatLAB file
   float vel_ref[3];
   for (int i = 0; i < 3; i++) {
-      vel_ref[i] = (pos_error[i] - pos_error_prev[i]) * 0.6;   // Gain to get velocity
+      vel_ref[i] = (pos_error[i] - pos_error_prev[i]) * 0.9;   // Gain to get velocity
   } 
 
   // Current speeds - plots give negative values, so I'm guessing that it is velocity and not speed
@@ -152,34 +152,9 @@ void guidance_module_run(bool in_flight)
   // Trying to compute acceleration as a gain times the velocity error. This is done in the MatLAB file
   float accel_ref[3];
   for (int i = 0; i < 3; i++) {
-      accel_ref[i] = (vel_error[i] - vel_error_prev[i]) * 1.8;   // Gain to get velocity
+      accel_ref[i] = (vel_error[i] - vel_error_prev[i]) * 3.0;   // Gain to get velocity
   } 
   
-      //---------------------SELF-DONE LOGGING-------------------
-  const char *path = "/home/t/paparazzi/output.txt";
-  // Try to open the file in "read" mode to check if it already exists
-  FILE *check = fopen(path, "r");
-  bool file_exists = (check != NULL);
-  if (check) fclose(check);
-
-  // Open the file in "append" mode so we don't overwrite existing data
-  FILE *file = fopen(path, "a");
-  if (file == NULL) {
-      perror("Error opening file");
-  }
-
-  // Write header only if the file did not exist before
-  if (!file_exists) {
-      fprintf(file, "Time, pos_a[0], pos_ref[0], vel_ref[0]\n");
-  }
-
-  // Write the current data values to the file
-  // fprintf(file, "%f,%f,%f,%f\n", get_sys_time_float(), roll_v_ref, pitch_v_ref, yaw_v_ref);
-  fprintf(file, "%d,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], vel_ref[0]);
-
-  // Close the file
-  fclose(file);
-  //-----------------END SELF-MADE LOGGING---------------
 
   // Current accelerations
   struct NedCoor_f *accel_actual = stateGetAccelNed_f();
@@ -198,6 +173,32 @@ void guidance_module_run(bool in_flight)
   d_accel_ref[0] = accel_ref[0] - accel_a[0];
   d_accel_ref[1] = accel_ref[1] - accel_a[1];
   d_accel_ref[2] = accel_ref[2] - accel_a[2]; 
+
+  //---------------------SELF-DONE LOGGING-------------------
+  const char *path = "/home/t/paparazzi/output.txt";
+  // Try to open the file in "read" mode to check if it already exists
+  FILE *check = fopen(path, "r");
+  bool file_exists = (check != NULL);
+  if (check) fclose(check);
+
+  // Open the file in "append" mode so we don't overwrite existing data
+  FILE *file = fopen(path, "a");
+  if (file == NULL) {
+      perror("Error opening file");
+  }
+
+  // Write header only if the file did not exist before
+  if (!file_exists) {
+      fprintf(file, "Time, pos_a[1], pos_ref[1], vel_a[1], vel_ref[1], accel_a[1], accel_ref[1]\n");
+  }
+
+  // Write the current data values to the file
+  // fprintf(file, "%f,%f,%f,%f\n", get_sys_time_float(), roll_v_ref, pitch_v_ref, yaw_v_ref);
+  fprintf(file, "%d,%f,%f,%f,%f,%f,%f\n", counter, pos_a[1], pos_ref[1], vel_a[1], vel_ref[1], accel_a[1], accel_ref[1]);
+
+  // Close the file
+  fclose(file);
+  //-----------------END SELF-MADE LOGGING---------------
 
 
   // CONTROL LAW
