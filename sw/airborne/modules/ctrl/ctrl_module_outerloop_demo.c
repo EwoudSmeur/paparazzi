@@ -43,6 +43,9 @@
 
 #include <stdio.h>
 
+// Access estimated thrust from stabilization_indi.c file. This is estimated thrust in the z direction
+extern float thrust_estimate;
+
 struct ctrl_module_demo_struct {
 // RC Inputs
   struct AttitudeRCInput rc_sp;
@@ -111,7 +114,7 @@ void guidance_module_run(bool in_flight)
   // Trying to compute velocity as a gain times the position error. This is done in the MatLAB file
   float vel_ref[3];
   for (int i = 0; i < 3; i++) {
-      vel_ref[i] = (pos_error[i] - pos_error_prev[i]) * 0.9;   // Gain to get velocity
+      vel_ref[i] = pos_error[i] * 0.9;   // Gain to get velocity
   } 
 
   // Current speeds - plots give negative values, so I'm guessing that it is velocity and not speed
@@ -130,7 +133,7 @@ void guidance_module_run(bool in_flight)
   // Trying to compute acceleration as a gain times the velocity error. This is done in the MatLAB file
   float accel_ref[3];
   for (int i = 0; i < 3; i++) {
-      accel_ref[i] = (vel_error[i] - vel_error_prev[i]) * 3.0;   // Gain to get velocity
+      accel_ref[i] = vel_error[i] * 3.0;   // Gain to get velocity
   } 
 
   // Current accelerations
@@ -183,7 +186,9 @@ void guidance_module_run(bool in_flight)
 
 
   struct StabilizationSetpoint sp = stab_sp_from_rates_f(&(ctrl.cmd));
-  struct ThrustSetpoint th = guidance_v_run(in_flight);
+  struct ThrustSetpoint th = th_sp_from_incr_f(thrust_estimate + rates_guidance[2], THRUST_AXIS_Z);
+  // struct ThrustSetpoint th = th_sp_from_thrust_f(9000, THRUST_AXIS_Z);
+  //struct ThrustSetpoint th = guidance_v_run(in_flight);
 
   // execute attitude stabilization:
   stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
@@ -236,7 +241,7 @@ float* guidance_function(float d_accel_ref[3])
   static float array[3];
   array[0] = 5*2*q.qx;
   array[1] = -5*2*q.qy;
-  array[2] = T + dcmd[2];
+  array[2] = dcmd[2];
 
   return array;
 }
