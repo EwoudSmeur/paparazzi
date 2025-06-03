@@ -9,7 +9,11 @@
         "editor.tabSize": 4,
     },
     "files.associations": {
-        "Makefile.*": "makefile"
+        "*.py": "python",
+        "Makefile.*": "makefile",
+        "*.inc": "c",
+        "condition_variable": "c",
+        "mutex": "c"
     },
     "C_Cpp.dimInactiveRegions": false,
     "esbonio.sphinx.confDir": "",

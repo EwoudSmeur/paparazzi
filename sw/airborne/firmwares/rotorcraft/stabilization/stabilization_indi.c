@@ -44,6 +44,9 @@
 #include "math/wls/wls_alloc.h"
 #include <stdio.h>
 
+// Own variables
+float thrust_estimate;
+
 // Factor that the estimated G matrix is allowed to deviate from initial one
 #define INDI_ALLOWED_G_FACTOR 2.0
 
@@ -517,6 +520,8 @@ void init_filters(void)
  *
  * Function that calculates the INDI commands
  */
+
+static int counter = 0;
 void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
 
@@ -630,12 +635,43 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
 
     // Compute estimated thrust
     struct FloatVect3 thrust_filt = { 0.f, 0.f, 0.f };
+
     for (i = 0; i < INDI_NUM_ACT; i++) {
       thrust_filt.z += Bwls[3][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_z[i];
 #if INDI_OUTPUTS == 5
       thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
 #endif
     }
+
+    // For accessing the thrust_filt value in outerloop 
+    thrust_estimate = thrust_filt.z;
+
+    //     //---------------------SELF-DONE LOGGING-------------------
+    // const char *path = "/home/t/paparazzi/output_inner.txt";
+    // // Try to open the file in "read" mode to check if it already exists
+    // FILE *check = fopen(path, "r");
+    // bool file_exists = (check != NULL);
+    // if (check) fclose(check);
+
+    // // Open the file in "append" mode so we don't overwrite existing data
+    // FILE *file = fopen(path, "a");
+    // if (file == NULL) {
+    //     perror("Error opening file");
+    // }
+
+    // // Write header only if the file did not exist before
+    // if (!file_exists) {
+    //     fprintf(file, "counter, thrust_filt.z, thrust_filt.x\n");
+    // }
+
+    // // Write the current data values to the file
+    // fprintf(file, "%d,%f,%f\n", counter, thrust_filt.z, thrust_filt.x);
+
+    // // Close the file
+    // fclose(file);
+    // //-----------------END SELF-MADE LOGGING---------------
+    // counter += 1;
+
     // Add the current estimated thrust to the increment
     VECT3_ADD(v_thrust, thrust_filt);
   } else {
@@ -651,6 +687,10 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     }
     v_thrust.y = 0.f;
   }
+
+
+
+
 
   // This term compensates for the spinup torque in the yaw axis
   float g2_times_u = float_vect_dot_product(g2, indi_u, INDI_NUM_ACT)/INDI_G_SCALING;

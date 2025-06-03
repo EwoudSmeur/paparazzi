@@ -93,10 +93,10 @@ void guidance_module_run(bool in_flight)
 
   // Desired position
   static float pos_ref[3];
-  // pos_ref[0] = cosf(counter/500.0);
-  pos_ref[0] = 10.0;
+  pos_ref[0] = cosf(counter/500.0);
+  // pos_ref[0] = 10.0;
   pos_ref[1] = 0.0;
-  pos_ref[2] = 10.0;
+  pos_ref[2] = -10.0;
 
   // Current positions
   struct NedCoor_f *pos_actual = stateGetPositionNed_f();
@@ -133,7 +133,7 @@ void guidance_module_run(bool in_flight)
   // Trying to compute acceleration as a gain times the velocity error. This is done in the MatLAB file
   float accel_ref[3];
   for (int i = 0; i < 3; i++) {
-      accel_ref[i] = vel_error[i] * 3.0;   // Gain to get velocity
+      accel_ref[i] = vel_error[i] * 4;   // Gain to get velocity
   } 
 
   // Current accelerations
@@ -164,11 +164,11 @@ void guidance_module_run(bool in_flight)
 
   // Write header only if the file did not exist before
   if (!file_exists) {
-      fprintf(file, "Time, pos_a[0], pos_ref[0], pos_a[1], pos_ref[1]\n");
+      fprintf(file, "Time, pos_a[0], pos_ref[0], vel_a[0], vel_ref[0], accel_a[0], accel_ref[0]\n");
   }
 
   // Write the current data values to the file
-  fprintf(file, "%d,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], pos_a[1], pos_ref[1]);
+  fprintf(file, "%d,%f,%f,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], vel_a[0], vel_ref[0], accel_a[0], accel_ref[0]);
 
   // Close the file
   fclose(file);
@@ -186,12 +186,13 @@ void guidance_module_run(bool in_flight)
 
 
   struct StabilizationSetpoint sp = stab_sp_from_rates_f(&(ctrl.cmd));
-  struct ThrustSetpoint th = th_sp_from_incr_f(thrust_estimate + rates_guidance[2], THRUST_AXIS_Z);
-  // struct ThrustSetpoint th = th_sp_from_thrust_f(9000, THRUST_AXIS_Z);
-  //struct ThrustSetpoint th = guidance_v_run(in_flight);
+  struct ThrustSetpoint th = th_sp_from_incr_f(rates_guidance[2], THRUST_AXIS_Z);
+  RunOnceEvery(100,printf("%f, %f, %f\n", rates_guidance[2], d_accel_ref[2], thrust_estimate);)
+  // struct ThrustSetpoint th = th_sp_from_thrust_f(thrust_estimate + rates_guidance[2], THRUST_AXIS_Z);
+  // struct ThrustSetpoint th = guidance_v_run(in_flight);
 
   // execute attitude stabilization:
-  stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
+  stabilization_rate_run(in_flight, &sp, &th, stabilization.cmd);
 }
 
 float* guidance_function(float d_accel_ref[3])
@@ -216,7 +217,7 @@ float* guidance_function(float d_accel_ref[3])
   }
 
   // Inverse of the control effectiveness matrix. The inverse is directly computed here.
-  float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, -1}};
+  float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, 1}};
 
   // Calculate dcmd via "matrix" calculation: dcmd = B_inverse * d_accel_ref_b * mass;
   float dcmd[3]; //MYB PUT LIMIT (45DEG)
@@ -241,7 +242,7 @@ float* guidance_function(float d_accel_ref[3])
   static float array[3];
   array[0] = 5*2*q.qx;
   array[1] = -5*2*q.qy;
-  array[2] = dcmd[2];
+  array[2] = dcmd[2]/mass;
 
   return array;
 }
