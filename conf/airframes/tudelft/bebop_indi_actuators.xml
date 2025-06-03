@@ -27,9 +27,6 @@
 
     <!--define name="USE_SONAR" value="TRUE"/-->
 
-    <autopilot name="rotorcraft_control_loop"/>
-    <module name="ctrl_module_outerloop_demo"/>
-
 	<!-- Subsystem section -->
     <module name="telemetry" type="transparent_udp"/>
     <module name="radio_control" type="datalink"/>
