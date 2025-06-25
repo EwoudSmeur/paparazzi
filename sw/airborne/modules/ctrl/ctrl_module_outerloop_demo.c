@@ -93,10 +93,10 @@ void guidance_module_run(bool in_flight)
 
   // Desired position
   static float pos_ref[3];
-  pos_ref[0] = cosf(counter/500.0);
-  // pos_ref[0] = 10.0;
+  pos_ref[0] = 3* sinf(counter/500.0) + 20.0;
+  // pos_ref[0] = 50.0;
   pos_ref[1] = 0.0;
-  pos_ref[2] = -10.0;
+  pos_ref[2] = -25.0;
 
   // Current positions
   struct NedCoor_f *pos_actual = stateGetPositionNed_f();
@@ -114,7 +114,13 @@ void guidance_module_run(bool in_flight)
   // Trying to compute velocity as a gain times the position error. This is done in the MatLAB file
   float vel_ref[3];
   for (int i = 0; i < 3; i++) {
-      vel_ref[i] = pos_error[i] * 0.9;   // Gain to get velocity
+      vel_ref[i] = pos_error[i] * 0.65;   // Gain to get velocity
+      if (vel_ref[i] >= 15.0) {
+        vel_ref[i] = 15.0;
+      }
+      if (vel_ref[i] <= -15.0) {
+        vel_ref[i] = -15.0;
+      }
   } 
 
   // Current speeds - plots give negative values, so I'm guessing that it is velocity and not speed
@@ -133,7 +139,13 @@ void guidance_module_run(bool in_flight)
   // Trying to compute acceleration as a gain times the velocity error. This is done in the MatLAB file
   float accel_ref[3];
   for (int i = 0; i < 3; i++) {
-      accel_ref[i] = vel_error[i] * 4;   // Gain to get velocity
+      accel_ref[i] = vel_error[i] * 4;   // Gain to get acceleration      
+      // if (accel_ref[i] >= 2.5) {
+      //   accel_ref[i] = 2.5;
+      // } 
+      // if (accel_ref[i] <= -2.5) {
+      //   accel_ref[i] = -2.5;
+      // }
   } 
 
   // Current accelerations
@@ -164,11 +176,13 @@ void guidance_module_run(bool in_flight)
 
   // Write header only if the file did not exist before
   if (!file_exists) {
-      fprintf(file, "Time, pos_a[0], pos_ref[0], vel_a[0], vel_ref[0], accel_a[0], accel_ref[0]\n");
+      fprintf(file, "Time, pos_a, pos_ref, vel_a, vel_ref, accel_a, accel_ref\n");
+      // fprintf(file, "Time, pos_a_x, pos_ref_x, pos_a_y, pos_ref_y\n");
   }
 
   // Write the current data values to the file
   fprintf(file, "%d,%f,%f,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], vel_a[0], vel_ref[0], accel_a[0], accel_ref[0]);
+  // fprintf(file, "%d,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], pos_a[1], pos_ref[1]);
 
   // Close the file
   fclose(file);
@@ -187,9 +201,7 @@ void guidance_module_run(bool in_flight)
 
   struct StabilizationSetpoint sp = stab_sp_from_rates_f(&(ctrl.cmd));
   struct ThrustSetpoint th = th_sp_from_incr_f(rates_guidance[2], THRUST_AXIS_Z);
-  RunOnceEvery(100,printf("%f, %f, %f\n", rates_guidance[2], d_accel_ref[2], thrust_estimate);)
-  // struct ThrustSetpoint th = th_sp_from_thrust_f(thrust_estimate + rates_guidance[2], THRUST_AXIS_Z);
-  // struct ThrustSetpoint th = guidance_v_run(in_flight);
+  // RunOnceEvery(100,printf("%f, %f, %f\n", rates_guidance[2], d_accel_ref[2], thrust_estimate);)
 
   // execute attitude stabilization:
   stabilization_rate_run(in_flight, &sp, &th, stabilization.cmd);
@@ -249,3 +261,5 @@ float* guidance_function(float d_accel_ref[3])
 
 
 // DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice,  &roll_v_ref, &pitch_v_ref, &yaw_v_ref, &T_cmd, &T_cmd, &T_cmd);
+// RunOnceEvery(100,printf("%f, %f, %f\n", array[0], array[1], array[2]);)
+  

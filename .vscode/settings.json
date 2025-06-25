@@ -17,4 +17,5 @@
     },
     "C_Cpp.dimInactiveRegions": false,
     "esbonio.sphinx.confDir": "",
+    "cmake.sourceDirectory": "/home/t/paparazzi/sw/ext/TRICAL",
 }
