@@ -21,7 +21,7 @@ for line in lines[1:]:
         if not numbers:
             continue
 
-        x_values.append(numbers[0]/500.0)
+        x_values.append(numbers[0]/500)
 
         # Store each Y column
         for i, y in enumerate(numbers[1:]):
