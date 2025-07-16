@@ -140,12 +140,12 @@ void guidance_module_run(bool in_flight)
   float accel_ref[3];
   for (int i = 0; i < 3; i++) {
       accel_ref[i] = vel_error[i] * 4;   // Gain to get acceleration      
-      // if (accel_ref[i] >= 2.5) {
-      //   accel_ref[i] = 2.5;
-      // } 
-      // if (accel_ref[i] <= -2.5) {
-      //   accel_ref[i] = -2.5;
-      // }
+      if (accel_ref[i] >= 2.5) {
+        accel_ref[i] = 2.5;
+      } 
+      if (accel_ref[i] <= -2.5) {
+        accel_ref[i] = -2.5;
+      }
   } 
 
   // Current accelerations
