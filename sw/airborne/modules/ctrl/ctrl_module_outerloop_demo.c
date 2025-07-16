@@ -162,7 +162,7 @@ void guidance_module_run(bool in_flight)
   d_accel_ref[2] = accel_ref[2] - accel_a[2]; 
 
   //---------------------SELF-DONE LOGGING-------------------
-  const char *path = "/home/t/paparazzi/output.txt";
+  const char *path = "/home/t/paparazzi/output3.txt";
   // Try to open the file in "read" mode to check if it already exists
   FILE *check = fopen(path, "r");
   bool file_exists = (check != NULL);
@@ -210,7 +210,7 @@ void guidance_module_run(bool in_flight)
 float* guidance_function(float d_accel_ref[3])
 {
   // Setting fixed values for mass. Not sure if this is accurate.
-  float mass = 0.4;
+  float mass = 0.73;
 
   // Get thrust. Hard-coding as a constant needed for a hover to counteract gravity for now, probably have to change.
   float T = mass*9.81; 
@@ -229,7 +229,7 @@ float* guidance_function(float d_accel_ref[3])
   }
 
   // Inverse of the control effectiveness matrix. The inverse is directly computed here.
-  float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, 1}};
+  float B_inverse[3][3] = {{0, 1/T, 0}, {1/T, 0, 0}, {0, 0, 1}};
 
   // Calculate dcmd via "matrix" calculation: dcmd = B_inverse * d_accel_ref_b * mass;
   float dcmd[3]; //MYB PUT LIMIT (45DEG)
