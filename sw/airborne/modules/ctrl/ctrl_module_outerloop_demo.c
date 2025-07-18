@@ -34,6 +34,9 @@
 #include "modules/radio_control/radio_control.h"
 #include "autopilot.h"
 
+#include "modules/imu/imu.h"
+#include "modules/core/abi_sender_ids.h"
+
 #include "modules/datalink/downlink.h"
 
 #include "modules/datalink/downlink.h"
@@ -83,6 +86,7 @@ void guidance_module_enter(void)
 
 float* guidance_function(float d_accel_ref[3]);
 
+
 void guidance_module_run(bool in_flight)
 {
   stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot_in_flight(), false, false, &radio_control);
@@ -93,10 +97,11 @@ void guidance_module_run(bool in_flight)
 
   // Desired position
   static float pos_ref[3];
-  pos_ref[0] = 3* sinf(counter/500.0) + 20.0;
-  // pos_ref[0] = 50.0;
+  pos_ref[0] = 3 * sinf(counter/420.0);
+  // pos_ref[0] = 0.0;
   pos_ref[1] = 0.0;
-  pos_ref[2] = -25.0;
+  pos_ref[2] = -15.0;
+  // pos_ref[2] = -15.0 + sinf(counter/420.0);
 
   // Current positions
   struct NedCoor_f *pos_actual = stateGetPositionNed_f();
@@ -114,7 +119,7 @@ void guidance_module_run(bool in_flight)
   // Trying to compute velocity as a gain times the position error. This is done in the MatLAB file
   float vel_ref[3];
   for (int i = 0; i < 3; i++) {
-      vel_ref[i] = pos_error[i] * 0.65;   // Gain to get velocity
+      vel_ref[i] = pos_error[i] * 0.95;   // Gain to get velocity
       if (vel_ref[i] >= 15.0) {
         vel_ref[i] = 15.0;
       }
@@ -139,7 +144,7 @@ void guidance_module_run(bool in_flight)
   // Trying to compute acceleration as a gain times the velocity error. This is done in the MatLAB file
   float accel_ref[3];
   for (int i = 0; i < 3; i++) {
-      accel_ref[i] = vel_error[i] * 4;   // Gain to get acceleration      
+      accel_ref[i] = vel_error[i] * 2;   // Gain to get acceleration      
       if (accel_ref[i] >= 2.5) {
         accel_ref[i] = 2.5;
       } 
@@ -150,6 +155,7 @@ void guidance_module_run(bool in_flight)
 
   // Current accelerations
   struct NedCoor_f *accel_actual = stateGetAccelNed_f();
+
   float accel_a[3];
   accel_a[0] = accel_actual->x;
   accel_a[1] = accel_actual->y;
@@ -160,34 +166,6 @@ void guidance_module_run(bool in_flight)
   d_accel_ref[0] = accel_ref[0] - accel_a[0];
   d_accel_ref[1] = accel_ref[1] - accel_a[1];
   d_accel_ref[2] = accel_ref[2] - accel_a[2]; 
-
-  //---------------------SELF-DONE LOGGING-------------------
-  const char *path = "/home/t/paparazzi/output3.txt";
-  // Try to open the file in "read" mode to check if it already exists
-  FILE *check = fopen(path, "r");
-  bool file_exists = (check != NULL);
-  if (check) fclose(check);
-
-  // Open the file in "append" mode so we don't overwrite existing data
-  FILE *file = fopen(path, "a");
-  if (file == NULL) {
-      perror("Error opening file");
-  }
-
-  // Write header only if the file did not exist before
-  if (!file_exists) {
-      fprintf(file, "Time, pos_a, pos_ref, vel_a, vel_ref, accel_a, accel_ref\n");
-      // fprintf(file, "Time, pos_a_x, pos_ref_x, pos_a_y, pos_ref_y\n");
-  }
-
-  // Write the current data values to the file
-  fprintf(file, "%d,%f,%f,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], vel_a[0], vel_ref[0], accel_a[0], accel_ref[0]);
-  // fprintf(file, "%d,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], pos_a[1], pos_ref[1]);
-
-  // Close the file
-  fclose(file);
-  //-----------------END SELF-MADE LOGGING---------------
-
 
   // CONTROL LAW
   // Get results of guidance function
@@ -201,10 +179,43 @@ void guidance_module_run(bool in_flight)
 
   struct StabilizationSetpoint sp = stab_sp_from_rates_f(&(ctrl.cmd));
   struct ThrustSetpoint th = th_sp_from_incr_f(rates_guidance[2], THRUST_AXIS_Z);
-  // RunOnceEvery(100,printf("%f, %f, %f\n", rates_guidance[2], d_accel_ref[2], thrust_estimate);)
 
   // execute attitude stabilization:
   stabilization_rate_run(in_flight, &sp, &th, stabilization.cmd);
+
+  //---------------------SELF-DONE LOGGING-------------------
+  const char *path = "/home/t/paparazzi/output.txt";
+  // Try to open the file in "read" mode to check if it already exists
+  FILE *check = fopen(path, "r");
+  bool file_exists = (check != NULL);
+  if (check) fclose(check);
+
+  // Open the file in "append" mode so we don't overwrite existing data
+  FILE *file = fopen(path, "a");
+  if (file == NULL) {
+      perror("Error opening file");
+  }
+
+  // Write header only if the file did not exist before
+  if (!file_exists) {
+      // fprintf(file, "Time, pos_a, pos_ref, vel_a, vel_ref, accel_a, accel_ref\n");
+      // fprintf(file, "Time, pos_a, pos_ref, vel_a, vel_ref, accel_a, accel_ref, incr_thrust_cmd, total thrust\n");
+      // fprintf(file, "Time, ctrl.cmd.p, ctrl.cmd.r\n");
+      // fprintf(file, "Time,accel_ref_x,accel_a_x\n");
+      fprintf(file, "Time, thrust_commanded, total_thrust\n");
+  }
+
+  // Write the current data values to the file
+  // fprintf(file, "%d,%f,%f,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], vel_a[0], vel_ref[0], accel_a[0], accel_ref[0]);
+  // fprintf(file, "%d,%f,%f,%f,%f,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], vel_a[0], vel_ref[0], accel_a[0], accel_ref[0], rates_guidance[2], rates_guidance[2] + thrust_estimate);
+  // fprintf(file, "%d,%f,%f\n", counter, ctrl.cmd.p, ctrl.cmd.r);
+  // fprintf(file, "%d,%f,%f\n", counter, accel_ref[0], accel_a[0]);
+  fprintf(file, "%d,%f,%f\n", counter, rates_guidance[2] + thrust_estimate, thrust_estimate);
+
+  // Close the file
+  fclose(file);
+  //-----------------END SELF-MADE LOGGING---------------
+
 }
 
 float* guidance_function(float d_accel_ref[3])
@@ -212,8 +223,12 @@ float* guidance_function(float d_accel_ref[3])
   // Setting fixed values for mass. Not sure if this is accurate.
   float mass = 0.73;
 
-  // Get thrust. Hard-coding as a constant needed for a hover to counteract gravity for now, probably have to change.
-  float T = mass*9.81; 
+  // Get thrust
+  // float T = mass*9.81; //Hard-coding as a constant needed for a hover to counteract gravity for now, probably have to change.
+  float T = -thrust_estimate;  
+  if (T < 0.1) {
+    T = 0.1;
+  }
 
   // Rotation matrix, replacing eul2rotm(eulerzyx,"ZYX"). This gets the desired acceleration in the body frame
   struct FloatRMat *rot = stateGetNedToBodyRMat_f(); 
@@ -227,6 +242,7 @@ float* guidance_function(float d_accel_ref[3])
       d_accel_ref_b[i] += rot->m[i * 3 + j] * d_accel_ref[j];  
     }
   }
+
 
   // Inverse of the control effectiveness matrix. The inverse is directly computed here.
   float B_inverse[3][3] = {{0, 1/T, 0}, {1/T, 0, 0}, {0, 0, 1}};
@@ -252,8 +268,8 @@ float* guidance_function(float d_accel_ref[3])
 
   // Make array to return
   static float array[3];
-  array[0] = 5*2*q.qx;
-  array[1] = -5*2*q.qy;
+  array[0] = 35*2*q.qx;
+  array[1] = -35*2*q.qy;
   array[2] = dcmd[2]/mass;
 
   return array;
