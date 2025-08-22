@@ -34,6 +34,7 @@
 #include "modules/radio_control/radio_control.h"
 #include "autopilot.h"
 
+<<<<<<< HEAD
 #include "modules/imu/imu.h"
 #include "modules/core/abi_sender_ids.h"
 
@@ -48,6 +49,13 @@
 
 // Access estimated thrust from stabilization_indi.c file. This is estimated thrust in the z direction
 extern float thrust_estimate;
+=======
+#include "modules/datalink/downlink.h"
+
+#include "modules/datalink/downlink.h"
+
+// Own Variables
+>>>>>>> tudelft/swing_module
 
 struct ctrl_module_demo_struct {
 // RC Inputs
@@ -224,12 +232,35 @@ float* guidance_function(float d_accel_ref[3])
   // Setting fixed values for mass. Not sure if this is accurate.
   float mass = 0.73;    
 
+<<<<<<< HEAD
   // Get thrust
   // float T = mass*9.81; //Hard-coding as a constant needed for a hover to counteract gravity for now, probably have to change.
   float T = -thrust_estimate;  
   if (T < 0.1) {
     T = 0.1;
   }
+=======
+  // Get current angular rates
+  struct FloatRates *rates = stateGetBodyRates_f();
+  float roll_rate_c = rates->p;
+  float pitch_rate_c = rates->q; 
+  float yaw_rate_c = rates->r; 
+
+  // DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice,  &roll_c, &pitch_c, &yaw_c, &roll_rate_c, &pitch_rate_c, &yaw_rate_c);
+
+
+  // Setting fixed values for motor force constant and mass. Not sure if these are accurate.
+  float mot_force_constant = 0.01;
+  float mass = 0.4;
+
+  // GET THRUST. Hard-coding as a constant for now, probably have to change.
+  float T = 3.9;
+
+  // Stop thrust from being too small
+  // if (T < 0.1f) {
+  //   T = 0.1f;
+  // }
+>>>>>>> tudelft/swing_module
 
   // Rotation matrix, replacing eul2rotm(eulerzyx,"ZYX"). This gets the desired acceleration in the body frame
   struct FloatRMat *rot = stateGetNedToBodyRMat_f(); 
@@ -244,6 +275,7 @@ float* guidance_function(float d_accel_ref[3])
     }
   }
 
+<<<<<<< HEAD
 
   // Inverse of the control effectiveness matrix. The inverse is directly computed here.
   float B_inverse[3][3] = {{0, 1/T, 0}, {1/T, 0, 0}, {0, 0, 1}};
@@ -251,6 +283,19 @@ float* guidance_function(float d_accel_ref[3])
   // Calculate dcmd via "matrix" calculation: dcmd = B_inverse * d_accel_ref_b * mass;
   float dcmd[3]; //MYB PUT LIMIT (45DEG)
 
+=======
+float xx=55,yy=66,zz=77;
+xx = d_accel_ref_b[1];
+
+  DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice, &xx, &yy, &zz);
+
+  // Inverse of the control effectiveness matrix. The inverse is directly computed here.
+  float B_inverse[3][3] = { {0, 1/T, 0}, {1/T, 0, 0}, {0, 0, -1}};
+
+
+  // Calculate dcmd via "matrix" calculation with for loops: dcmd = B_inverse * d_accel_ref_b * mass;
+  float dcmd[3];
+>>>>>>> tudelft/swing_module
   for (int i = 0; i < 3; i++) {
     dcmd[i] = 0;
     for (int j = 0; j < 3; j++) {
@@ -260,6 +305,7 @@ float* guidance_function(float d_accel_ref[3])
   }
 
   // Quaternion
+<<<<<<< HEAD
   struct FloatQuat q; //quat output
   struct FloatEulers e;
   e.psi = 0.0;        
@@ -272,11 +318,129 @@ float* guidance_function(float d_accel_ref[3])
   array[0] = 35*2*q.qx;
   array[1] = -35*2*q.qy;
   array[2] = dcmd[2]/mass;
+=======
+  struct FloatQuat q[4];
+  struct FloatEulers e = {0.0, dcmd[2], dcmd[1]};
+  float_quat_of_eulers_zxy(&q, &e); //ASK EWOUD ABOUT ZYX VS ZXY 
+
+  // Make array to return
+  static float array[3];
+  array[0] = 5*2*q->qx;
+  array[1] = -5*2*q->qy;
+  array[2] = T + dcmd[2];
+>>>>>>> tudelft/swing_module
 
   return array;
 }
 
+<<<<<<< HEAD
 
 // DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice,  &roll_v_ref, &pitch_v_ref, &yaw_v_ref, &T_cmd, &T_cmd, &T_cmd);
 // RunOnceEvery(100,printf("%f, %f, %f\n", array[0], array[1], array[2]);)
   
+=======
+void guidance_module_run(bool in_flight)
+{
+  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot_in_flight(), false, false, &radio_control);
+
+  // YOUR NEW HORIZONTAL OUTERLOOP CONTROLLER GOES HERE
+  // ctrl.cmd = CallMyNewHorizontalOuterloopControl(ctrl);
+
+  // DESIRED TRAJECTORY
+  static int counter = 0;
+  counter +=1;
+
+  // Put in desired acceleration. Can change to position later 
+  static float accel_d[3];
+  accel_d[0] = cosf(counter/500.0);
+  accel_d[1] = sinf(counter/500.0);
+  //accel_d[1] = sinf(counter/500.0);
+  accel_d[2] = 0.0;
+
+  // Current accelerations
+  struct NedCoor_i *accel_actual = stateGetAccelNed_i();
+  float accel_a[3];
+  accel_a[0] = accel_actual->x;
+  accel_a[1] = accel_actual->y;
+  accel_a[2] = accel_actual->z;
+
+  // d_accel_ref
+  static float d_accel_ref[3];
+  d_accel_ref[0] = accel_d[0] - accel_a[0];
+  d_accel_ref[1] = accel_d[1] - accel_a[1];
+  d_accel_ref[2] = accel_d[2] - accel_a[2];
+
+
+  // CONTROL LAW
+  // Get results of guidance function
+  float* rates_ref = guidance_function(d_accel_ref);
+  
+
+
+  // Reference rates
+  float roll_v_ref = rates_ref[0];
+  float pitch_v_ref = rates_ref[1];
+  // float roll_v_ref = 0.0;
+  // float pitch_v_ref = 0.0;
+  float yaw_v_ref = 0.0; //Keep at zero, at least for now.
+
+  //float T_cmd = rates_ref[2];
+  float T_cmd = 3.9; //Hard-coding as a constant for now. probably will have to change
+
+  DOWNLINK_SEND_PLOP(DefaultChannel, DefaultDevice,  &roll_v_ref, &pitch_v_ref, &yaw_v_ref, &T_cmd, &T_cmd, &T_cmd);
+
+
+  // Make vector u, holding the roll rates and T_cmd
+  float u[4] = {roll_v_ref, pitch_v_ref, yaw_v_ref, T_cmd};
+
+  // B_pseudo_inverse is defined using the values seen in Matlab
+  float B_pseudo_inverse[4][4] = {{-0.25, -0.25, -2.5, 25.0}, {0.25, -0.25, 2.5, 25.0}, {0.25, 0.25, -2.5, 25.0}, {-0.25, 0.25, 2.5, 25.0}};
+
+  // Calculate delta_u. Doing this manually.
+  float delta_u[4];
+
+  // Matrix multiplication with B_pseudo_inverse to calculate delta_u
+  for (int i = 0; i < 4; i++) {
+    delta_u[i] = 0;  // Initialize the result element
+    for (int j = 0; j < 4; j++) {
+      delta_u[i] += B_pseudo_inverse[i][j] * u[j];
+    }
+  }
+
+  // Send control to the drone
+  ctrl.cmd.phi = ANGLE_BFP_OF_REAL(delta_u[0]);
+  ctrl.cmd.theta = ANGLE_BFP_OF_REAL(delta_u[1]);
+  ctrl.cmd.psi = ANGLE_BFP_OF_REAL(delta_u[2]);
+
+  struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&(ctrl.cmd));
+  struct ThrustSetpoint th = guidance_v_run(in_flight);
+
+  // execute attitude stabilization:
+  stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
+
+
+  //  struct FloatEulers* att = stateGetNedToBodyEulers_f();
+  //  struct FloatRates* rates = stateGetBodyRates_f();
+
+  // static int counter = 0;
+  // counter +=1;
+
+  // float roll = sinf(counter/500.0);
+  // float pitch = sinf(counter/500.0);
+  //OR
+  // Desired rates. To be replaced by desired trajectory, with "guidance" function to determine this from position description
+  // float roll_v_d = (0.5/512.0)*cosf(counter/512.0);
+  // float pitch_v_d = (-0.5/512.0)*sinf(counter/512.0);
+  // float yaw_v_d = 0.0;
+
+  // ctrl.cmd.phi = ANGLE_BFP_OF_REAL(roll);
+  // ctrl.cmd.theta = ANGLE_BFP_OF_REAL(pitch);
+
+  // struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&(ctrl.cmd));
+  // struct ThrustSetpoint th = guidance_v_run(in_flight);
+
+  // // execute attitude stabilization:
+  // stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
+}
+
+>>>>>>> tudelft/swing_module
