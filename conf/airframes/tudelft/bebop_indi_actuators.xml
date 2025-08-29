@@ -24,7 +24,9 @@
     </target>
 
     <autopilot name="rotorcraft_control_loop"/>
-    <module name="ctrl_module_outerloop_demo"/>
+    <module name="ctrl_module_outerloop_demo">
+      <define name="MOL_DRONE_WEIGHT" value="0.73"/>
+    </module>
 
     <!--define name="USE_SONAR" value="TRUE"/-->
 

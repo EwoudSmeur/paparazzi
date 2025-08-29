@@ -49,6 +49,11 @@
 // Access estimated thrust from stabilization_indi.c file. This is estimated thrust in the z direction
 extern float thrust_estimate;
 
+// Setting fixed values for mass. Not sure if this is accurate.
+#ifndef MOL_DRONE_WEIGHT
+#error "You have to define MOL_DRONE_WEIGHT for the ctrl_module_outerloop_demo!"
+#endif
+float mass = MOL_DRONE_WEIGHT;
 
 // Gains and limits
 static float vel_limit = 15.0;
@@ -232,12 +237,10 @@ void guidance_module_run(bool in_flight)
 
 float* guidance_function(float d_accel_ref[3])
 {
-  // Setting fixed values for mass. Not sure if this is accurate.
-  float mass = 0.73;    
-
   // Get thrust
   // float T = mass*9.81; //Hard-coding as a constant needed for a hover to counteract gravity for now, probably have to change.
-  float T = -thrust_estimate;  
+  // float T = -thrust_estimate;  
+  float T = ACCEL_FLOAT_OF_BFP(stateGetAccelBody_i()->z)*mass;
   if (T < thrust_limit) {
     T = thrust_limit;
   }
