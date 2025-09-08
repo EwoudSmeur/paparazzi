@@ -18,8 +18,8 @@
       <module name="udp"/>
       <define name="STABILIZATION_INDI_RPM_FEEDBACK" value="FALSE"/>
       <module name="logger_file">
-        <!-- <define name="LOGGER_FILE_PATH" value="/home/t/paparazzi/var/logs"/> -->
-        <define name="LOGGER_FILE_PATH" value="/home/paparazzi/var/logs/"/>
+        <define name="LOGGER_FILE_PATH" value="/home/t/paparazzi/var/logs"/>
+        <!-- <define name="LOGGER_FILE_PATH" value="/home/paparazzi/var/logs/"/> -->
       </module>
     </target>
 

@@ -1,42 +1,30 @@
+import pandas as pd
 import matplotlib.pyplot as plt
 
-x_values = []
-y_columns = []
-labels = []
+# Load CSV file with headers. Must update the csv being logged
+df = pd.read_csv('var/logs/20250907-224624.csv')   
 
-# Read data from file
-with open('output.txt', 'r') as file:
-    lines = file.readlines()
 
-# Handle header
-header = lines[0].strip().replace(',', ' ').split()
-labels = header  # First label is X, rest are Y
+# Plotting
+plt.figure(figsize=(12, 6))
+# plt.plot(df['time'], df['pos_x_ref'], label='Position Ref', linewidth=2)
+# plt.plot(df['time'], df['pos_x_actual'], label='Position Actual', linewidth=2)
+# plt.plot(df['time'], df['vel_x_ref'], label='Velocity Ref', linewidth=2)
+# plt.plot(df['time'], df['vel_x_actual'], label='Velocity Actual', linewidth=2)
+# plt.plot(df['time'], df['acc_x_ref'], label='Acceleration Ref', linewidth=2)
+# plt.plot(df['time'], df['acc_x_actual'], label='Acceleration Actual', linewidth=2)
+plt.plot(df['time'], df['rate_p'], label='Rate p', linewidth=2)
+plt.plot(df['time'], df['rate_q'], label='Rate q', linewidth=2)
+# plt.plot(df['time'], df['rate_r'], label='Rate r', linewidth=2)
+# plt.plot(df['time'], df['T_calculated'], label='T calculated', linewidth=2)
+# plt.plot(df['time'], df['roll_rate_cmd'], label='Commanded roll rate', linewidth=2)
+# plt.plot(df['time'], df['pitch_rate_cmd'], label='Commanded pitch rate', linewidth=2)
 
-# Parse numeric data
-for line in lines[1:]:
-    if line.strip():
-        parts = line.strip().replace(',', ' ').split()
-        numbers = list(map(float, parts))
 
-        if not numbers:
-            continue
-
-        x_values.append(numbers[0]/500)
-
-        # Store each Y column
-        for i, y in enumerate(numbers[1:]):
-            if len(y_columns) <= i:
-                y_columns.append([])
-            y_columns[i].append(y)
-
-# Plot using labels
-for i, y_values in enumerate(y_columns):
-    label = labels[i + 1] if i + 1 < len(labels) else f'Column {i + 2}'
-    plt.plot(x_values, y_values, label=label)
-
-plt.xlabel(labels[0] if labels else 'X (Column 1)')
-plt.ylabel('Y Values')
-plt.title('Plot of Columns vs. First Column')
+plt.xlabel('Time (s)')
+plt.ylabel('Value')
+plt.title('Logging')
 plt.legend()
 plt.grid(True)
+plt.tight_layout()
 plt.show()

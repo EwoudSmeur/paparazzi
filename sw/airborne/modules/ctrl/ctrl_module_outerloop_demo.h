@@ -39,4 +39,12 @@ extern void ctrl_module_init(void);
 extern void guidance_module_enter(void);
 extern void guidance_module_run(bool in_flight);
 
+
+extern float pos_ref[3];
+extern float vel_ref[3];
+extern float accel_ref[3];
+extern float T;
+extern float roll_rate_calc;
+extern float pitch_rate_calc;
+
 #endif /* CTRL_MODULE_OUTERLOOP_DEMO_H_ */

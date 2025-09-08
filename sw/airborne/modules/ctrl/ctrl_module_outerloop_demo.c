@@ -61,8 +61,17 @@ static float acc_limit = 2.5;
 static float thrust_limit = 0.1;
 static float vel_gain = 0.6;
 static float acc_gain = 1.2;
-static float roll_rate_gain = 35.0;
-static float pitch_rate_gain = 35.0;
+static float roll_rate_gain = 50.0; //35
+static float pitch_rate_gain = 50.0; //35
+
+
+// Globally defined parameters (able to access these with logging)
+float pos_ref[3];
+float vel_ref[3];
+float accel_ref[3];
+float T;
+float roll_rate_calc;
+float pitch_rate_calc;
 
 
 struct ctrl_module_demo_struct {
@@ -112,7 +121,6 @@ void guidance_module_run(bool in_flight)
   counter += 1;
 
   // Desired position
-  static float pos_ref[3];
   pos_ref[0] = 3 * sinf(counter/420.0);
   // pos_ref[0] = 0.0;
   pos_ref[1] = 0.0;
@@ -133,7 +141,6 @@ void guidance_module_run(bool in_flight)
   pos_error[2] = pos_ref[2] - pos_a[2];
 
   // Trying to compute velocity as a gain times the position error. This is done in the MatLAB file
-  float vel_ref[3];
   for (int i = 0; i < 3; i++) {
       vel_ref[i] = pos_error[i] * vel_gain;   // Gain to get velocity  0.95
       if (vel_ref[i] >= vel_limit) {
@@ -159,7 +166,6 @@ void guidance_module_run(bool in_flight)
 
 
   // Trying to compute acceleration as a gain times the velocity error. This is done in the MatLAB file
-  float accel_ref[3];
   for (int i = 0; i < 3; i++) {
       accel_ref[i] = vel_error[i] * acc_gain;   // Gain to get acceleration    2  
       if (accel_ref[i] >= acc_limit) {
@@ -193,6 +199,8 @@ void guidance_module_run(bool in_flight)
   ctrl.cmd.q = rates_guidance[1];
   ctrl.cmd.r = 0.0;
 
+  roll_rate_calc = ctrl.cmd.p;
+  pitch_rate_calc = ctrl.cmd.q;
 
   struct StabilizationSetpoint sp = stab_sp_from_rates_f(&(ctrl.cmd));
   struct ThrustSetpoint th = th_sp_from_incr_f(rates_guidance[2], THRUST_AXIS_Z);
@@ -200,47 +208,14 @@ void guidance_module_run(bool in_flight)
   // execute attitude stabilization:
   stabilization_rate_run(in_flight, &sp, &th, stabilization.cmd);
 
-  //---------------------SELF-DONE LOGGING-------------------
-  const char *path = "/home/t/paparazzi/output.txt";
-  // Try to open the file in "read" mode to check if it already exists
-  FILE *check = fopen(path, "r");
-  bool file_exists = (check != NULL);
-  if (check) fclose(check);
-
-  // Open the file in "append" mode so we don't overwrite existing data
-  FILE *file = fopen(path, "a");
-  if (file == NULL) {
-      perror("Error opening file");
-  }
-
-  // Write header only if the file did not exist before
-  if (!file_exists) {
-      fprintf(file, "Time, pos_a, pos_ref, vel_a, vel_ref, accel_a, accel_ref\n");
-      // fprintf(file, "Time, pos_a, pos_ref, vel_a, vel_ref, accel_a, accel_ref, incr_thrust_cmd, total thrust\n");
-      // fprintf(file, "Time, ctrl.cmd.p, ctrl.cmd.r\n");
-      // fprintf(file, "Time,accel_ref_x,accel_a_x\n");
-      // fprintf(file, "Time, thrust_commanded, total_thrust\n");
-  }
-
-  // Write the current data values to the file
-  fprintf(file, "%d,%f,%f,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], vel_a[0], vel_ref[0], accel_a[0], accel_ref[0]);
-  // fprintf(file, "%d,%f,%f,%f,%f,%f,%f,%f,%f\n", counter, pos_a[0], pos_ref[0], vel_a[0], vel_ref[0], accel_a[0], accel_ref[0], rates_guidance[2], rates_guidance[2] + thrust_estimate);
-  // fprintf(file, "%d,%f,%f\n", counter, ctrl.cmd.p, ctrl.cmd.r);
-  // fprintf(file, "%d,%f,%f\n", counter, accel_ref[0], accel_a[0]);
-  // fprintf(file, "%d,%f,%f\n", counter, rates_guidance[2] + thrust_estimate, thrust_estimate);
-
-  // Close the file
-  fclose(file);
-  //-----------------END SELF-MADE LOGGING---------------
-
 }
 
 float* guidance_function(float d_accel_ref[3])
 {
   // Get thrust
   // float T = mass*9.81; //Hard-coding as a constant needed for a hover to counteract gravity for now, probably have to change.
-  // float T = -thrust_estimate;  
-  float T = ACCEL_FLOAT_OF_BFP(stateGetAccelBody_i()->z)*mass;
+  // T = -thrust_estimate;  
+  T = -ACCEL_FLOAT_OF_BFP(stateGetAccelBody_i()->z)*mass;
   if (T < thrust_limit) {
     T = thrust_limit;
   }

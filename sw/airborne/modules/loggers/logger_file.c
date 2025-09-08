@@ -45,6 +45,8 @@
 
 #include "generated/modules.h"
 
+#include "modules/ctrl/ctrl_module_outerloop_demo.h"
+
 /** Set the default File logger path to the USB drive */
 #ifndef LOGGER_FILE_PATH
 #define LOGGER_FILE_PATH /data/video/usb
@@ -64,10 +66,16 @@ static FILE *logger_file = NULL;
  */
 static void logger_file_write_header(FILE *file) {
   fprintf(file, "time,");
-  fprintf(file, "pos_x,pos_y,pos_z,");
-  fprintf(file, "vel_x,vel_y,vel_z,");
+  fprintf(file, "pos_x_ref,pos_y_ref,pos_z_ref,");
+  fprintf(file, "vel_x_ref,vel_y_ref,vel_z_ref,");
+  fprintf(file, "acc_x_ref,acc_y_ref,acc_z_ref,");
+  fprintf(file, "pos_x_actual,pos_y_actual,pos_z_actual,");
+  fprintf(file, "vel_x_actual,vel_y_actual,vel_z_actual,");
+  fprintf(file, "acc_x_actual,acc_y_actual,acc_z_actual,");
   fprintf(file, "att_phi,att_theta,att_psi,");
   fprintf(file, "rate_p,rate_q,rate_r,");
+  fprintf(file, "T_calculated,");
+  fprintf(file, "roll_rate_cmd,pitch_rate_cmd,");
 #ifdef BOARD_BEBOP
   fprintf(file, "rpm_obs_1,rpm_obs_2,rpm_obs_3,rpm_obs_4,");
   fprintf(file, "rpm_ref_1,rpm_ref_2,rpm_ref_3,rpm_ref_4,");
@@ -91,14 +99,21 @@ static void logger_file_write_header(FILE *file) {
 static void logger_file_write_row(FILE *file) {
   struct NedCoor_f *pos = stateGetPositionNed_f();
   struct NedCoor_f *vel = stateGetSpeedNed_f();
+  struct NedCoor_f *acc = stateGetAccelNed_f();
   struct FloatEulers *att = stateGetNedToBodyEulers_f();
   struct FloatRates *rates = stateGetBodyRates_f();
 
   fprintf(file, "%f,", get_sys_time_float());
+  fprintf(file, "%f,%f,%f,", pos_ref[0], pos_ref[1], pos_ref[2]);
+  fprintf(file, "%f,%f,%f,", vel_ref[0], vel_ref[1], vel_ref[2]);
+  fprintf(file, "%f,%f,%f,", accel_ref[0], accel_ref[1], accel_ref[2]);
   fprintf(file, "%f,%f,%f,", pos->x, pos->y, pos->z);
   fprintf(file, "%f,%f,%f,", vel->x, vel->y, vel->z);
+  fprintf(file, "%f,%f,%f,", acc->x, acc->y, acc->z);
   fprintf(file, "%f,%f,%f,", att->phi, att->theta, att->psi);
   fprintf(file, "%f,%f,%f,", rates->p, rates->q, rates->r);
+  fprintf(file, "%f,", T);
+  fprintf(file, "%f, %f,", roll_rate_calc, pitch_rate_calc);
 #ifdef BOARD_BEBOP
   fprintf(file, "%d,%d,%d,%d,",actuators_bebop.rpm_obs[0],actuators_bebop.rpm_obs[1],actuators_bebop.rpm_obs[2],actuators_bebop.rpm_obs[3]);
   fprintf(file, "%d,%d,%d,%d,",actuators_bebop.rpm_ref[0],actuators_bebop.rpm_ref[1],actuators_bebop.rpm_ref[2],actuators_bebop.rpm_ref[3]);
