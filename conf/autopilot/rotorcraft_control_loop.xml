@@ -72,7 +72,7 @@
         <call fun="guidance_module_run(autopilot_in_flight())"/>
         <call_block name="set_commands"/>
       </control>
-      <exception cond="RCLost()" deroute="FAILSAFE"/>
+      <!-- <exception cond="RCLost()" deroute="FAILSAFE"/> -->
     </mode>
 
     <mode name="NAV">

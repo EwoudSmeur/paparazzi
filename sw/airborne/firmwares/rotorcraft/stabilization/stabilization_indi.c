@@ -520,8 +520,6 @@ void init_filters(void)
  *
  * Function that calculates the INDI commands
  */
-
-static int counter = 0;
 void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
 
