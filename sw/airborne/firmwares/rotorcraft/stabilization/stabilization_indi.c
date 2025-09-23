@@ -626,6 +626,10 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
   angular_accel_ref.q = (rate_sp.q - rates_filt.q) * indi_gains.rate.q;
   angular_accel_ref.r = (rate_sp.r - rates_filt.r) * indi_gains.rate.r;
 
+  static int counter_indi = 0;
+  counter_indi +=1;
+  printf("i: %d, %f\n", counter_indi, rate_sp.q);
+
   // compute virtual thrust
   struct FloatVect3 v_thrust = { 0.f, 0.f, 0.f };
   if (thrust->type == THRUST_INCR_SP) {

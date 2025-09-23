@@ -208,6 +208,12 @@ void guidance_module_run(bool in_flight)
   // execute attitude stabilization:
   stabilization_rate_run(in_flight, &sp, &th, stabilization.cmd);
 
+  static int counter_module = 0;
+
+  counter_module += 1;
+
+  printf("m: %d, %f\n", counter_module, ctrl.cmd.q);
+
 }
 
 float* guidance_function(float d_accel_ref[3])
