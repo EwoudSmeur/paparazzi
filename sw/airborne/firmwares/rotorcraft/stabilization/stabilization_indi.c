@@ -626,7 +626,7 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
 
   static int counter_indi = 0;
   counter_indi +=1;
-  printf("i: %d, %f\n", counter_indi, rate_sp.q);
+  // printf("i: %d, %f\n", counter_indi, rate_sp.q);
 
   // compute virtual thrust
   struct FloatVect3 v_thrust = { 0.f, 0.f, 0.f };
