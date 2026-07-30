@@ -126,7 +126,13 @@ float waypoint_get_alt(uint8_t wp_id)
 float waypoint_get_lla_alt(uint8_t wp_id)
 {
   if (wp_id < nb_waypoint) {
-    return waypoints[wp_id].lla.alt/1000.f - stateGetLlaOrigin_i().alt/1000.f;
+    if (!waypoint_is_global(wp_id) && !bit_is_set(waypoints[wp_id].flags, WP_FLAG_LLA_I)) {
+      waypoint_globalize(wp_id);
+    }
+    if (bit_is_set(waypoints[wp_id].flags, WP_FLAG_LLA_I)) {
+      return waypoints[wp_id].lla.alt / 1000.f - stateGetLlaOrigin_i().alt / 1000.f;
+    }
+    return waypoint_get_alt(wp_id);
   }
   return 0.f;
 }
@@ -358,13 +364,17 @@ void waypoint_localize(uint8_t wp_id)
   }
 }
 
-/** update local ENU coordinates of global waypoints */
+/** update waypoint coordinates after a local origin change */
 void waypoints_localize_all(void)
 {
   uint8_t i = 0;
   for (i = 0; i < nb_waypoint; i++) {
     if (waypoint_is_global(i)) {
       waypoint_localize(i);
+#if USE_ALT_LLA_WAYPOINTS
+    } else {
+      waypoint_globalize(i);
+#endif
     }
   }
 }
